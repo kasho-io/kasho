@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# PostgreSQL
+*.dump
+*.backup
+*.bak
+
+# Logs
+*.log
+
+# Docker
+docker-compose.override.yml
+
+# Project specific
+demo/tmp/ 
