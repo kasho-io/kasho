@@ -138,9 +138,9 @@ def poll_and_apply_ddls(primary_cursor, replica_cursor, last_lsn_str):
     for ddl_row in ddls:
         lsn = ddl_row['lsn']
         ddl = ddl_row['ddl']
-        # Skip DDLs related to translicate_ddl_log
-        if 'translicate_ddl_log' in ddl.lower():
-            print(f"Skipping translicate_ddl_log DDL at LSN {lsn}")
+        # Skip DDLs related to translicate_ddl_log or publications
+        if 'translicate_ddl_log' in ddl.lower() or 'publication' in ddl.lower():
+            print(f"Skipping DDL at LSN {lsn} (translicate_ddl_log or publication related)")
             applied_lsn_str = lsn
             continue
             

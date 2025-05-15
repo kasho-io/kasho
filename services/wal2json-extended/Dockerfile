@@ -1,0 +1,18 @@
+FROM golang:1.24-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux go build -o /wal2json-extended ./cmd/server
+
+FROM golang:1.24-alpine AS development
+WORKDIR /app
+RUN go install github.com/air-verse/air@latest
+COPY . .
+RUN go mod download
+CMD ["air", "-c", ".air.toml"]
+
+FROM alpine:latest
+WORKDIR /app
+COPY --from=builder /wal2json-extended .
+EXPOSE 8080
+CMD ["./wal2json-extended"] 

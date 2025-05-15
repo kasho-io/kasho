@@ -9,6 +9,8 @@ import (
 	"strings"
 	"syscall"
 
+	"translicate/internal/server"
+
 	"github.com/joho/godotenv"
 )
 
@@ -20,9 +22,9 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	broker := newMessageBroker()
-	go broker.run()
-	go startServer(broker)
+	broker := server.NewMessageBroker()
+	go broker.Run()
+	go server.StartServer(broker)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -37,7 +39,7 @@ func main() {
 		log.Fatal("PRIMARY_DATABASE_URL environment variable is required")
 	}
 
-	client, err := NewClient(ctx, dbURL)
+	client, err := server.NewClient(ctx, dbURL)
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
 	}
@@ -69,7 +71,7 @@ func main() {
 					log.Printf("Error marshaling change: %v", err)
 					continue
 				}
-				broker.broadcast(jsonData)
+				broker.Broadcast(jsonData)
 			}
 		}
 	}

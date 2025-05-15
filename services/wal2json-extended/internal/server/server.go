@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"log"
@@ -13,7 +13,7 @@ type messageBroker struct {
 	unregister chan chan []byte
 }
 
-func newMessageBroker() *messageBroker {
+func NewMessageBroker() *messageBroker {
 	return &messageBroker{
 		clients:    make(map[chan []byte]struct{}),
 		register:   make(chan chan []byte),
@@ -21,7 +21,7 @@ func newMessageBroker() *messageBroker {
 	}
 }
 
-func (b *messageBroker) run() {
+func (b *messageBroker) Run() {
 	for {
 		select {
 		case client := <-b.register:
@@ -37,7 +37,7 @@ func (b *messageBroker) run() {
 	}
 }
 
-func (b *messageBroker) broadcast(msg []byte) {
+func (b *messageBroker) Broadcast(msg []byte) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -50,7 +50,7 @@ func (b *messageBroker) broadcast(msg []byte) {
 	}
 }
 
-func startServer(broker *messageBroker) {
+func StartServer(broker *messageBroker) {
 	http.HandleFunc("/stream", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
