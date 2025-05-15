@@ -22,4 +22,4 @@ venv/
 docker-compose.override.yml
 
 # Project specific
-demo/tmp/ 
+**/tmp/ 
