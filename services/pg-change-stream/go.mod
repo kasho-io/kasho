@@ -6,7 +6,6 @@ require (
 	github.com/icrowley/fake v0.0.0-20221112152111-d7b7e2276db2
 	github.com/jackc/pglogrepl v0.0.0-20250509230407-a9884f6bd75a
 	github.com/jackc/pgx/v5 v5.5.4
-	github.com/joho/godotenv v1.5.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
