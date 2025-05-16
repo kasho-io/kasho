@@ -2,7 +2,7 @@ FROM golang:1.24-alpine AS builder
 WORKDIR /app
 COPY . .
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux go build -o /wal2json-extended ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -o /pg-change-stream ./cmd/server
 
 FROM golang:1.24-alpine AS development
 WORKDIR /app
@@ -13,6 +13,6 @@ CMD ["air", "-c", ".air.toml"]
 
 FROM alpine:latest
 WORKDIR /app
-COPY --from=builder /wal2json-extended .
+COPY --from=builder /pg-change-stream .
 EXPOSE 8080
-CMD ["./wal2json-extended"] 
+CMD ["./pg-change-stream"] 

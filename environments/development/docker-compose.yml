@@ -1,14 +1,14 @@
 services:
-  wal2json-extended:
+  pg-change-stream:
     build: 
-      context: ../../services/wal2json-extended
+      context: ../../services/pg-change-stream
       target: development
     ports:
       - "${PORT:-8080}:8080"
     env_file:
       - .env
     volumes:
-      - ../../services/wal2json-extended:/app
+      - ../../services/pg-change-stream:/app
     depends_on:
       - redis
       - postgres-primary
