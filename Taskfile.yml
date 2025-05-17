@@ -1,0 +1,33 @@
+version: '3'
+
+tasks:
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list
+
+  dev:
+    desc: Start development environment
+    cmds:
+      - cd environments/development && docker-compose up --build
+
+  dev-down:
+    desc: Stop development environment
+    cmds:
+      - cd environments/development && docker-compose down
+
+  dev-reset:
+    desc: Reset and restart development environment (removes volumes)
+    deps: [dev-down]
+    cmds:
+      - cd environments/development && docker-compose down -v && docker-compose up --build
+
+  build:
+    desc: Build the pg-change-stream service
+    cmds:
+      - cd services/pg-change-stream && go build -o bin/server ./cmd/server
+
+  test:
+    desc: Run tests for pg-change-stream service
+    cmds:
+      - cd services/pg-change-stream && go test ./... 

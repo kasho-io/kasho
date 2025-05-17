@@ -1,6 +1,6 @@
 # Translicate
 
-Translicate is a PostgreSQL replication tool that captures and applies DDL (Data Definition Language) and DML (Data Manipulation Language) changes from a primary database to a replica database. It uses PostgreSQL's logical replication capabilities to ensure that schema changes and data modifications are properly synchronized.
+Translicate aims to be a PostgreSQL replication tool that captures and applies DDL (Data Definition Language) and DML (Data Manipulation Language) changes from a primary database. For DML changes, each will be fed through a transform layer in order to modify / sanitize things so that no sensitive data is exposed to the replica database. It uses PostgreSQL's logical replication capabilities to ensure that schema changes and data modifications are properly synchronized.
 
 ## Features
 
@@ -15,17 +15,16 @@ Translicate is a PostgreSQL replication tool that captures and applies DDL (Data
 - Allow complex transforms on data
   - Possibly use an LLM to help figure out what needs to be transformed
 - Support bootstrapping from an existing database with significant schema and data
-- Port to Golang (and possibly Temporal.io)
 
 ## Components
 
-### SQL Setup Scripts (`sql/`)
-- `setup_wal_primary.sql`: Enables WAL logging on the primary database
-- `setup_replication_primary.sql`: Sets up the primary database with DDL logging and replication
-- `setup_replication_replica.sql`: Sets up the replica database for replication
-- Creates the DDL logging system with triggers and necessary permissions
+### pg-change-stream (`services/pg-change-stream/`)
+- Go service that captures and streams database changes
+- Uses PostgreSQL's logical replication
+- Provides SSE interface for real-time change streaming
+- Handles connection management and retries
 
-### Python Consumer (`python-consumer/translicate_consumer.py`)
+### replicate-poc (`services/replicate-poc`)
 - Connects to both primary and replica databases
 - Polls the `translicate_ddl_log` table for DDL changes
 - Applies DDL changes in order before processing DML changes
@@ -34,54 +33,50 @@ Translicate is a PostgreSQL replication tool that captures and applies DDL (Data
   1. Starting before changes: Captures and applies changes as they occur
   2. Starting after changes: Applies historical DDLs before processing DMLs
 
-### Demo using Docker (`demo/`)
-
-- `Dockerfile`: build the PostgreSQL image
-- `docker-compose.yml`: start two containers, one primary and one replica, for PostgreSQL
-- `scripts`: scripts for running the demo
-- `sql`: sql files for running the demo
+### Development Environment (`environments/development/`)
+- Docker Compose setup for local development
+- Includes PostgreSQL primary and replica databases
+- Redis for caching
+- pg-change-stream service
 
 ## Getting Started
 
-1. Install Docker.
+1. Install dependencies:
+   - Docker
+   - Go 1.24 or later
+   - Task (task runner)
 
-2. Start the demo.
+2. Install Task:
 ```bash
-cd demo/scripts
-docker-compose up
+go install github.com/go-task/task/v3/cmd/task@latest
 ```
 
-3. Reset the databases.
+3. Reset and restart the development environment:
 ```bash
-./demo/scripts/reset-dbs.sh
+task dev-reset
 ```
 
-4. Set up replication.
+4. Run tests:
 ```bash
-./demo/scripts/setup-replication.sh
+task test
 ```
 
-5. Run the demo consumer.
-```bash
-cd python-consumer
-pipenv install
-cat .env.demo > .env
-python3 translicate_consumer.py
-```
+## Development
 
-6. Execute some DB operations
-```bash
-./demo/scripts/demo_replication.sh
-```
+The project uses Task for common development commands. Available commands:
 
-7. Make sure there are no differences across the primary and replica.
-```bash
-./demo/scripts/compare-dbs.sh
-```
+- `task dev`: Start development environment
+- `task dev-down`: Stop development environment
+- `task dev-reset`: Reset and restart development environment (removes volumes)
+- `task build`: Build the pg-change-stream service
+- `task test`: Run tests for pg-change-stream service
+
 ## Requirements
 
 - Docker
-- Python 3.13 or later
+- Go 1.24 or later
+- Task (task runner)
+- Python 3.13 or later (for replicate-poc)
 
 ## License
 
