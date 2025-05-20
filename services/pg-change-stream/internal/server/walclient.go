@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"pg-change-stream/internal/types"
+
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5"
 )
@@ -153,7 +155,7 @@ func (c *Client) sendStatusUpdates(ctx context.Context) {
 	}
 }
 
-func (c *Client) ReceiveMessage(ctx context.Context) ([]Change, error) {
+func (c *Client) ReceiveMessage(ctx context.Context) ([]types.Change, error) {
 	msg, err := c.conn.PgConn().ReceiveMessage(ctx)
 	if err != nil {
 		return nil, err
@@ -166,11 +168,4 @@ func (c *Client) ReceiveMessage(ctx context.Context) ([]Change, error) {
 		c.slotLSN = lsn
 	}
 	return changes, nil
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

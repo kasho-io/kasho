@@ -6,90 +6,13 @@ import (
 	"fmt"
 	"time"
 
+	"pg-change-stream/internal/types"
+
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgproto3"
 )
 
-type Change struct {
-	LSN  string
-	data interface {
-		Type() string
-	}
-}
-
-func (c Change) Type() string {
-	return c.data.Type()
-}
-
-type DMLData struct {
-	Table        string   `json:"table"`
-	ColumnNames  []string `json:"columnnames"`
-	ColumnValues []any    `json:"columnvalues"`
-	Kind         string   `json:"kind"`
-	OldKeys      *struct {
-		KeyNames  []string `json:"keynames"`
-		KeyValues []any    `json:"keyvalues"`
-	} `json:"oldkeys,omitempty"`
-}
-
-func (c DMLData) Type() string {
-	return "dml"
-}
-
-type DDLData struct {
-	ID       int       `json:"id"`
-	Time     time.Time `json:"time"`
-	Username string    `json:"username"`
-	Database string    `json:"database"`
-	DDL      string    `json:"ddl"`
-}
-
-func (c DDLData) Type() string {
-	return "ddl"
-}
-
-func (c Change) MarshalJSON() ([]byte, error) {
-	data, err := json.Marshal(c.data)
-	if err != nil {
-		return nil, err
-	}
-
-	return json.Marshal(struct {
-		Type string          `json:"type"`
-		LSN  string          `json:"lsn"`
-		Data json.RawMessage `json:"data"`
-	}{
-		Type: c.Type(),
-		LSN:  c.LSN,
-		Data: data,
-	})
-}
-
-func (c *Change) UnmarshalJSON(data []byte) error {
-	var aux struct {
-		Type string          `json:"type"`
-		LSN  string          `json:"lsn"`
-		Data json.RawMessage `json:"data"`
-	}
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-
-	c.LSN = aux.LSN
-
-	switch aux.Type {
-	case "dml":
-		c.data = &DMLData{}
-	case "ddl":
-		c.data = &DDLData{}
-	default:
-		return fmt.Errorf("unknown change type: %s", aux.Type)
-	}
-
-	return json.Unmarshal(aux.Data, c.data)
-}
-
-func ParseMessage(msg pgproto3.BackendMessage) ([]Change, pglogrepl.LSN, error) {
+func ParseMessage(msg pgproto3.BackendMessage) ([]types.Change, pglogrepl.LSN, error) {
 	copyData, ok := msg.(*pgproto3.CopyData)
 	if !ok {
 		return nil, 0, nil
@@ -112,7 +35,7 @@ func ParseMessage(msg pgproto3.BackendMessage) ([]Change, pglogrepl.LSN, error) 
 	return changes, walData.WALStart, nil
 }
 
-func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]Change, error) {
+func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]types.Change, error) {
 	jsonStart := bytes.Index(walData, []byte("{"))
 	if jsonStart == -1 {
 		return nil, fmt.Errorf("no JSON data found in WAL")
@@ -133,7 +56,7 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]Change, error) {
 		return nil, fmt.Errorf("no changes found in WAL data")
 	}
 
-	var result []Change
+	var result []types.Change
 	for _, c := range changes {
 		change, ok := c.(map[string]any)
 		if !ok {
@@ -146,7 +69,7 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]Change, error) {
 		}
 
 		if table == "translicate_ddl_log" && change["kind"].(string) == "insert" {
-			ddl := DDLData{}
+			ddl := types.DDLData{}
 			for i, col := range change["columnnames"].([]any) {
 				colName := col.(string)
 				value := change["columnvalues"].([]any)[i]
@@ -173,9 +96,9 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]Change, error) {
 					}
 				}
 			}
-			result = append(result, Change{LSN: lsn.String(), data: ddl})
+			result = append(result, types.Change{LSN: lsn.String(), Data: ddl})
 		} else {
-			dml := DMLData{
+			dml := types.DMLData{
 				Table:        table,
 				ColumnNames:  make([]string, 0),
 				ColumnValues: make([]any, 0),
@@ -209,7 +132,7 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]Change, error) {
 				}
 			}
 
-			result = append(result, Change{LSN: lsn.String(), data: dml})
+			result = append(result, types.Change{LSN: lsn.String(), Data: dml})
 		}
 	}
 

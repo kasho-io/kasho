@@ -18,16 +18,16 @@ tasks:
 
   dev-reset:
     desc: Reset and restart development environment (removes volumes)
-    deps: [dev-down]
     cmds:
       - cd environments/development && docker-compose down -v && docker-compose up --build
 
-  build:
-    desc: Build the pg-change-stream service
-    cmds:
-      - cd services/pg-change-stream && go build -o bin/server ./cmd/server
-
   test:
     desc: Run tests for pg-change-stream service
+    deps: [proto]
     cmds:
-      - cd services/pg-change-stream && go test ./... 
+      - cd services/pg-change-stream && go test ./...
+
+  proto:
+    desc: Generate Go code from protobuf definitions
+    cmds:
+      - cd services/pg-change-stream && protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative api/change_stream.proto 

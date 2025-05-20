@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 
-	"translicate/internal/server"
+	"pg-change-stream/api"
+	"pg-change-stream/internal/server"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -21,20 +24,30 @@ func main() {
 		log.Fatal("REDIS_URL environment variable is required")
 	}
 
-	broker, err := server.NewMessageBroker(redisURL)
+	buffer, err := server.NewRedisBuffer(redisURL)
 	if err != nil {
-		log.Fatalf("Failed to create message broker: %v", err)
+		log.Fatalf("Failed to create Redis buffer: %v", err)
 	}
-	defer broker.Close()
+	defer buffer.Close()
 
-	go broker.Run()
-	go server.StartServer(broker)
+	lis, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	s := grpc.NewServer()
+	api.RegisterChangeStreamServer(s, server.NewChangeStreamServer(buffer))
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigChan
 		log.Println("Received shutdown signal")
+		s.GracefulStop()
 		cancel()
 	}()
 
@@ -70,16 +83,9 @@ func main() {
 			}
 
 			for _, change := range changes {
-				jsonData, err := json.Marshal(change)
-				if err != nil {
-					log.Printf("Error marshaling change: %v", err)
-					continue
-				}
-
-				if err := broker.AddChange(ctx, change.LSN, change); err != nil {
+				if err := buffer.AddChange(ctx, change.LSN, change); err != nil {
 					log.Printf("Error storing change in Redis: %v", err)
 				}
-				broker.Broadcast(jsonData, change.LSN)
 			}
 		}
 	}
