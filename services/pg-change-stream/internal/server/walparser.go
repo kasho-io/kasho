@@ -21,7 +21,7 @@ func (c Change) Type() string {
 	return c.data.Type()
 }
 
-type DMLChange struct {
+type DMLData struct {
 	Table        string   `json:"table"`
 	ColumnNames  []string `json:"columnnames"`
 	ColumnValues []any    `json:"columnvalues"`
@@ -32,11 +32,11 @@ type DMLChange struct {
 	} `json:"oldkeys,omitempty"`
 }
 
-func (c DMLChange) Type() string {
+func (c DMLData) Type() string {
 	return "dml"
 }
 
-type DDLChange struct {
+type DDLData struct {
 	ID       int       `json:"id"`
 	Time     time.Time `json:"time"`
 	Username string    `json:"username"`
@@ -44,7 +44,7 @@ type DDLChange struct {
 	DDL      string    `json:"ddl"`
 }
 
-func (c DDLChange) Type() string {
+func (c DDLData) Type() string {
 	return "ddl"
 }
 
@@ -79,9 +79,9 @@ func (c *Change) UnmarshalJSON(data []byte) error {
 
 	switch aux.Type {
 	case "dml":
-		c.data = &DMLChange{}
+		c.data = &DMLData{}
 	case "ddl":
-		c.data = &DDLChange{}
+		c.data = &DDLData{}
 	default:
 		return fmt.Errorf("unknown change type: %s", aux.Type)
 	}
@@ -146,7 +146,7 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]Change, error) {
 		}
 
 		if table == "translicate_ddl_log" && change["kind"].(string) == "insert" {
-			ddl := DDLChange{}
+			ddl := DDLData{}
 			for i, col := range change["columnnames"].([]any) {
 				colName := col.(string)
 				value := change["columnvalues"].([]any)[i]
@@ -175,7 +175,7 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]Change, error) {
 			}
 			result = append(result, Change{LSN: lsn.String(), data: ddl})
 		} else {
-			dml := DMLChange{
+			dml := DMLData{
 				Table:        table,
 				ColumnNames:  make([]string, 0),
 				ColumnValues: make([]any, 0),
