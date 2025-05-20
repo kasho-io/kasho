@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"sync"
+
+	"pg-change-stream/internal/types"
 )
 
 type messageBroker struct {
@@ -76,7 +78,7 @@ func (mb *messageBroker) Close() error {
 	return mb.buffer.Close()
 }
 
-func (mb *messageBroker) AddChange(ctx context.Context, lsn string, change Change) error {
+func (mb *messageBroker) AddChange(ctx context.Context, lsn string, change types.Change) error {
 	return mb.buffer.AddChange(ctx, lsn, change)
 }
 

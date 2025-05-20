@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package change_stream;
+
+option go_package = "github.com/jeffreywescott/kasho/services/pg-change-stream/api";
+
+service ChangeStream {
+  // Stream returns a stream of changes after the given LSN
+  rpc Stream(StreamRequest) returns (stream Change) {}
+}
+
+message StreamRequest {
+  string last_lsn = 1;
+}
+
+message Change {
+  string lsn = 1;
+  string type = 2;
+  oneof data {
+    DMLData dml = 3;
+    DDLData ddl = 4;
+  }
+}
+
+message DMLData {
+  string table = 1;
+  repeated string column_names = 2;
+  repeated string column_values = 3;
+  string kind = 4;
+  OldKeys old_keys = 5;
+}
+
+message OldKeys {
+  repeated string key_names = 1;
+  repeated string key_values = 2;
+}
+
+message DDLData {
+  int32 id = 1;
+  string time = 2;
+  string username = 3;
+  string database = 4;
+  string ddl = 5;
+} 

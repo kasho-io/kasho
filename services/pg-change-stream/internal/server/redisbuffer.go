@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"pg-change-stream/internal/types"
+
 	"github.com/jackc/pglogrepl"
 	"github.com/redis/go-redis/v9"
 )
@@ -38,7 +40,7 @@ func NewRedisBuffer(redisURL string) (*RedisBuffer, error) {
 }
 
 // AddChange adds a change to the Redis buffer with its LSN as the score
-func (b *RedisBuffer) AddChange(ctx context.Context, lsn string, change Change) error {
+func (b *RedisBuffer) AddChange(ctx context.Context, lsn string, change types.Change) error {
 	score, err := pglogrepl.ParseLSN(lsn)
 	if err != nil {
 		return fmt.Errorf("failed to parse LSN: %w", err)
@@ -62,11 +64,16 @@ func (b *RedisBuffer) AddChange(ctx context.Context, lsn string, change Change) 
 		return fmt.Errorf("failed to set TTL: %w", err)
 	}
 
+	err = b.client.Publish(ctx, "pg:changes", data).Err()
+	if err != nil {
+		return fmt.Errorf("failed to publish change: %w", err)
+	}
+
 	return nil
 }
 
 // GetChangesAfter returns all changes after the given LSN
-func (b *RedisBuffer) GetChangesAfter(ctx context.Context, lsn string) ([]Change, error) {
+func (b *RedisBuffer) GetChangesAfter(ctx context.Context, lsn string) ([]types.Change, error) {
 	score, err := pglogrepl.ParseLSN(lsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse LSN: %w", err)
@@ -83,9 +90,9 @@ func (b *RedisBuffer) GetChangesAfter(ctx context.Context, lsn string) ([]Change
 		return nil, fmt.Errorf("failed to get changes from Redis: %w", err)
 	}
 
-	changes := make([]Change, 0, len(results))
+	changes := make([]types.Change, 0, len(results))
 	for _, result := range results {
-		var change Change
+		var change types.Change
 		if err := json.Unmarshal([]byte(result), &change); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal change: %w", err)
 		}

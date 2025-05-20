@@ -1,6 +1,0 @@
-tables:
-  users:
-    name: FullName
-    email: Email
-    ssn: SSN
-    dob: DateOfBirth
