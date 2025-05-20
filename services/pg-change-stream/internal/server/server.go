@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"sync"
@@ -8,46 +10,74 @@ import (
 
 type messageBroker struct {
 	clients    map[chan []byte]struct{}
+	clientLSNs map[chan []byte]string
 	mu         sync.RWMutex
-	register   chan chan []byte
+	register   chan struct {
+		ch  chan []byte
+		lsn string
+	}
 	unregister chan chan []byte
+	buffer     *RedisBuffer
 }
 
-func NewMessageBroker() *messageBroker {
+func NewMessageBroker(redisURL string) (*messageBroker, error) {
+	buffer, err := NewRedisBuffer(redisURL)
+	if err != nil {
+		return nil, err
+	}
+
 	return &messageBroker{
 		clients:    make(map[chan []byte]struct{}),
-		register:   make(chan chan []byte),
+		clientLSNs: make(map[chan []byte]string),
+		register: make(chan struct {
+			ch  chan []byte
+			lsn string
+		}),
 		unregister: make(chan chan []byte),
-	}
+		buffer:     buffer,
+	}, nil
 }
 
 func (b *messageBroker) Run() {
 	for {
 		select {
-		case client := <-b.register:
+		case reg := <-b.register:
 			b.mu.Lock()
-			b.clients[client] = struct{}{}
+			b.clients[reg.ch] = struct{}{}
+			b.clientLSNs[reg.ch] = reg.lsn
 			b.mu.Unlock()
 		case client := <-b.unregister:
 			b.mu.Lock()
 			delete(b.clients, client)
+			delete(b.clientLSNs, client)
 			b.mu.Unlock()
 			close(client)
 		}
 	}
 }
 
-func (b *messageBroker) Broadcast(msg []byte) {
+func (b *messageBroker) Broadcast(msg []byte, currentLSN string) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
 	for client := range b.clients {
-		select {
-		case client <- msg:
-		default:
-			// Skip if client's channel is full
+		clientLSN := b.clientLSNs[client]
+		if clientLSN == "" || clientLSN < currentLSN {
+			select {
+			case client <- msg:
+			default:
+				// Skip if client's channel is full
+			}
 		}
 	}
+}
+
+func (mb *messageBroker) Close() error {
+	return mb.buffer.Close()
+}
+
+func (mb *messageBroker) AddChange(ctx context.Context, lsn string, change Change) error {
+	return mb.buffer.AddChange(ctx, lsn, change)
 }
 
 func StartServer(broker *messageBroker) {
@@ -57,8 +87,31 @@ func StartServer(broker *messageBroker) {
 		w.Header().Set("Connection", "keep-alive")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 
+		lastLSN := r.URL.Query().Get("last_lsn")
+		if lastLSN != "" {
+			changes, err := broker.buffer.GetChangesAfter(r.Context(), lastLSN)
+			if err != nil {
+				log.Printf("Error getting buffered changes: %v", err)
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+
+			for _, change := range changes {
+				data, err := json.Marshal(change)
+				if err != nil {
+					log.Printf("Error marshaling change: %v", err)
+					continue
+				}
+				w.Write(append(data, '\n'))
+				w.(http.Flusher).Flush()
+			}
+		}
+
 		clientChan := make(chan []byte, 100)
-		broker.register <- clientChan
+		broker.register <- struct {
+			ch  chan []byte
+			lsn string
+		}{clientChan, lastLSN}
 		defer func() {
 			broker.unregister <- clientChan
 		}()

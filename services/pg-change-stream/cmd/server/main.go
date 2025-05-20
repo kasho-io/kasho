@@ -16,7 +16,17 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	broker := server.NewMessageBroker()
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		log.Fatal("REDIS_URL environment variable is required")
+	}
+
+	broker, err := server.NewMessageBroker(redisURL)
+	if err != nil {
+		log.Fatalf("Failed to create message broker: %v", err)
+	}
+	defer broker.Close()
+
 	go broker.Run()
 	go server.StartServer(broker)
 
@@ -65,7 +75,11 @@ func main() {
 					log.Printf("Error marshaling change: %v", err)
 					continue
 				}
-				broker.Broadcast(jsonData)
+
+				if err := broker.AddChange(ctx, change.LSN, change); err != nil {
+					log.Printf("Error storing change in Redis: %v", err)
+				}
+				broker.Broadcast(jsonData, change.LSN)
 			}
 		}
 	}

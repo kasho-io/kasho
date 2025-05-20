@@ -10,20 +10,26 @@ import (
 	"github.com/jackc/pgx/v5/pgproto3"
 )
 
-type Change interface {
-	Type() string
+type Change struct {
+	LSN  string
+	data interface {
+		Type() string
+	}
+}
+
+func (c Change) Type() string {
+	return c.data.Type()
 }
 
 type DMLChange struct {
-	Table        string
-	ColumnNames  []string
-	ColumnValues []any
-	Kind         string
-	LSN          string
+	Table        string   `json:"table"`
+	ColumnNames  []string `json:"columnnames"`
+	ColumnValues []any    `json:"columnvalues"`
+	Kind         string   `json:"kind"`
 	OldKeys      *struct {
-		KeyNames  []string
-		KeyValues []any
-	}
+		KeyNames  []string `json:"keynames"`
+		KeyValues []any    `json:"keyvalues"`
+	} `json:"oldkeys,omitempty"`
 }
 
 func (c DMLChange) Type() string {
@@ -31,16 +37,56 @@ func (c DMLChange) Type() string {
 }
 
 type DDLChange struct {
-	ID       int
-	LSN      string
-	Time     time.Time
-	Username string
-	Database string
-	DDL      string
+	ID       int       `json:"id"`
+	Time     time.Time `json:"time"`
+	Username string    `json:"username"`
+	Database string    `json:"database"`
+	DDL      string    `json:"ddl"`
 }
 
 func (c DDLChange) Type() string {
 	return "ddl"
+}
+
+func (c Change) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(c.data)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(struct {
+		Type string          `json:"type"`
+		LSN  string          `json:"lsn"`
+		Data json.RawMessage `json:"data"`
+	}{
+		Type: c.Type(),
+		LSN:  c.LSN,
+		Data: data,
+	})
+}
+
+func (c *Change) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		Type string          `json:"type"`
+		LSN  string          `json:"lsn"`
+		Data json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	c.LSN = aux.LSN
+
+	switch aux.Type {
+	case "dml":
+		c.data = &DMLChange{}
+	case "ddl":
+		c.data = &DDLChange{}
+	default:
+		return fmt.Errorf("unknown change type: %s", aux.Type)
+	}
+
+	return json.Unmarshal(aux.Data, c.data)
 }
 
 func ParseMessage(msg pgproto3.BackendMessage) ([]Change, pglogrepl.LSN, error) {
@@ -106,27 +152,34 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]Change, error) {
 				value := change["columnvalues"].([]any)[i]
 				switch colName {
 				case "id":
-					ddl.ID = int(value.(float64))
-				case "lsn":
-					ddl.LSN = value.(string)
+					if value != nil {
+						ddl.ID = int(value.(float64))
+					}
 				case "time":
-					ddl.Time = value.(time.Time)
+					if value != nil {
+						ddl.Time = value.(time.Time)
+					}
 				case "username":
-					ddl.Username = value.(string)
+					if value != nil {
+						ddl.Username = value.(string)
+					}
 				case "database":
-					ddl.Database = value.(string)
+					if value != nil {
+						ddl.Database = value.(string)
+					}
 				case "ddl":
-					ddl.DDL = value.(string)
+					if value != nil {
+						ddl.DDL = value.(string)
+					}
 				}
 			}
-			result = append(result, ddl)
+			result = append(result, Change{LSN: lsn.String(), data: ddl})
 		} else {
 			dml := DMLChange{
 				Table:        table,
 				ColumnNames:  make([]string, 0),
 				ColumnValues: make([]any, 0),
 				Kind:         change["kind"].(string),
-				LSN:          lsn.String(),
 			}
 
 			if names, ok := change["columnnames"].([]any); ok {
@@ -140,8 +193,8 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]Change, error) {
 
 			if oldKeys, ok := change["oldkeys"].(map[string]any); ok {
 				dml.OldKeys = &struct {
-					KeyNames  []string
-					KeyValues []any
+					KeyNames  []string `json:"keynames"`
+					KeyValues []any    `json:"keyvalues"`
 				}{
 					KeyNames:  make([]string, 0),
 					KeyValues: make([]any, 0),
@@ -156,7 +209,7 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]Change, error) {
 				}
 			}
 
-			result = append(result, dml)
+			result = append(result, Change{LSN: lsn.String(), data: dml})
 		}
 	}
 
