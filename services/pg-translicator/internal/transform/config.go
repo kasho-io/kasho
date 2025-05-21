@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"pg-change-stream/api"
+
 	"gopkg.in/yaml.v3"
 )
 
@@ -202,4 +204,62 @@ func (ft TransformType) GetTransformFunction() (any, error) {
 		return fn, nil
 	}
 	return nil, fmt.Errorf("unknown transform type: %s", ft)
+}
+
+// TransformChange takes a Change object and returns a new Change object with transformed values
+func TransformChange(c *Config, change *api.Change) (*api.Change, error) {
+	// Create a new Change object to avoid modifying the original
+	newChange := &api.Change{
+		Lsn:  change.Lsn,
+		Type: change.Type,
+	}
+
+	switch data := change.Data.(type) {
+	case *api.Change_Dml:
+		// Create a new DMLData object
+		newDML := &api.DMLData{
+			Table:        data.Dml.Table,
+			ColumnNames:  make([]string, len(data.Dml.ColumnNames)),
+			ColumnValues: make([]string, len(data.Dml.ColumnValues)),
+			Kind:         data.Dml.Kind,
+		}
+		copy(newDML.ColumnNames, data.Dml.ColumnNames)
+		copy(newDML.ColumnValues, data.Dml.ColumnValues)
+
+		// Transform column values if configured
+		for i, col := range newDML.ColumnNames {
+			transformed, err := GetFakeValue(c, newDML.Table, col, newDML.ColumnValues[i])
+			if err == nil && transformed != nil {
+				// Only update if transformation was successful and returned a value
+				newDML.ColumnValues[i] = fmt.Sprintf("%v", transformed)
+			} else if err != nil {
+				return nil, fmt.Errorf("error transforming %s.%s: %w", newDML.Table, col, err)
+			}
+		}
+
+		// Copy old keys if present
+		if data.Dml.OldKeys != nil {
+			newDML.OldKeys = &api.OldKeys{
+				KeyNames:  make([]string, len(data.Dml.OldKeys.KeyNames)),
+				KeyValues: make([]string, len(data.Dml.OldKeys.KeyValues)),
+			}
+			copy(newDML.OldKeys.KeyNames, data.Dml.OldKeys.KeyNames)
+			copy(newDML.OldKeys.KeyValues, data.Dml.OldKeys.KeyValues)
+		}
+
+		newChange.Data = &api.Change_Dml{Dml: newDML}
+
+	case *api.Change_Ddl:
+		// For DDL changes, just copy the DDL data
+		newChange.Data = &api.Change_Ddl{
+			Ddl: &api.DDLData{
+				Ddl: data.Ddl.Ddl,
+			},
+		}
+
+	default:
+		return nil, fmt.Errorf("unsupported change type: %T", change.Data)
+	}
+
+	return newChange, nil
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 
@@ -55,34 +54,18 @@ func main() {
 			log.Fatalf("Error receiving change: %v", err)
 		}
 
-		switch data := change.Data.(type) {
-		case *api.Change_Dml:
-			dml := data.Dml
-			// Apply transformations to column values if configured
-			for i, col := range dml.ColumnNames {
-				transformed, err := transform.GetFakeValue(config, dml.Table, col, dml.ColumnValues[i])
-				if err == nil && transformed != nil {
-					// Only update if transformation was successful and returned a value
-					dml.ColumnValues[i] = fmt.Sprintf("%v", transformed)
-				} else if err != nil {
-					log.Printf("Error transforming %s.%s: %v", dml.Table, col, err)
-				}
-			}
-			stmt, err := sql.ToSQL(change)
-			if err != nil {
-				log.Printf("Error generating SQL: %v", err)
-				continue
-			}
-			log.Printf("%s (%s): %s", change.Lsn, change.Type, stmt)
-		case *api.Change_Ddl:
-			stmt, err := sql.ToSQL(change)
-			if err != nil {
-				log.Printf("Error generating SQL: %v", err)
-				continue
-			}
-			log.Printf("%s (%s): %s", change.Lsn, change.Type, stmt)
-		default:
-			log.Printf("Unexpected data type: %T", data)
+		transformedChange, err := transform.TransformChange(config, change)
+		if err != nil {
+			log.Printf("Error transforming change: %v", err)
+			continue
 		}
+
+		stmt, err := sql.ToSQL(transformedChange)
+		if err != nil {
+			log.Printf("Error generating SQL: %v", err)
+			continue
+		}
+
+		log.Printf("%s (%s): %s", change.Lsn, change.Type, stmt)
 	}
 }
