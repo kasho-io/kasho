@@ -4,6 +4,7 @@ go 1.24.3
 
 require (
 	github.com/brianvoe/gofakeit/v7 v7.0.2
+	github.com/lib/pq v1.10.9
 	google.golang.org/grpc v1.64.0
 	gopkg.in/yaml.v3 v3.0.1
 	pg-change-stream v0.0.0-00010101000000-000000000000
