@@ -68,15 +68,19 @@ func main() {
 					log.Printf("Error transforming %s.%s: %v", dml.Table, col, err)
 				}
 			}
-			stmt, err := sql.ToSQL(dml)
+			stmt, err := sql.ToSQL(change)
 			if err != nil {
 				log.Printf("Error generating SQL: %v", err)
 				continue
 			}
 			log.Printf("%s (%s): %s", change.Lsn, change.Type, stmt)
 		case *api.Change_Ddl:
-			ddl := data.Ddl
-			log.Printf("%s (%s): %s", change.Lsn, change.Type, ddl.Ddl)
+			stmt, err := sql.ToSQL(change)
+			if err != nil {
+				log.Printf("Error generating SQL: %v", err)
+				continue
+			}
+			log.Printf("%s (%s): %s", change.Lsn, change.Type, stmt)
 		default:
 			log.Printf("Unexpected data type: %T", data)
 		}

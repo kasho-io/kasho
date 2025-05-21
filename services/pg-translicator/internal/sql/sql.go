@@ -9,8 +9,20 @@ import (
 	"pg-change-stream/api"
 )
 
-// ToSQL converts a DMLData into a SQL statement
-func ToSQL(dml *api.DMLData) (string, error) {
+// ToSQL converts a Change into a SQL statement
+func ToSQL(change *api.Change) (string, error) {
+	switch data := change.Data.(type) {
+	case *api.Change_Dml:
+		return toDMLSQL(data.Dml)
+	case *api.Change_Ddl:
+		return data.Ddl.Ddl, nil
+	default:
+		return "", fmt.Errorf("unsupported change type: %T", change.Data)
+	}
+}
+
+// toDMLSQL converts a DMLData into a SQL statement
+func toDMLSQL(dml *api.DMLData) (string, error) {
 	switch dml.Kind {
 	case "insert":
 		return toInsertSQL(dml)
