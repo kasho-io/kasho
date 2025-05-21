@@ -22,10 +22,11 @@ tasks:
       - cd environments/development && docker-compose down -v && docker-compose up --build
 
   test:
-    desc: Run tests for pg-change-stream service
+    desc: Run tests for all services
     deps: [proto]
     cmds:
       - cd services/pg-change-stream && go test ./...
+      - cd services/pg-translicator && go test ./...
 
   proto:
     desc: Generate Go code from protobuf definitions
