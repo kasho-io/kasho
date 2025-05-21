@@ -9,7 +9,9 @@ WORKDIR /app
 RUN go install github.com/air-verse/air@latest
 COPY . .
 RUN go mod download
-CMD ["air", "-c", ".air.toml"]
+WORKDIR /app/services/pg-change-stream
+COPY environments/development/.air.toml /app/.air.toml
+CMD ["air", "-c", "/app/.air.toml"]
 
 FROM alpine:latest
 WORKDIR /app

@@ -1,0 +1,6 @@
+tables:
+  users:
+    name: Name
+    email: Email
+    ssn: SSN
+    dob: DateOfBirth
