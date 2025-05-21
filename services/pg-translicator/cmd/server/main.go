@@ -26,8 +26,11 @@ func main() {
 	}
 
 	ctx := context.Background()
-
-	client, err := grpc.NewClient("localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	serverAddr := os.Getenv("CHANGE_STREAM_ADDR")
+	if serverAddr == "" {
+		serverAddr = "pg-change-stream:8080"
+	}
+	client, err := grpc.NewClient(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}
@@ -35,7 +38,13 @@ func main() {
 
 	streamClient := api.NewChangeStreamClient(client)
 
-	stream, err := streamClient.Stream(ctx, &api.StreamRequest{})
+	// Get last LSN from command line if provided
+	lastLSN := ""
+	if len(os.Args) > 2 {
+		lastLSN = os.Args[2]
+	}
+
+	stream, err := streamClient.Stream(ctx, &api.StreamRequest{LastLsn: lastLSN})
 	if err != nil {
 		log.Fatalf("Failed to start stream: %v", err)
 	}

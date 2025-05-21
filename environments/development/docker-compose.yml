@@ -1,18 +1,39 @@
 services:
   pg-change-stream:
     build: 
-      context: ../../services/pg-change-stream
+      context: ../..
+      dockerfile: services/pg-change-stream/Dockerfile
       target: development
     ports:
       - "${PORT:-8080}:8080"
     env_file:
       - .env
     volumes:
-      - ../../services/pg-change-stream:/app
+      - ../../services/pg-change-stream:/app/services/pg-change-stream
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     depends_on:
       - redis
       - postgres-primary
-      - postgres-replica
+
+  pg-translicator:
+    build:
+      context: ../..
+      dockerfile: services/pg-translicator/Dockerfile
+      target: development
+    env_file:
+      - .env
+    volumes:
+      - ../../services/pg-translicator:/app/services/pg-translicator
+      - ../demo/config:/app/config
+    depends_on:
+      pg-change-stream:
+        condition: service_healthy
+      postgres-replica:
+        condition: service_started
 
   redis:
     image: redis:7-alpine
