@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"pg-change-stream/api"
 	"pg-translicator/internal/sql"
@@ -48,7 +49,31 @@ func main() {
 		log.Fatalf("Failed to ping replica database: %v", err)
 	}
 
-	ctx := context.Background()
+	// Start periodic sequence sync
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	syncTicker := time.NewTicker(15 * time.Second)
+	defer syncTicker.Stop()
+
+	hasInserts := false
+
+	go func() {
+		for {
+			select {
+			case <-syncTicker.C:
+				if hasInserts {
+					if err := sql.SyncSequences(ctx, db); err != nil {
+						log.Printf("Error during sequence sync: %v", err)
+					}
+					hasInserts = false
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
 	serverAddr := os.Getenv("CHANGE_STREAM_ADDR")
 	if serverAddr == "" {
 		serverAddr = "pg-change-stream:8080"
@@ -87,6 +112,10 @@ func main() {
 		if _, err := db.ExecContext(ctx, stmt); err != nil {
 			log.Printf("Error executing SQL: %v", err)
 			continue
+		}
+
+		if dml := transformedChange.GetDml(); dml != nil && dml.Kind == "insert" {
+			hasInserts = true
 		}
 
 		log.Printf("%s (%s): %s", change.Lsn, change.Type, stmt)

@@ -1,7 +1,10 @@
 package sql
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -140,4 +143,57 @@ func toDeleteSQL(dml *api.DMLData) (string, error) {
 		dml.Table,
 		strings.Join(whereClauses, " AND "),
 	), nil
+}
+
+// SyncSequences synchronizes all sequences in the database to their corresponding table's max values
+func SyncSequences(ctx context.Context, db *sql.DB) error {
+	query := `
+		SELECT
+			n.nspname AS schema,
+			t.relname AS table,
+			a.attname AS column,
+			s.relname AS sequence
+		FROM pg_class s
+		JOIN pg_depend d ON d.objid = s.oid AND d.deptype = 'a'
+		JOIN pg_class t ON d.refobjid = t.oid
+		JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = d.refobjsubid
+		JOIN pg_namespace n ON n.oid = t.relnamespace
+		WHERE s.relkind = 'S'`
+
+	rows, err := db.QueryContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to query sequences: %w", err)
+	}
+	defer rows.Close()
+
+	updatedCount := 0
+	for rows.Next() {
+		var schema, table, column, sequence string
+		if err := rows.Scan(&schema, &table, &column, &sequence); err != nil {
+			return fmt.Errorf("failed to scan sequence info: %w", err)
+		}
+
+		fullTable := fmt.Sprintf("%s.%s", schema, table)
+		fullSeq := fmt.Sprintf("%s.%s", schema, sequence)
+
+		var maxVal sql.NullInt64
+		err := db.QueryRowContext(ctx, fmt.Sprintf("SELECT COALESCE(MAX(%s), 1) FROM %s", column, fullTable)).Scan(&maxVal)
+		if err != nil {
+			return fmt.Errorf("failed to get max value for %s: %w", fullTable, err)
+		}
+
+		// Set the sequence to the max value
+		_, err = db.ExecContext(ctx, fmt.Sprintf("SELECT setval('%s', %d, true)", fullSeq, maxVal.Int64))
+		if err != nil {
+			return fmt.Errorf("failed to set sequence %s: %w", fullSeq, err)
+		}
+		updatedCount++
+	}
+
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	log.Printf("Updated %d sequences", updatedCount)
+	return nil
 }
