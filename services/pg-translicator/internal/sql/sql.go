@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
@@ -38,111 +37,109 @@ func toDMLSQL(dml *api.DMLData) (string, error) {
 	}
 }
 
-func formatValue(v string) string {
-	// Handle NULL
-	if v == "" || strings.ToLower(v) == "null" {
-		return "NULL"
+// formatValue formats a value for SQL
+func formatValue(v *api.ColumnValue) (string, error) {
+	if v == nil || v.Value == nil {
+		return "NULL", nil
 	}
 
-	// Try to parse as timestamp
-	if t, err := time.Parse(time.RFC3339, v); err == nil {
-		return fmt.Sprintf("'%s'", t.Format("2006-01-02 15:04:05"))
+	switch val := v.Value.(type) {
+	case *api.ColumnValue_StringValue:
+		return fmt.Sprintf("'%s'", strings.ReplaceAll(val.StringValue, "'", "''")), nil
+	case *api.ColumnValue_IntValue:
+		return fmt.Sprintf("%d", val.IntValue), nil
+	case *api.ColumnValue_FloatValue:
+		return fmt.Sprintf("%f", val.FloatValue), nil
+	case *api.ColumnValue_BoolValue:
+		return fmt.Sprintf("%t", val.BoolValue), nil
+	case *api.ColumnValue_TimestampValue:
+		// Try to parse as date first (YYYY-MM-DD)
+		if t, err := time.Parse("2006-01-02", val.TimestampValue); err == nil {
+			return fmt.Sprintf("'%s'", t.Format("2006-01-02")), nil
+		}
+		// Try to parse as timestamp
+		if t, err := time.Parse(time.RFC3339, val.TimestampValue); err == nil {
+			return fmt.Sprintf("'%s'", t.Format("2006-01-02 15:04:05")), nil
+		}
+		return "", fmt.Errorf("invalid timestamp format: %s", val.TimestampValue)
+	default:
+		return "", fmt.Errorf("unsupported value type: %T", v.Value)
 	}
-
-	// Try to parse as date
-	if t, err := time.Parse("2006-01-02", v); err == nil {
-		return fmt.Sprintf("'%s'", t.Format("2006-01-02"))
-	}
-
-	// Try to parse as number
-	if _, err := strconv.ParseFloat(v, 64); err == nil {
-		return v
-	}
-
-	// Try to parse as boolean
-	if v == "true" || v == "false" {
-		return v
-	}
-
-	// Otherwise treat as string
-	return fmt.Sprintf("'%s'", v)
 }
 
+// toInsertSQL generates an INSERT SQL statement
 func toInsertSQL(dml *api.DMLData) (string, error) {
 	if len(dml.ColumnNames) != len(dml.ColumnValues) {
 		return "", fmt.Errorf("mismatched column names and values: %d names, %d values", len(dml.ColumnNames), len(dml.ColumnValues))
 	}
 
+	columns := strings.Join(dml.ColumnNames, ", ")
 	values := make([]string, len(dml.ColumnValues))
 	for i, v := range dml.ColumnValues {
-		values[i] = formatValue(v)
+		formatted, err := formatValue(v)
+		if err != nil {
+			return "", fmt.Errorf("error formatting value for column %s: %w", dml.ColumnNames[i], err)
+		}
+		values[i] = formatted
 	}
 
-	return fmt.Sprintf(
-		"INSERT INTO %s (%s) VALUES (%s);",
-		dml.Table,
-		strings.Join(dml.ColumnNames, ", "),
-		strings.Join(values, ", "),
-	), nil
+	return fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);", dml.Table, columns, strings.Join(values, ", ")), nil
 }
 
+// toUpdateSQL generates an UPDATE SQL statement
 func toUpdateSQL(dml *api.DMLData) (string, error) {
 	if len(dml.ColumnNames) != len(dml.ColumnValues) {
 		return "", fmt.Errorf("mismatched column names and values: %d names, %d values", len(dml.ColumnNames), len(dml.ColumnValues))
 	}
 
-	if dml.OldKeys == nil {
-		return "", fmt.Errorf("old keys required for update")
+	if dml.OldKeys == nil || len(dml.OldKeys.KeyNames) == 0 || len(dml.OldKeys.KeyValues) == 0 {
+		return "", fmt.Errorf("update requires old keys")
 	}
 
-	if len(dml.OldKeys.KeyNames) != len(dml.OldKeys.KeyValues) {
-		return "", fmt.Errorf("mismatched old key names and values: %d names, %d values", len(dml.OldKeys.KeyNames), len(dml.OldKeys.KeyValues))
-	}
-
-	pkColumns := make(map[string]bool)
-	for _, col := range dml.OldKeys.KeyNames {
-		pkColumns[col] = true
-	}
-
-	setClauses := make([]string, 0)
+	// Build SET clause
+	setClauses := make([]string, len(dml.ColumnNames))
 	for i, col := range dml.ColumnNames {
-		if !pkColumns[col] {
-			setClauses = append(setClauses, fmt.Sprintf("%s = %s", col, formatValue(dml.ColumnValues[i])))
+		formatted, err := formatValue(dml.ColumnValues[i])
+		if err != nil {
+			return "", fmt.Errorf("error formatting value for column %s: %w", col, err)
 		}
+		setClauses[i] = fmt.Sprintf("%s = %s", col, formatted)
 	}
 
+	// Build WHERE clause
 	whereClauses := make([]string, len(dml.OldKeys.KeyNames))
-	for i, col := range dml.OldKeys.KeyNames {
-		whereClauses[i] = fmt.Sprintf("%s = %s", col, formatValue(dml.OldKeys.KeyValues[i]))
+	for i, key := range dml.OldKeys.KeyNames {
+		formatted, err := formatValue(dml.OldKeys.KeyValues[i])
+		if err != nil {
+			return "", fmt.Errorf("error formatting value for key %s: %w", key, err)
+		}
+		whereClauses[i] = fmt.Sprintf("%s = %s", key, formatted)
 	}
 
-	return fmt.Sprintf(
-		"UPDATE %s SET %s WHERE %s;",
+	return fmt.Sprintf("UPDATE %s SET %s WHERE %s;",
 		dml.Table,
 		strings.Join(setClauses, ", "),
-		strings.Join(whereClauses, " AND "),
-	), nil
+		strings.Join(whereClauses, " AND ")), nil
 }
 
+// toDeleteSQL generates a DELETE SQL statement
 func toDeleteSQL(dml *api.DMLData) (string, error) {
-	if dml.OldKeys == nil {
-		return "", fmt.Errorf("old keys required for delete")
-	}
-
-	if len(dml.OldKeys.KeyNames) != len(dml.OldKeys.KeyValues) {
-		return "", fmt.Errorf("mismatched old key names and values: %d names, %d values", len(dml.OldKeys.KeyNames), len(dml.OldKeys.KeyValues))
+	if dml.OldKeys == nil || len(dml.OldKeys.KeyNames) == 0 || len(dml.OldKeys.KeyValues) == 0 {
+		return "", fmt.Errorf("delete requires old keys")
 	}
 
 	whereClauses := make([]string, len(dml.OldKeys.KeyNames))
-	for i, col := range dml.OldKeys.KeyNames {
-		whereClauses[i] = fmt.Sprintf("%s = %s", col, formatValue(dml.OldKeys.KeyValues[i]))
+	for i, key := range dml.OldKeys.KeyNames {
+		formatted, err := formatValue(dml.OldKeys.KeyValues[i])
+		if err != nil {
+			return "", fmt.Errorf("error formatting value for key %s: %w", key, err)
+		}
+		whereClauses[i] = fmt.Sprintf("%s = %s", key, formatted)
 	}
 
-	return fmt.Sprintf(
-		"DELETE FROM %s WHERE %s;",
+	return fmt.Sprintf("DELETE FROM %s WHERE %s;",
 		dml.Table,
-		strings.Join(whereClauses, " AND "),
-	), nil
+		strings.Join(whereClauses, " AND ")), nil
 }
 
 // SyncSequences synchronizes all sequences in the database to their corresponding table's max values

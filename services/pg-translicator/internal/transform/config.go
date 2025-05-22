@@ -127,6 +127,9 @@ var transformFunctions = map[TransformType]any{
 	Bool: TransformBool,
 }
 
+func init() {
+}
+
 // TableConfig represents the configuration for a single table
 type TableConfig map[string]TransformType
 
@@ -136,22 +139,22 @@ type Config struct {
 }
 
 // LoadConfig loads the configuration from a YAML file
-func LoadConfig(filename string) (*Config, error) {
-	data, err := os.ReadFile(filename)
+func LoadConfig(path string) (*Config, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("error reading config file: %w", err)
+		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
 	var config Config
 	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("error parsing config file: %w", err)
+		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
 	return &config, nil
 }
 
 // GetFakeValue generates a fake value for a given table, column, and original value
-func GetFakeValue[T ScalarValue](c *Config, table string, column string, original T) (any, error) {
+func GetFakeValue(c *Config, table string, column string, original *api.ColumnValue) (*api.ColumnValue, error) {
 	tableConfig, exists := c.Tables[table]
 	if !exists {
 		return nil, nil // not an error, just no transform for this table
@@ -167,32 +170,59 @@ func GetFakeValue[T ScalarValue](c *Config, table string, column string, origina
 		return nil, err
 	}
 
+	// Extract the raw value based on its type
+	var rawValue any
+	switch v := original.Value.(type) {
+	case *api.ColumnValue_StringValue:
+		rawValue = v.StringValue
+	case *api.ColumnValue_IntValue:
+		rawValue = v.IntValue
+	case *api.ColumnValue_FloatValue:
+		rawValue = v.FloatValue
+	case *api.ColumnValue_BoolValue:
+		rawValue = v.BoolValue
+	case *api.ColumnValue_TimestampValue:
+		if t, err := time.Parse(time.RFC3339, v.TimestampValue); err == nil {
+			rawValue = t
+		} else {
+			rawValue = v.TimestampValue
+		}
+	default:
+		return nil, fmt.Errorf("unsupported value type: %T", original.Value)
+	}
+
+	// Apply the transform function
 	switch f := fn.(type) {
 	case func(string) string:
-		if str, ok := any(original).(string); ok {
-			return f(str), nil
+		if str, ok := rawValue.(string); ok {
+			transformed := f(str)
+			return &api.ColumnValue{Value: &api.ColumnValue_StringValue{StringValue: transformed}}, nil
 		}
-		return nil, fmt.Errorf("expected string input, got %T", original)
+		return nil, fmt.Errorf("expected string input, got %T", rawValue)
 	case func(int) int:
-		if i, ok := any(original).(int); ok {
-			return f(i), nil
+		if i, ok := rawValue.(int64); ok {
+			transformed := f(int(i))
+			return &api.ColumnValue{Value: &api.ColumnValue_IntValue{IntValue: int64(transformed)}}, nil
 		}
-		return nil, fmt.Errorf("expected int input, got %T", original)
+		return nil, fmt.Errorf("expected int64 input, got %T", rawValue)
 	case func(float64) float64:
-		if flt, ok := any(original).(float64); ok {
-			return f(flt), nil
+		if flt, ok := rawValue.(float64); ok {
+			transformed := f(flt)
+			return &api.ColumnValue{Value: &api.ColumnValue_FloatValue{FloatValue: transformed}}, nil
 		}
-		return nil, fmt.Errorf("expected float64 input, got %T", original)
+		return nil, fmt.Errorf("expected float64 input, got %T", rawValue)
 	case func(bool) bool:
-		if b, ok := any(original).(bool); ok {
-			return f(b), nil
+		if b, ok := rawValue.(bool); ok {
+			transformed := f(b)
+			return &api.ColumnValue{Value: &api.ColumnValue_BoolValue{BoolValue: transformed}}, nil
 		}
-		return nil, fmt.Errorf("expected bool input, got %T", original)
+		return nil, fmt.Errorf("expected bool input, got %T", rawValue)
 	case func(time.Time) time.Time:
-		if t, ok := any(original).(time.Time); ok {
-			return f(t), nil
+		if t, ok := rawValue.(time.Time); ok {
+			transformed := f(t)
+			return &api.ColumnValue{Value: &api.ColumnValue_TimestampValue{TimestampValue: transformed.Format(time.RFC3339)}}, nil
 		}
-		return nil, fmt.Errorf("expected time.Time input, got %T", original)
+		return nil, fmt.Errorf("expected time.Time input, got %T", rawValue)
 	default:
 		return nil, fmt.Errorf("unsupported function type: %T", fn)
 	}
@@ -220,20 +250,22 @@ func TransformChange(c *Config, change *api.Change) (*api.Change, error) {
 		newDML := &api.DMLData{
 			Table:        data.Dml.Table,
 			ColumnNames:  make([]string, len(data.Dml.ColumnNames)),
-			ColumnValues: make([]string, len(data.Dml.ColumnValues)),
+			ColumnValues: make([]*api.ColumnValue, len(data.Dml.ColumnValues)),
 			Kind:         data.Dml.Kind,
 		}
 		copy(newDML.ColumnNames, data.Dml.ColumnNames)
-		copy(newDML.ColumnValues, data.Dml.ColumnValues)
 
 		// Transform column values if configured
 		for i, col := range newDML.ColumnNames {
-			transformed, err := GetFakeValue(c, newDML.Table, col, newDML.ColumnValues[i])
-			if err == nil && transformed != nil {
-				// Only update if transformation was successful and returned a value
-				newDML.ColumnValues[i] = fmt.Sprintf("%v", transformed)
-			} else if err != nil {
+			transformed, err := GetFakeValue(c, newDML.Table, col, data.Dml.ColumnValues[i])
+			if err != nil {
 				return nil, fmt.Errorf("error transforming %s.%s: %w", newDML.Table, col, err)
+			}
+			if transformed != nil {
+				newDML.ColumnValues[i] = transformed
+			} else {
+				// If no transformation, copy the original value
+				newDML.ColumnValues[i] = data.Dml.ColumnValues[i]
 			}
 		}
 
@@ -241,7 +273,7 @@ func TransformChange(c *Config, change *api.Change) (*api.Change, error) {
 		if data.Dml.OldKeys != nil {
 			newDML.OldKeys = &api.OldKeys{
 				KeyNames:  make([]string, len(data.Dml.OldKeys.KeyNames)),
-				KeyValues: make([]string, len(data.Dml.OldKeys.KeyValues)),
+				KeyValues: make([]*api.ColumnValue, len(data.Dml.OldKeys.KeyValues)),
 			}
 			copy(newDML.OldKeys.KeyNames, data.Dml.OldKeys.KeyNames)
 			copy(newDML.OldKeys.KeyValues, data.Dml.OldKeys.KeyValues)
@@ -256,9 +288,6 @@ func TransformChange(c *Config, change *api.Change) (*api.Change, error) {
 				Ddl: data.Ddl.Ddl,
 			},
 		}
-
-	default:
-		return nil, fmt.Errorf("unsupported change type: %T", change.Data)
 	}
 
 	return newChange, nil

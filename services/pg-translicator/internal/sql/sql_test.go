@@ -18,10 +18,13 @@ func TestToSQL(t *testing.T) {
 			change: &api.Change{
 				Data: &api.Change_Dml{
 					Dml: &api.DMLData{
-						Table:        "users",
-						ColumnNames:  []string{"name", "email"},
-						ColumnValues: []string{"John Doe", "john@example.com"},
-						Kind:         "insert",
+						Table:       "users",
+						ColumnNames: []string{"name", "email"},
+						ColumnValues: []*api.ColumnValue{
+							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &api.ColumnValue_StringValue{StringValue: "john@example.com"}},
+						},
+						Kind: "insert",
 					},
 				},
 			},
@@ -33,13 +36,18 @@ func TestToSQL(t *testing.T) {
 			change: &api.Change{
 				Data: &api.Change_Dml{
 					Dml: &api.DMLData{
-						Table:        "users",
-						ColumnNames:  []string{"name", "email"},
-						ColumnValues: []string{"John Doe", "john@example.com"},
-						Kind:         "update",
+						Table:       "users",
+						ColumnNames: []string{"name", "email"},
+						ColumnValues: []*api.ColumnValue{
+							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &api.ColumnValue_StringValue{StringValue: "john@example.com"}},
+						},
+						Kind: "update",
 						OldKeys: &api.OldKeys{
-							KeyNames:  []string{"id"},
-							KeyValues: []string{"1"},
+							KeyNames: []string{"id"},
+							KeyValues: []*api.ColumnValue{
+								{Value: &api.ColumnValue_IntValue{IntValue: 1}},
+							},
 						},
 					},
 				},
@@ -55,8 +63,10 @@ func TestToSQL(t *testing.T) {
 						Table: "users",
 						Kind:  "delete",
 						OldKeys: &api.OldKeys{
-							KeyNames:  []string{"id"},
-							KeyValues: []string{"1"},
+							KeyNames: []string{"id"},
+							KeyValues: []*api.ColumnValue{
+								{Value: &api.ColumnValue_IntValue{IntValue: 1}},
+							},
 						},
 					},
 				},
@@ -93,10 +103,13 @@ func TestToSQL(t *testing.T) {
 			change: &api.Change{
 				Data: &api.Change_Dml{
 					Dml: &api.DMLData{
-						Table:        "users",
-						ColumnNames:  []string{"name"},
-						ColumnValues: []string{"John Doe", "john@example.com"},
-						Kind:         "insert",
+						Table:       "users",
+						ColumnNames: []string{"name"},
+						ColumnValues: []*api.ColumnValue{
+							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &api.ColumnValue_StringValue{StringValue: "john@example.com"}},
+						},
+						Kind: "insert",
 					},
 				},
 			},
@@ -107,10 +120,12 @@ func TestToSQL(t *testing.T) {
 			change: &api.Change{
 				Data: &api.Change_Dml{
 					Dml: &api.DMLData{
-						Table:        "users",
-						ColumnNames:  []string{"name"},
-						ColumnValues: []string{"John Doe"},
-						Kind:         "update",
+						Table:       "users",
+						ColumnNames: []string{"name"},
+						ColumnValues: []*api.ColumnValue{
+							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
+						},
+						Kind: "update",
 					},
 				},
 			},
@@ -133,10 +148,13 @@ func TestToSQL(t *testing.T) {
 			change: &api.Change{
 				Data: &api.Change_Dml{
 					Dml: &api.DMLData{
-						Table:        "users",
-						ColumnNames:  []string{"name", "email"},
-						ColumnValues: []string{"John Doe", ""},
-						Kind:         "insert",
+						Table:       "users",
+						ColumnNames: []string{"name", "email"},
+						ColumnValues: []*api.ColumnValue{
+							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: nil},
+						},
+						Kind: "insert",
 					},
 				},
 			},
@@ -148,10 +166,13 @@ func TestToSQL(t *testing.T) {
 			change: &api.Change{
 				Data: &api.Change_Dml{
 					Dml: &api.DMLData{
-						Table:        "users",
-						ColumnNames:  []string{"name", "age"},
-						ColumnValues: []string{"John Doe", "42"},
-						Kind:         "insert",
+						Table:       "users",
+						ColumnNames: []string{"name", "age"},
+						ColumnValues: []*api.ColumnValue{
+							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &api.ColumnValue_IntValue{IntValue: 42}},
+						},
+						Kind: "insert",
 					},
 				},
 			},
@@ -163,10 +184,13 @@ func TestToSQL(t *testing.T) {
 			change: &api.Change{
 				Data: &api.Change_Dml{
 					Dml: &api.DMLData{
-						Table:        "users",
-						ColumnNames:  []string{"name", "is_active"},
-						ColumnValues: []string{"John Doe", "true"},
-						Kind:         "insert",
+						Table:       "users",
+						ColumnNames: []string{"name", "is_active"},
+						ColumnValues: []*api.ColumnValue{
+							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &api.ColumnValue_BoolValue{BoolValue: true}},
+						},
+						Kind: "insert",
 					},
 				},
 			},
@@ -178,10 +202,13 @@ func TestToSQL(t *testing.T) {
 			change: &api.Change{
 				Data: &api.Change_Dml{
 					Dml: &api.DMLData{
-						Table:        "users",
-						ColumnNames:  []string{"name", "created_at"},
-						ColumnValues: []string{"John Doe", "2024-03-20T15:04:05Z"},
-						Kind:         "insert",
+						Table:       "users",
+						ColumnNames: []string{"name", "created_at"},
+						ColumnValues: []*api.ColumnValue{
+							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &api.ColumnValue_TimestampValue{TimestampValue: "2024-03-20T15:04:05Z"}},
+						},
+						Kind: "insert",
 					},
 				},
 			},
@@ -193,10 +220,13 @@ func TestToSQL(t *testing.T) {
 			change: &api.Change{
 				Data: &api.Change_Dml{
 					Dml: &api.DMLData{
-						Table:        "users",
-						ColumnNames:  []string{"name", "birth_date"},
-						ColumnValues: []string{"John Doe", "2024-03-20"},
-						Kind:         "insert",
+						Table:       "users",
+						ColumnNames: []string{"name", "birth_date"},
+						ColumnValues: []*api.ColumnValue{
+							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &api.ColumnValue_TimestampValue{TimestampValue: "2024-03-20"}},
+						},
+						Kind: "insert",
 					},
 				},
 			},

@@ -71,13 +71,19 @@ func convertToProtoChange(change types.Change) *api.Change {
 		dml := &api.DMLData{
 			Table:        data.Table,
 			ColumnNames:  data.ColumnNames,
-			ColumnValues: convertToStrings(data.ColumnValues),
+			ColumnValues: make([]*api.ColumnValue, len(data.ColumnValues)),
 			Kind:         data.Kind,
+		}
+		for i, cv := range data.ColumnValues {
+			dml.ColumnValues[i] = cv.ColumnValue
 		}
 		if data.OldKeys != nil {
 			dml.OldKeys = &api.OldKeys{
 				KeyNames:  data.OldKeys.KeyNames,
-				KeyValues: convertToStrings(data.OldKeys.KeyValues),
+				KeyValues: make([]*api.ColumnValue, len(data.OldKeys.KeyValues)),
+			}
+			for i, cv := range data.OldKeys.KeyValues {
+				dml.OldKeys.KeyValues[i] = cv.ColumnValue
 			}
 		}
 		protoChange.Data = &api.Change_Dml{Dml: dml}
@@ -94,12 +100,4 @@ func convertToProtoChange(change types.Change) *api.Change {
 	}
 
 	return protoChange
-}
-
-func convertToStrings(values []any) []string {
-	result := make([]string, len(values))
-	for i, v := range values {
-		result[i] = fmt.Sprint(v)
-	}
-	return result
 }

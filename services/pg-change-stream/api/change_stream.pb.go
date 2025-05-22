@@ -163,11 +163,141 @@ func (*Change_Dml) isChange_Data() {}
 
 func (*Change_Ddl) isChange_Data() {}
 
+type ColumnValue struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Value:
+	//
+	//	*ColumnValue_StringValue
+	//	*ColumnValue_IntValue
+	//	*ColumnValue_FloatValue
+	//	*ColumnValue_BoolValue
+	//	*ColumnValue_TimestampValue
+	Value         isColumnValue_Value `protobuf_oneof:"value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ColumnValue) Reset() {
+	*x = ColumnValue{}
+	mi := &file_api_change_stream_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ColumnValue) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ColumnValue) ProtoMessage() {}
+
+func (x *ColumnValue) ProtoReflect() protoreflect.Message {
+	mi := &file_api_change_stream_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ColumnValue.ProtoReflect.Descriptor instead.
+func (*ColumnValue) Descriptor() ([]byte, []int) {
+	return file_api_change_stream_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ColumnValue) GetValue() isColumnValue_Value {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+func (x *ColumnValue) GetStringValue() string {
+	if x != nil {
+		if x, ok := x.Value.(*ColumnValue_StringValue); ok {
+			return x.StringValue
+		}
+	}
+	return ""
+}
+
+func (x *ColumnValue) GetIntValue() int64 {
+	if x != nil {
+		if x, ok := x.Value.(*ColumnValue_IntValue); ok {
+			return x.IntValue
+		}
+	}
+	return 0
+}
+
+func (x *ColumnValue) GetFloatValue() float64 {
+	if x != nil {
+		if x, ok := x.Value.(*ColumnValue_FloatValue); ok {
+			return x.FloatValue
+		}
+	}
+	return 0
+}
+
+func (x *ColumnValue) GetBoolValue() bool {
+	if x != nil {
+		if x, ok := x.Value.(*ColumnValue_BoolValue); ok {
+			return x.BoolValue
+		}
+	}
+	return false
+}
+
+func (x *ColumnValue) GetTimestampValue() string {
+	if x != nil {
+		if x, ok := x.Value.(*ColumnValue_TimestampValue); ok {
+			return x.TimestampValue
+		}
+	}
+	return ""
+}
+
+type isColumnValue_Value interface {
+	isColumnValue_Value()
+}
+
+type ColumnValue_StringValue struct {
+	StringValue string `protobuf:"bytes,1,opt,name=string_value,json=stringValue,proto3,oneof"`
+}
+
+type ColumnValue_IntValue struct {
+	IntValue int64 `protobuf:"varint,2,opt,name=int_value,json=intValue,proto3,oneof"`
+}
+
+type ColumnValue_FloatValue struct {
+	FloatValue float64 `protobuf:"fixed64,3,opt,name=float_value,json=floatValue,proto3,oneof"`
+}
+
+type ColumnValue_BoolValue struct {
+	BoolValue bool `protobuf:"varint,4,opt,name=bool_value,json=boolValue,proto3,oneof"`
+}
+
+type ColumnValue_TimestampValue struct {
+	TimestampValue string `protobuf:"bytes,5,opt,name=timestamp_value,json=timestampValue,proto3,oneof"` // ISO 8601 format
+}
+
+func (*ColumnValue_StringValue) isColumnValue_Value() {}
+
+func (*ColumnValue_IntValue) isColumnValue_Value() {}
+
+func (*ColumnValue_FloatValue) isColumnValue_Value() {}
+
+func (*ColumnValue_BoolValue) isColumnValue_Value() {}
+
+func (*ColumnValue_TimestampValue) isColumnValue_Value() {}
+
 type DMLData struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Table         string                 `protobuf:"bytes,1,opt,name=table,proto3" json:"table,omitempty"`
 	ColumnNames   []string               `protobuf:"bytes,2,rep,name=column_names,json=columnNames,proto3" json:"column_names,omitempty"`
-	ColumnValues  []string               `protobuf:"bytes,3,rep,name=column_values,json=columnValues,proto3" json:"column_values,omitempty"`
+	ColumnValues  []*ColumnValue         `protobuf:"bytes,3,rep,name=column_values,json=columnValues,proto3" json:"column_values,omitempty"`
 	Kind          string                 `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty"`
 	OldKeys       *OldKeys               `protobuf:"bytes,5,opt,name=old_keys,json=oldKeys,proto3" json:"old_keys,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -176,7 +306,7 @@ type DMLData struct {
 
 func (x *DMLData) Reset() {
 	*x = DMLData{}
-	mi := &file_api_change_stream_proto_msgTypes[2]
+	mi := &file_api_change_stream_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -188,7 +318,7 @@ func (x *DMLData) String() string {
 func (*DMLData) ProtoMessage() {}
 
 func (x *DMLData) ProtoReflect() protoreflect.Message {
-	mi := &file_api_change_stream_proto_msgTypes[2]
+	mi := &file_api_change_stream_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -201,7 +331,7 @@ func (x *DMLData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DMLData.ProtoReflect.Descriptor instead.
 func (*DMLData) Descriptor() ([]byte, []int) {
-	return file_api_change_stream_proto_rawDescGZIP(), []int{2}
+	return file_api_change_stream_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DMLData) GetTable() string {
@@ -218,7 +348,7 @@ func (x *DMLData) GetColumnNames() []string {
 	return nil
 }
 
-func (x *DMLData) GetColumnValues() []string {
+func (x *DMLData) GetColumnValues() []*ColumnValue {
 	if x != nil {
 		return x.ColumnValues
 	}
@@ -242,14 +372,14 @@ func (x *DMLData) GetOldKeys() *OldKeys {
 type OldKeys struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	KeyNames      []string               `protobuf:"bytes,1,rep,name=key_names,json=keyNames,proto3" json:"key_names,omitempty"`
-	KeyValues     []string               `protobuf:"bytes,2,rep,name=key_values,json=keyValues,proto3" json:"key_values,omitempty"`
+	KeyValues     []*ColumnValue         `protobuf:"bytes,2,rep,name=key_values,json=keyValues,proto3" json:"key_values,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OldKeys) Reset() {
 	*x = OldKeys{}
-	mi := &file_api_change_stream_proto_msgTypes[3]
+	mi := &file_api_change_stream_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -261,7 +391,7 @@ func (x *OldKeys) String() string {
 func (*OldKeys) ProtoMessage() {}
 
 func (x *OldKeys) ProtoReflect() protoreflect.Message {
-	mi := &file_api_change_stream_proto_msgTypes[3]
+	mi := &file_api_change_stream_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -274,7 +404,7 @@ func (x *OldKeys) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OldKeys.ProtoReflect.Descriptor instead.
 func (*OldKeys) Descriptor() ([]byte, []int) {
-	return file_api_change_stream_proto_rawDescGZIP(), []int{3}
+	return file_api_change_stream_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *OldKeys) GetKeyNames() []string {
@@ -284,7 +414,7 @@ func (x *OldKeys) GetKeyNames() []string {
 	return nil
 }
 
-func (x *OldKeys) GetKeyValues() []string {
+func (x *OldKeys) GetKeyValues() []*ColumnValue {
 	if x != nil {
 		return x.KeyValues
 	}
@@ -304,7 +434,7 @@ type DDLData struct {
 
 func (x *DDLData) Reset() {
 	*x = DDLData{}
-	mi := &file_api_change_stream_proto_msgTypes[4]
+	mi := &file_api_change_stream_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -316,7 +446,7 @@ func (x *DDLData) String() string {
 func (*DDLData) ProtoMessage() {}
 
 func (x *DDLData) ProtoReflect() protoreflect.Message {
-	mi := &file_api_change_stream_proto_msgTypes[4]
+	mi := &file_api_change_stream_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -329,7 +459,7 @@ func (x *DDLData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DDLData.ProtoReflect.Descriptor instead.
 func (*DDLData) Descriptor() ([]byte, []int) {
-	return file_api_change_stream_proto_rawDescGZIP(), []int{4}
+	return file_api_change_stream_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DDLData) GetId() int32 {
@@ -379,17 +509,26 @@ const file_api_change_stream_proto_rawDesc = "" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12*\n" +
 	"\x03dml\x18\x03 \x01(\v2\x16.change_stream.DMLDataH\x00R\x03dml\x12*\n" +
 	"\x03ddl\x18\x04 \x01(\v2\x16.change_stream.DDLDataH\x00R\x03ddlB\x06\n" +
-	"\x04data\"\xae\x01\n" +
+	"\x04data\"\xc9\x01\n" +
+	"\vColumnValue\x12#\n" +
+	"\fstring_value\x18\x01 \x01(\tH\x00R\vstringValue\x12\x1d\n" +
+	"\tint_value\x18\x02 \x01(\x03H\x00R\bintValue\x12!\n" +
+	"\vfloat_value\x18\x03 \x01(\x01H\x00R\n" +
+	"floatValue\x12\x1f\n" +
+	"\n" +
+	"bool_value\x18\x04 \x01(\bH\x00R\tboolValue\x12)\n" +
+	"\x0ftimestamp_value\x18\x05 \x01(\tH\x00R\x0etimestampValueB\a\n" +
+	"\x05value\"\xca\x01\n" +
 	"\aDMLData\x12\x14\n" +
 	"\x05table\x18\x01 \x01(\tR\x05table\x12!\n" +
-	"\fcolumn_names\x18\x02 \x03(\tR\vcolumnNames\x12#\n" +
-	"\rcolumn_values\x18\x03 \x03(\tR\fcolumnValues\x12\x12\n" +
+	"\fcolumn_names\x18\x02 \x03(\tR\vcolumnNames\x12?\n" +
+	"\rcolumn_values\x18\x03 \x03(\v2\x1a.change_stream.ColumnValueR\fcolumnValues\x12\x12\n" +
 	"\x04kind\x18\x04 \x01(\tR\x04kind\x121\n" +
-	"\bold_keys\x18\x05 \x01(\v2\x16.change_stream.OldKeysR\aoldKeys\"E\n" +
+	"\bold_keys\x18\x05 \x01(\v2\x16.change_stream.OldKeysR\aoldKeys\"a\n" +
 	"\aOldKeys\x12\x1b\n" +
-	"\tkey_names\x18\x01 \x03(\tR\bkeyNames\x12\x1d\n" +
+	"\tkey_names\x18\x01 \x03(\tR\bkeyNames\x129\n" +
 	"\n" +
-	"key_values\x18\x02 \x03(\tR\tkeyValues\"w\n" +
+	"key_values\x18\x02 \x03(\v2\x1a.change_stream.ColumnValueR\tkeyValues\"w\n" +
 	"\aDDLData\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04time\x18\x02 \x01(\tR\x04time\x12\x1a\n" +
@@ -411,25 +550,28 @@ func file_api_change_stream_proto_rawDescGZIP() []byte {
 	return file_api_change_stream_proto_rawDescData
 }
 
-var file_api_change_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_api_change_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_api_change_stream_proto_goTypes = []any{
 	(*StreamRequest)(nil), // 0: change_stream.StreamRequest
 	(*Change)(nil),        // 1: change_stream.Change
-	(*DMLData)(nil),       // 2: change_stream.DMLData
-	(*OldKeys)(nil),       // 3: change_stream.OldKeys
-	(*DDLData)(nil),       // 4: change_stream.DDLData
+	(*ColumnValue)(nil),   // 2: change_stream.ColumnValue
+	(*DMLData)(nil),       // 3: change_stream.DMLData
+	(*OldKeys)(nil),       // 4: change_stream.OldKeys
+	(*DDLData)(nil),       // 5: change_stream.DDLData
 }
 var file_api_change_stream_proto_depIdxs = []int32{
-	2, // 0: change_stream.Change.dml:type_name -> change_stream.DMLData
-	4, // 1: change_stream.Change.ddl:type_name -> change_stream.DDLData
-	3, // 2: change_stream.DMLData.old_keys:type_name -> change_stream.OldKeys
-	0, // 3: change_stream.ChangeStream.Stream:input_type -> change_stream.StreamRequest
-	1, // 4: change_stream.ChangeStream.Stream:output_type -> change_stream.Change
-	4, // [4:5] is the sub-list for method output_type
-	3, // [3:4] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	3, // 0: change_stream.Change.dml:type_name -> change_stream.DMLData
+	5, // 1: change_stream.Change.ddl:type_name -> change_stream.DDLData
+	2, // 2: change_stream.DMLData.column_values:type_name -> change_stream.ColumnValue
+	4, // 3: change_stream.DMLData.old_keys:type_name -> change_stream.OldKeys
+	2, // 4: change_stream.OldKeys.key_values:type_name -> change_stream.ColumnValue
+	0, // 5: change_stream.ChangeStream.Stream:input_type -> change_stream.StreamRequest
+	1, // 6: change_stream.ChangeStream.Stream:output_type -> change_stream.Change
+	6, // [6:7] is the sub-list for method output_type
+	5, // [5:6] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_api_change_stream_proto_init() }
@@ -441,13 +583,20 @@ func file_api_change_stream_proto_init() {
 		(*Change_Dml)(nil),
 		(*Change_Ddl)(nil),
 	}
+	file_api_change_stream_proto_msgTypes[2].OneofWrappers = []any{
+		(*ColumnValue_StringValue)(nil),
+		(*ColumnValue_IntValue)(nil),
+		(*ColumnValue_FloatValue)(nil),
+		(*ColumnValue_BoolValue)(nil),
+		(*ColumnValue_TimestampValue)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_change_stream_proto_rawDesc), len(file_api_change_stream_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

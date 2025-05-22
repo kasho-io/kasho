@@ -43,9 +43,7 @@ services:
       - redis-data:/data
 
   postgres-primary:
-    build:
-      context: ../demo
-      dockerfile: Dockerfile
+    image: postgres:15
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
