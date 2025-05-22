@@ -69,10 +69,8 @@ func (c *Client) Connect(ctx context.Context) error {
 
 	log.Printf("Starting replication from LSN: %s", startLSN)
 	if err := pglogrepl.StartReplication(ctx, walConn.PgConn(), "translicate_slot", startLSN, pglogrepl.StartReplicationOptions{
-		PluginArgs: []string{
-			"\"pretty-print\" 'true'",
-		},
-		Mode: pglogrepl.LogicalReplication,
+		Mode:       pglogrepl.LogicalReplication,
+		PluginArgs: []string{"proto_version '2'", "publication_names 'translicate_pub'"},
 	}); err != nil {
 		conn.Close(ctx)
 		walConn.Close(ctx)

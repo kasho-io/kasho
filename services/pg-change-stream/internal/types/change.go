@@ -4,7 +4,76 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"pg-change-stream/api"
 )
+
+type ColumnValueWrapper struct {
+	*api.ColumnValue
+}
+
+func (cv ColumnValueWrapper) MarshalJSON() ([]byte, error) {
+	if cv.ColumnValue == nil {
+		return json.Marshal(nil)
+	}
+	switch v := cv.Value.(type) {
+	case *api.ColumnValue_StringValue:
+		return json.Marshal(v.StringValue)
+	case *api.ColumnValue_IntValue:
+		return json.Marshal(v.IntValue)
+	case *api.ColumnValue_FloatValue:
+		return json.Marshal(v.FloatValue)
+	case *api.ColumnValue_BoolValue:
+		return json.Marshal(v.BoolValue)
+	case *api.ColumnValue_TimestampValue:
+		return json.Marshal(v.TimestampValue)
+	default:
+		return nil, fmt.Errorf("unknown column value type: %T", v)
+	}
+}
+
+func (cv *ColumnValueWrapper) UnmarshalJSON(data []byte) error {
+	if cv.ColumnValue == nil {
+		cv.ColumnValue = &api.ColumnValue{}
+	}
+
+	// Try string first
+	var strVal string
+	if err := json.Unmarshal(data, &strVal); err == nil {
+		cv.Value = &api.ColumnValue_StringValue{StringValue: strVal}
+		return nil
+	}
+
+	// Try int
+	var intVal int64
+	if err := json.Unmarshal(data, &intVal); err == nil {
+		cv.Value = &api.ColumnValue_IntValue{IntValue: intVal}
+		return nil
+	}
+
+	// Try float
+	var floatVal float64
+	if err := json.Unmarshal(data, &floatVal); err == nil {
+		cv.Value = &api.ColumnValue_FloatValue{FloatValue: floatVal}
+		return nil
+	}
+
+	// Try bool
+	var boolVal bool
+	if err := json.Unmarshal(data, &boolVal); err == nil {
+		cv.Value = &api.ColumnValue_BoolValue{BoolValue: boolVal}
+		return nil
+	}
+
+	// Try timestamp
+	var timeVal time.Time
+	if err := json.Unmarshal(data, &timeVal); err == nil {
+		cv.Value = &api.ColumnValue_TimestampValue{TimestampValue: timeVal.Format(time.RFC3339)}
+		return nil
+	}
+
+	return fmt.Errorf("failed to unmarshal column value: %s", string(data))
+}
 
 type Change struct {
 	LSN  string
@@ -59,13 +128,13 @@ func (c *Change) UnmarshalJSON(data []byte) error {
 }
 
 type DMLData struct {
-	Table        string   `json:"table"`
-	ColumnNames  []string `json:"columnnames"`
-	ColumnValues []any    `json:"columnvalues"`
-	Kind         string   `json:"kind"`
+	Table        string               `json:"table"`
+	ColumnNames  []string             `json:"columnnames"`
+	ColumnValues []ColumnValueWrapper `json:"columnvalues"`
+	Kind         string               `json:"kind"`
 	OldKeys      *struct {
-		KeyNames  []string `json:"keynames"`
-		KeyValues []any    `json:"keyvalues"`
+		KeyNames  []string             `json:"keynames"`
+		KeyValues []ColumnValueWrapper `json:"keyvalues"`
 	} `json:"oldkeys,omitempty"`
 }
 

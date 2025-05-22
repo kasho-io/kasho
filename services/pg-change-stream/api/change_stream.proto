@@ -22,17 +22,27 @@ message Change {
   }
 }
 
+message ColumnValue {
+  oneof value {
+    string string_value = 1;
+    int64 int_value = 2;
+    double float_value = 3;
+    bool bool_value = 4;
+    string timestamp_value = 5;  // ISO 8601 format
+  }
+}
+
 message DMLData {
   string table = 1;
   repeated string column_names = 2;
-  repeated string column_values = 3;
+  repeated ColumnValue column_values = 3;
   string kind = 4;
   OldKeys old_keys = 5;
 }
 
 message OldKeys {
   repeated string key_names = 1;
-  repeated string key_values = 2;
+  repeated ColumnValue key_values = 2;
 }
 
 message DDLData {
