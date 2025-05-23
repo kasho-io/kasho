@@ -1,6 +1,6 @@
 # Kasho
 
-Kasho aims to be a PostgreSQL replication tool that captures and applies DDL (Data Definition Language) and DML (Data Manipulation Language) changes from a primary database. For DML changes, each will be fed through a transform layer in order to modify / sanitize things so that no sensitive data is exposed to the replica database. It uses PostgreSQL's logical replication capabilities to ensure that schema changes and data modifications are properly synchronized.
+Kasho is a security-and-privacy-first PostgreSQL replication tool that captures and applies DDL (Data Definition Language) and DML (Data Manipulation Language) changes from a primary database to a replica database. For DML changes, each will be fed through a transform layer in order to modify / sanitize things so that no sensitive data is exposed to the replica database. It uses PostgreSQL's logical replication capabilities to ensure that schema changes and data modifications are properly synchronized.
 
 ## Features
 
@@ -18,26 +18,49 @@ Kasho aims to be a PostgreSQL replication tool that captures and applies DDL (Da
 
 ## Components
 
-### pg-change-stream (`services/pg-change-stream/`)
+### Services
+
+#### pg-change-stream (`services/pg-change-stream/`)
 - Go service that captures and streams database changes
 - Uses PostgreSQL's logical replication
-- Provides SSE interface for real-time change streaming
+- Provides gRPC interface for real-time change streaming
 - Handles connection management and retries
+- Uses Redis for buffering and pub/sub
 
-### replicate-poc (`services/replicate-poc`)
-- Connects to both primary and replica databases
-- Polls the `translicate_ddl_log` table for DDL changes
-- Applies DDL changes in order before processing DML changes
-- Uses PostgreSQL's logical replication to capture and apply DML changes
-- Handles both startup scenarios:
-  1. Starting before changes: Captures and applies changes as they occur
-  2. Starting after changes: Applies historical DDLs before processing DMLs
+#### pg-translicator (`services/pg-translicator/`)
+- Go service for translating and transforming database changes
+- Processes change events from pg-change-stream
+- Supports custom transformation rules
+- Integrates with external systems
 
-### Development Environment (`environments/development/`)
+#### replicate-poc (`services/replicate-poc/`)
+- Proof of concept for replication features
+- Experimental service for testing new replication patterns
+- Used for validating replication strategies
+
+### Environments
+
+#### Development (`environments/development/`)
 - Docker Compose setup for local development
 - Includes PostgreSQL primary and replica databases
 - Redis for caching
-- pg-change-stream service
+- All core services configured for development
+
+#### Demo (`environments/demo/`)
+- Demo environment with PostgreSQL primary and replica databases
+- Configured for logical replication
+- Used for testing replication features
+- Includes initialization scripts for database setup
+
+#### POC (`environments/poc/`)
+- Environment for proof of concept testing
+- Used for validating new features
+- Includes experimental configurations
+
+### Tools (`tools/`)
+- `generate-fake-saas-data`: Utility for generating realistic SaaS application test data
+  - Creates sample organizations, users, subscriptions, and related data
+  - Used for populating test databases with realistic data
 
 ## Getting Started
 
@@ -63,13 +86,7 @@ task test
 
 ## Development
 
-The project uses Task for common development commands. Available commands:
-
-- `task dev`: Start development environment
-- `task dev-down`: Stop development environment
-- `task dev-reset`: Reset and restart development environment (removes volumes)
-- `task build`: Build the pg-change-stream service
-- `task test`: Run tests for pg-change-stream service
+The project uses Task for common development commands. Type `task` by itself for a list of commands.
 
 ## Requirements
 
