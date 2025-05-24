@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
 import { queryPrimary } from '@/lib/db';
+import { USER_TABLE_QUERY } from '@/lib/userTableQuery';
 
 export async function GET() {
   try {
-    const data = await queryPrimary(`
-      SELECT id, organization_id, name, email, password, created_at, updated_at
-      FROM users
-      LIMIT 5
-    `);
+    const data = await queryPrimary(USER_TABLE_QUERY);
     return NextResponse.json(data);
   } catch (err) {
+    console.error('DB error:', err);
     return NextResponse.json({ error: 'Failed to fetch data', details: String(err) }, { status: 500 });
   }
 } 
