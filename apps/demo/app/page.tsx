@@ -1,71 +1,114 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+
+interface Row {
+  id: number;
+  organization_id: number;
+  name: string;
+  email: string;
+  password: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function Home() {
+  const [primaryRows, setPrimaryRows] = useState<Row[] | null>(null);
+  const [replicaRows, setReplicaRows] = useState<Row[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      const [primaryRes, replicaRes] = await Promise.all([
+        fetch("/api/primary-table"),
+        fetch("/api/replica-table"),
+      ]);
+      const [primaryData, replicaData] = await Promise.all([
+        primaryRes.json(),
+        replicaRes.json(),
+      ]);
+      console.log("Primary API response:", primaryData);
+      console.log("Replica API response:", replicaData);
+      setPrimaryRows(primaryData);
+      setReplicaRows(replicaData);
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
+
   return (
-    <div className="min-h-screen p-8 bg-base-200">
-      <div className="max-w-4xl mx-auto space-y-8">        
-        {/* Card with badge */}
-        <div className="card bg-base-100 shadow-xl text-base-content">
-          <div className="card-body">
-            <div className="flex items-center gap-2">
-              <h2 className="card-title">Database Status</h2>
-              <div className="badge badge-success">Connected</div>
-            </div>
-            <p>Primary and replica databases are synchronized.</p>
-          </div>
-        </div>
-
-        {/* Buttons with different variants */}
-        <div className="flex gap-4 justify-center">
-          <button className="btn btn-primary">Primary</button>
-          <button className="btn btn-secondary">Secondary</button>
-          <button className="btn btn-accent">Accent</button>
-        </div>
-
-        {/* Alert */}
-        <div className="alert alert-info text-base-content">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          <span>Changes in the primary database will be reflected in real-time in the replica.</span>
-        </div>
-
-        {/* Table with JetBrains Mono font */}
-        <div className="overflow-x-auto">
-          <table className="table table-zebra w-full font-mono">
+    <div className="min-h-screen flex flex-col bg-base-200">
+      {/* Top Pane */}
+      <div className="flex-1 flex flex-col items-center justify-center border-b border-base-300 p-8">
+        <h2 className="text-xl font-bold mb-4">Primary</h2>
+        <div className="w-full max-w-3xl overflow-x-auto">
+          <table className="table table-zebra w-full font-mono min-w-[900px]">
             <thead>
               <tr>
                 <th>ID</th>
+                <th>Organization ID</th>
                 <th>Name</th>
-                <th>Status</th>
-                <th>Value</th>
+                <th>Email</th>
+                <th>Password</th>
+                <th>Created At</th>
+                <th>Updated At</th>
               </tr>
             </thead>
             <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="text-center">Loading...</td>
+                </tr>
+              )}
+              {!loading && Array.isArray(primaryRows) && primaryRows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.id}</td>
+                  <td>{row.organization_id}</td>
+                  <td>{row.name}</td>
+                  <td>{row.email}</td>
+                  <td>{row.password}</td>
+                  <td>{row.created_at}</td>
+                  <td>{row.updated_at}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {/* Bottom Pane */}
+      <div className="flex-1 flex flex-col items-center justify-center p-8">
+        <h2 className="text-xl font-bold mb-4">Replica</h2>
+        <div className="w-full max-w-3xl overflow-x-auto">
+          <table className="table table-zebra w-full font-mono min-w-[900px]">
+            <thead>
               <tr>
-                <td>1</td>
-                <td>Alice</td>
-                <td>Active</td>
-                <td>42.7</td>
+                <th>ID</th>
+                <th>Organization ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Password</th>
+                <th>Created At</th>
+                <th>Updated At</th>
               </tr>
-              <tr>
-                <td>2</td>
-                <td>Bob</td>
-                <td>Inactive</td>
-                <td>13.2</td>
-              </tr>
-              <tr>
-                <td>3</td>
-                <td>Charlie</td>
-                <td>Active</td>
-                <td>99.9</td>
-              </tr>
-              <tr>
-                <td>4</td>
-                <td>Dana</td>
-                <td>Pending</td>
-                <td>7.5</td>
-              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="text-center">Loading...</td>
+                </tr>
+              )}
+              {!loading && Array.isArray(replicaRows) && replicaRows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.id}</td>
+                  <td>{row.organization_id}</td>
+                  <td>{row.name}</td>
+                  <td>{row.email}</td>
+                  <td>{row.password}</td>
+                  <td>{row.created_at}</td>
+                  <td>{row.updated_at}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
