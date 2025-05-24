@@ -62,6 +62,26 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
   - Creates sample organizations, users, subscriptions, and related data
   - Used for populating test databases with realistic data
 
+## Apps
+
+### Homepage (`apps/homepage/`)
+- Public-facing landing page for Kasho.
+- Shows the Kasho wordmark and a brief description.
+- To run locally:
+  ```bash
+  task homepage
+  ```
+  (Runs on [http://localhost:3000](http://localhost:3000))
+
+### Demo (`apps/demo/`)
+- Interactive demo app for showcasing Kasho's real-time database replication and transformation features.
+- Includes a UI for connecting to primary and replica databases, and visualizing real-time changes.
+- To run locally:
+  ```bash
+  task demo
+  ```
+  (Runs on [http://localhost:4000](http://localhost:4000))
+
 ## Getting Started
 
 1. Install dependencies:
