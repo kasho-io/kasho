@@ -29,6 +29,46 @@ export default function Home() {
           </svg>
           <span>Changes in the primary database will be reflected in real-time in the replica.</span>
         </div>
+
+        {/* Table with JetBrains Mono font */}
+        <div className="overflow-x-auto">
+          <table className="table table-zebra w-full font-mono">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>Alice</td>
+                <td>Active</td>
+                <td>42.7</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Bob</td>
+                <td>Inactive</td>
+                <td>13.2</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>Charlie</td>
+                <td>Active</td>
+                <td>99.9</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>Dana</td>
+                <td>Pending</td>
+                <td>7.5</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
