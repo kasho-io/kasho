@@ -1,8 +1,5 @@
 import { Pool } from 'pg';
 
-console.log('PRIMARY_DATABASE_URL:', process.env.PRIMARY_DATABASE_URL);
-console.log('REPLICA_DATABASE_URL:', process.env.REPLICA_DATABASE_URL);
-
 const primaryPool = new Pool({
   connectionString: process.env.PRIMARY_DATABASE_URL,
 });
