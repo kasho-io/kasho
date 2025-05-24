@@ -42,3 +42,8 @@ tasks:
     desc: Start the demo app
     cmds:
       - cd apps/demo && npm run dev
+
+  homepage:
+    desc: Start the homepage app
+    cmds:
+      - cd apps/homepage && npm run dev
