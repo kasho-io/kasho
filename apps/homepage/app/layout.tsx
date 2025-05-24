@@ -15,8 +15,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kasho Demo",
-  description: "Real-time database transformation demo",
+  title: "Kasho",
+  description: "Anonymized, live replicas on demand for development, testing and staging.",
 };
 
 export default function RootLayout({
