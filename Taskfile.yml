@@ -37,3 +37,8 @@ tasks:
     desc: Generate fake SaaSdata for the demo environment
     cmds:
       - go run tools/generate-fake-saas-data/main.go > environments/demo/sql/fake_projmgmt_saas.sql
+
+  demo:
+    desc: Start the demo app
+    cmds:
+      - cd apps/demo && npm run dev
