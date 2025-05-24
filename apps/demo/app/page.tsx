@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import DataTable from "@/components/DataTable";
 
 interface Row {
@@ -17,10 +17,14 @@ export default function Home() {
   const [primaryRows, setPrimaryRows] = useState<Row[] | null>(null);
   const [replicaRows, setReplicaRows] = useState<Row[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const firstLoad = useRef(true);
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchData() {
-      setLoading(true);
+      if (firstLoad.current) {
+        setLoading(true);
+      }
       const [primaryRes, replicaRes] = await Promise.all([
         fetch("/api/primary-table"),
         fetch("/api/replica-table"),
@@ -29,13 +33,20 @@ export default function Home() {
         primaryRes.json(),
         replicaRes.json(),
       ]);
-      console.log("Primary API response:", primaryData);
-      console.log("Replica API response:", replicaData);
+      if (!isMounted) return;
       setPrimaryRows(primaryData);
       setReplicaRows(replicaData);
-      setLoading(false);
+      if (firstLoad.current) {
+        setLoading(false);
+        firstLoad.current = false;
+      }
     }
     fetchData();
+    const interval = setInterval(fetchData, 3000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   return (
