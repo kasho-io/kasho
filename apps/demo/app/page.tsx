@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import DataTable from "@/components/DataTable";
+import Image from "next/image";
 
 interface Row {
   id: string;
@@ -67,7 +68,10 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-base-200">
+    <div className="min-h-screen flex flex-col bg-base-200 relative">
+      <div className="absolute top-2 left-2 z-10">
+        <Image src="/kasho-icon.png" alt="Kasho Icon" width={32} height={32} />
+      </div>
       <div className="flex-1 border-b border-base-300 bg-base-200">
         <div
           className="max-w-6xl mx-auto w-full flex items-center gap-2"
