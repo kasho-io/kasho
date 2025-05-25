@@ -40,7 +40,7 @@ services:
     volumes:
       - postgres-primary-data:/var/lib/postgresql/data
       - ./primary-init.d:/docker-entrypoint-initdb.d
-    command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
+    command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 -c listen_addresses='*'
 
   postgres-replica:
     image: postgres:15
@@ -53,7 +53,7 @@ services:
     volumes:
       - postgres-replica-data:/var/lib/postgresql/data
       - ./replica-init.d:/docker-entrypoint-initdb.d
-    command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
+    command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 -c listen_addresses='*'
 
 volumes:
   postgres-primary-data:
