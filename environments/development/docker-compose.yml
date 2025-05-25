@@ -10,6 +10,7 @@ services:
       - .env
     volumes:
       - ../../services/pg-change-stream:/app/services/pg-change-stream
+      - ../../proto:/app/proto
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "8080"]
       interval: 5s
@@ -29,6 +30,7 @@ services:
     volumes:
       - ../../services/pg-translicator:/app/services/pg-translicator
       - ../demo/config:/app/config
+      - ../../proto:/app/proto
     depends_on:
       pg-change-stream:
         condition: service_healthy
