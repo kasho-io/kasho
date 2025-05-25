@@ -94,14 +94,19 @@ Type `task` by itself for a list of commands.
 task dev-reset
 ```
 
-2. Setup replication and some test data. In a separate terminal, run:
+2. Setup replication. In a separate terminal, run:
 ```bash
-task dev-setup
+task dev-setup-replication
+```
+
+3. Wait for the `pg-change-stream` service to connect to the primary by watching the output from the first terminal, then set up some test data. Run:
+```bash
+task dev-setup-data
 ```
 
 3. Run the demo. In a separate terminal, run:
 ```bash
-task demo
+task app-demo
 ```
 
 ## Requirements
