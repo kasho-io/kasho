@@ -17,7 +17,6 @@ services:
       timeout: 3s
       retries: 5
     depends_on:
-      - redis
       - postgres-primary
 
   pg-translicator:
@@ -36,13 +35,6 @@ services:
         condition: service_healthy
       postgres-replica:
         condition: service_started
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
 
   postgres-primary:
     image: postgres:15
@@ -71,7 +63,6 @@ services:
     command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
 
 volumes:
-  redis-data:
   postgres-primary-data:
     driver: local
   postgres-replica-data:

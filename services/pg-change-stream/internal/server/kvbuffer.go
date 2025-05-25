@@ -17,14 +17,14 @@ const (
 	changesTTL = 24 * time.Hour
 )
 
-type RedisBuffer struct {
+type KVBuffer struct {
 	client *redis.Client
 }
 
-func NewRedisBuffer(redisURL string) (*RedisBuffer, error) {
-	opts, err := redis.ParseURL(redisURL)
+func NewKVBuffer(kvURL string) (*KVBuffer, error) {
+	opts, err := redis.ParseURL(kvURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse Redis URL: %w", err)
+		return nil, fmt.Errorf("failed to parse KV URL: %w", err)
 	}
 
 	client := redis.NewClient(opts)
@@ -33,14 +33,14 @@ func NewRedisBuffer(redisURL string) (*RedisBuffer, error) {
 	defer cancel()
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+		return nil, fmt.Errorf("failed to connect to KV: %w", err)
 	}
 
-	return &RedisBuffer{client: client}, nil
+	return &KVBuffer{client: client}, nil
 }
 
-// AddChange adds a change to the Redis buffer with its LSN as the score
-func (b *RedisBuffer) AddChange(ctx context.Context, lsn string, change types.Change) error {
+// AddChange adds a change to the KV buffer with its LSN as the score
+func (b *KVBuffer) AddChange(ctx context.Context, lsn string, change types.Change) error {
 	score, err := pglogrepl.ParseLSN(lsn)
 	if err != nil {
 		return fmt.Errorf("failed to parse LSN: %w", err)
@@ -56,7 +56,7 @@ func (b *RedisBuffer) AddChange(ctx context.Context, lsn string, change types.Ch
 		Member: data,
 	}).Err()
 	if err != nil {
-		return fmt.Errorf("failed to add change to Redis: %w", err)
+		return fmt.Errorf("failed to add change to KV: %w", err)
 	}
 
 	err = b.client.Expire(ctx, changesKey, changesTTL).Err()
@@ -73,7 +73,7 @@ func (b *RedisBuffer) AddChange(ctx context.Context, lsn string, change types.Ch
 }
 
 // GetChangesAfter returns all changes after the given LSN
-func (b *RedisBuffer) GetChangesAfter(ctx context.Context, lsn string) ([]types.Change, error) {
+func (b *KVBuffer) GetChangesAfter(ctx context.Context, lsn string) ([]types.Change, error) {
 	score, err := pglogrepl.ParseLSN(lsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse LSN: %w", err)
@@ -87,7 +87,7 @@ func (b *RedisBuffer) GetChangesAfter(ctx context.Context, lsn string) ([]types.
 		Count:  1000,
 	}).Result()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get changes from Redis: %w", err)
+		return nil, fmt.Errorf("failed to get changes from KV: %w", err)
 	}
 
 	changes := make([]types.Change, 0, len(results))
@@ -102,7 +102,7 @@ func (b *RedisBuffer) GetChangesAfter(ctx context.Context, lsn string) ([]types.
 	return changes, nil
 }
 
-// Close closes the Redis connection
-func (b *RedisBuffer) Close() error {
+// Close closes the KV connection
+func (b *KVBuffer) Close() error {
 	return b.client.Close()
 }
