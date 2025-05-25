@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"pg-change-stream/api"
+	"kasho/proto"
 
 	"gopkg.in/yaml.v3"
 )
@@ -154,7 +154,7 @@ func LoadConfig(path string) (*Config, error) {
 }
 
 // GetFakeValue generates a fake value for a given table, column, and original value
-func GetFakeValue(c *Config, table string, column string, original *api.ColumnValue) (*api.ColumnValue, error) {
+func GetFakeValue(c *Config, table string, column string, original *proto.ColumnValue) (*proto.ColumnValue, error) {
 	tableConfig, exists := c.Tables[table]
 	if !exists {
 		return nil, nil // not an error, just no transform for this table
@@ -173,15 +173,15 @@ func GetFakeValue(c *Config, table string, column string, original *api.ColumnVa
 	// Extract the raw value based on its type
 	var rawValue any
 	switch v := original.Value.(type) {
-	case *api.ColumnValue_StringValue:
+	case *proto.ColumnValue_StringValue:
 		rawValue = v.StringValue
-	case *api.ColumnValue_IntValue:
+	case *proto.ColumnValue_IntValue:
 		rawValue = v.IntValue
-	case *api.ColumnValue_FloatValue:
+	case *proto.ColumnValue_FloatValue:
 		rawValue = v.FloatValue
-	case *api.ColumnValue_BoolValue:
+	case *proto.ColumnValue_BoolValue:
 		rawValue = v.BoolValue
-	case *api.ColumnValue_TimestampValue:
+	case *proto.ColumnValue_TimestampValue:
 		if t, err := time.Parse(time.RFC3339, v.TimestampValue); err == nil {
 			rawValue = t
 		} else {
@@ -196,31 +196,31 @@ func GetFakeValue(c *Config, table string, column string, original *api.ColumnVa
 	case func(string) string:
 		if str, ok := rawValue.(string); ok {
 			transformed := f(str)
-			return &api.ColumnValue{Value: &api.ColumnValue_StringValue{StringValue: transformed}}, nil
+			return &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: transformed}}, nil
 		}
 		return nil, fmt.Errorf("expected string input, got %T", rawValue)
 	case func(int) int:
 		if i, ok := rawValue.(int64); ok {
 			transformed := f(int(i))
-			return &api.ColumnValue{Value: &api.ColumnValue_IntValue{IntValue: int64(transformed)}}, nil
+			return &proto.ColumnValue{Value: &proto.ColumnValue_IntValue{IntValue: int64(transformed)}}, nil
 		}
 		return nil, fmt.Errorf("expected int64 input, got %T", rawValue)
 	case func(float64) float64:
 		if flt, ok := rawValue.(float64); ok {
 			transformed := f(flt)
-			return &api.ColumnValue{Value: &api.ColumnValue_FloatValue{FloatValue: transformed}}, nil
+			return &proto.ColumnValue{Value: &proto.ColumnValue_FloatValue{FloatValue: transformed}}, nil
 		}
 		return nil, fmt.Errorf("expected float64 input, got %T", rawValue)
 	case func(bool) bool:
 		if b, ok := rawValue.(bool); ok {
 			transformed := f(b)
-			return &api.ColumnValue{Value: &api.ColumnValue_BoolValue{BoolValue: transformed}}, nil
+			return &proto.ColumnValue{Value: &proto.ColumnValue_BoolValue{BoolValue: transformed}}, nil
 		}
 		return nil, fmt.Errorf("expected bool input, got %T", rawValue)
 	case func(time.Time) time.Time:
 		if t, ok := rawValue.(time.Time); ok {
 			transformed := f(t)
-			return &api.ColumnValue{Value: &api.ColumnValue_TimestampValue{TimestampValue: transformed.Format(time.RFC3339)}}, nil
+			return &proto.ColumnValue{Value: &proto.ColumnValue_TimestampValue{TimestampValue: transformed.Format(time.RFC3339)}}, nil
 		}
 		return nil, fmt.Errorf("expected time.Time input, got %T", rawValue)
 	default:
@@ -237,20 +237,20 @@ func (ft TransformType) GetTransformFunction() (any, error) {
 }
 
 // TransformChange takes a Change object and returns a new Change object with transformed values
-func TransformChange(c *Config, change *api.Change) (*api.Change, error) {
+func TransformChange(c *Config, change *proto.Change) (*proto.Change, error) {
 	// Create a new Change object to avoid modifying the original
-	newChange := &api.Change{
+	newChange := &proto.Change{
 		Lsn:  change.Lsn,
 		Type: change.Type,
 	}
 
 	switch data := change.Data.(type) {
-	case *api.Change_Dml:
+	case *proto.Change_Dml:
 		// Create a new DMLData object
-		newDML := &api.DMLData{
+		newDML := &proto.DMLData{
 			Table:        data.Dml.Table,
 			ColumnNames:  make([]string, len(data.Dml.ColumnNames)),
-			ColumnValues: make([]*api.ColumnValue, len(data.Dml.ColumnValues)),
+			ColumnValues: make([]*proto.ColumnValue, len(data.Dml.ColumnValues)),
 			Kind:         data.Dml.Kind,
 		}
 		copy(newDML.ColumnNames, data.Dml.ColumnNames)
@@ -271,20 +271,20 @@ func TransformChange(c *Config, change *api.Change) (*api.Change, error) {
 
 		// Copy old keys if present
 		if data.Dml.OldKeys != nil {
-			newDML.OldKeys = &api.OldKeys{
+			newDML.OldKeys = &proto.OldKeys{
 				KeyNames:  make([]string, len(data.Dml.OldKeys.KeyNames)),
-				KeyValues: make([]*api.ColumnValue, len(data.Dml.OldKeys.KeyValues)),
+				KeyValues: make([]*proto.ColumnValue, len(data.Dml.OldKeys.KeyValues)),
 			}
 			copy(newDML.OldKeys.KeyNames, data.Dml.OldKeys.KeyNames)
 			copy(newDML.OldKeys.KeyValues, data.Dml.OldKeys.KeyValues)
 		}
 
-		newChange.Data = &api.Change_Dml{Dml: newDML}
+		newChange.Data = &proto.Change_Dml{Dml: newDML}
 
-	case *api.Change_Ddl:
+	case *proto.Change_Ddl:
 		// For DDL changes, just copy the DDL data
-		newChange.Data = &api.Change_Ddl{
-			Ddl: &api.DDLData{
+		newChange.Data = &proto.Change_Ddl{
+			Ddl: &proto.DDLData{
 				Ddl: data.Ddl.Ddl,
 			},
 		}

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"pg-change-stream/api"
+	"kasho/proto"
 	"pg-translicator/internal/sql"
 	"pg-translicator/internal/transform"
 
@@ -84,9 +84,9 @@ func main() {
 	}
 	defer client.Close()
 
-	streamClient := api.NewChangeStreamClient(client)
+	streamClient := proto.NewChangeStreamClient(client)
 
-	stream, err := streamClient.Stream(ctx, &api.StreamRequest{LastLsn: ""})
+	stream, err := streamClient.Stream(ctx, &proto.StreamRequest{LastLsn: ""})
 	if err != nil {
 		log.Fatalf("Failed to start stream: %v", err)
 	}

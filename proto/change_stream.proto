@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package change_stream;
 
-option go_package = "github.com/jeffreywescott/kasho/services/pg-change-stream/api";
+option go_package = "kasho/proto;proto";
 
 service ChangeStream {
   // Stream returns a stream of changes after the given LSN

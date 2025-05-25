@@ -3,26 +3,26 @@ package sql
 import (
 	"testing"
 
-	"pg-change-stream/api"
+	"kasho/proto"
 )
 
 func TestToSQL(t *testing.T) {
 	tests := []struct {
 		name    string
-		change  *api.Change
+		change  *proto.Change
 		wantSQL string
 		wantErr bool
 	}{
 		{
 			name: "valid insert",
-			change: &api.Change{
-				Data: &api.Change_Dml{
-					Dml: &api.DMLData{
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
 						Table:       "users",
 						ColumnNames: []string{"name", "email"},
-						ColumnValues: []*api.ColumnValue{
-							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
-							{Value: &api.ColumnValue_StringValue{StringValue: "john@example.com"}},
+						ColumnValues: []*proto.ColumnValue{
+							{Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &proto.ColumnValue_StringValue{StringValue: "john@example.com"}},
 						},
 						Kind: "insert",
 					},
@@ -33,20 +33,20 @@ func TestToSQL(t *testing.T) {
 		},
 		{
 			name: "valid update",
-			change: &api.Change{
-				Data: &api.Change_Dml{
-					Dml: &api.DMLData{
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
 						Table:       "users",
 						ColumnNames: []string{"name", "email"},
-						ColumnValues: []*api.ColumnValue{
-							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
-							{Value: &api.ColumnValue_StringValue{StringValue: "john@example.com"}},
+						ColumnValues: []*proto.ColumnValue{
+							{Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &proto.ColumnValue_StringValue{StringValue: "john@example.com"}},
 						},
 						Kind: "update",
-						OldKeys: &api.OldKeys{
+						OldKeys: &proto.OldKeys{
 							KeyNames: []string{"id"},
-							KeyValues: []*api.ColumnValue{
-								{Value: &api.ColumnValue_IntValue{IntValue: 1}},
+							KeyValues: []*proto.ColumnValue{
+								{Value: &proto.ColumnValue_IntValue{IntValue: 1}},
 							},
 						},
 					},
@@ -57,15 +57,15 @@ func TestToSQL(t *testing.T) {
 		},
 		{
 			name: "valid delete",
-			change: &api.Change{
-				Data: &api.Change_Dml{
-					Dml: &api.DMLData{
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
 						Table: "users",
 						Kind:  "delete",
-						OldKeys: &api.OldKeys{
+						OldKeys: &proto.OldKeys{
 							KeyNames: []string{"id"},
-							KeyValues: []*api.ColumnValue{
-								{Value: &api.ColumnValue_IntValue{IntValue: 1}},
+							KeyValues: []*proto.ColumnValue{
+								{Value: &proto.ColumnValue_IntValue{IntValue: 1}},
 							},
 						},
 					},
@@ -76,9 +76,9 @@ func TestToSQL(t *testing.T) {
 		},
 		{
 			name: "valid DDL",
-			change: &api.Change{
-				Data: &api.Change_Ddl{
-					Ddl: &api.DDLData{
+			change: &proto.Change{
+				Data: &proto.Change_Ddl{
+					Ddl: &proto.DDLData{
 						Ddl: "CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT);",
 					},
 				},
@@ -88,9 +88,9 @@ func TestToSQL(t *testing.T) {
 		},
 		{
 			name: "invalid DML kind",
-			change: &api.Change{
-				Data: &api.Change_Dml{
-					Dml: &api.DMLData{
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
 						Table: "users",
 						Kind:  "invalid",
 					},
@@ -100,14 +100,14 @@ func TestToSQL(t *testing.T) {
 		},
 		{
 			name: "mismatched columns and values",
-			change: &api.Change{
-				Data: &api.Change_Dml{
-					Dml: &api.DMLData{
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
 						Table:       "users",
 						ColumnNames: []string{"name"},
-						ColumnValues: []*api.ColumnValue{
-							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
-							{Value: &api.ColumnValue_StringValue{StringValue: "john@example.com"}},
+						ColumnValues: []*proto.ColumnValue{
+							{Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &proto.ColumnValue_StringValue{StringValue: "john@example.com"}},
 						},
 						Kind: "insert",
 					},
@@ -117,13 +117,13 @@ func TestToSQL(t *testing.T) {
 		},
 		{
 			name: "update without old keys",
-			change: &api.Change{
-				Data: &api.Change_Dml{
-					Dml: &api.DMLData{
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
 						Table:       "users",
 						ColumnNames: []string{"name"},
-						ColumnValues: []*api.ColumnValue{
-							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
+						ColumnValues: []*proto.ColumnValue{
+							{Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}},
 						},
 						Kind: "update",
 					},
@@ -133,9 +133,9 @@ func TestToSQL(t *testing.T) {
 		},
 		{
 			name: "delete without old keys",
-			change: &api.Change{
-				Data: &api.Change_Dml{
-					Dml: &api.DMLData{
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
 						Table: "users",
 						Kind:  "delete",
 					},
@@ -145,13 +145,13 @@ func TestToSQL(t *testing.T) {
 		},
 		{
 			name: "insert with null value",
-			change: &api.Change{
-				Data: &api.Change_Dml{
-					Dml: &api.DMLData{
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
 						Table:       "users",
 						ColumnNames: []string{"name", "email"},
-						ColumnValues: []*api.ColumnValue{
-							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
+						ColumnValues: []*proto.ColumnValue{
+							{Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}},
 							{Value: nil},
 						},
 						Kind: "insert",
@@ -163,14 +163,14 @@ func TestToSQL(t *testing.T) {
 		},
 		{
 			name: "insert with number",
-			change: &api.Change{
-				Data: &api.Change_Dml{
-					Dml: &api.DMLData{
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
 						Table:       "users",
 						ColumnNames: []string{"name", "age"},
-						ColumnValues: []*api.ColumnValue{
-							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
-							{Value: &api.ColumnValue_IntValue{IntValue: 42}},
+						ColumnValues: []*proto.ColumnValue{
+							{Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &proto.ColumnValue_IntValue{IntValue: 42}},
 						},
 						Kind: "insert",
 					},
@@ -181,14 +181,14 @@ func TestToSQL(t *testing.T) {
 		},
 		{
 			name: "insert with boolean",
-			change: &api.Change{
-				Data: &api.Change_Dml{
-					Dml: &api.DMLData{
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
 						Table:       "users",
 						ColumnNames: []string{"name", "is_active"},
-						ColumnValues: []*api.ColumnValue{
-							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
-							{Value: &api.ColumnValue_BoolValue{BoolValue: true}},
+						ColumnValues: []*proto.ColumnValue{
+							{Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &proto.ColumnValue_BoolValue{BoolValue: true}},
 						},
 						Kind: "insert",
 					},
@@ -199,14 +199,14 @@ func TestToSQL(t *testing.T) {
 		},
 		{
 			name: "insert with timestamp",
-			change: &api.Change{
-				Data: &api.Change_Dml{
-					Dml: &api.DMLData{
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
 						Table:       "users",
 						ColumnNames: []string{"name", "created_at"},
-						ColumnValues: []*api.ColumnValue{
-							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
-							{Value: &api.ColumnValue_TimestampValue{TimestampValue: "2024-03-20T15:04:05Z"}},
+						ColumnValues: []*proto.ColumnValue{
+							{Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &proto.ColumnValue_TimestampValue{TimestampValue: "2024-03-20T15:04:05Z"}},
 						},
 						Kind: "insert",
 					},
@@ -217,14 +217,14 @@ func TestToSQL(t *testing.T) {
 		},
 		{
 			name: "insert with date",
-			change: &api.Change{
-				Data: &api.Change_Dml{
-					Dml: &api.DMLData{
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
 						Table:       "users",
 						ColumnNames: []string{"name", "birth_date"},
-						ColumnValues: []*api.ColumnValue{
-							{Value: &api.ColumnValue_StringValue{StringValue: "John Doe"}},
-							{Value: &api.ColumnValue_TimestampValue{TimestampValue: "2024-03-20"}},
+						ColumnValues: []*proto.ColumnValue{
+							{Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}},
+							{Value: &proto.ColumnValue_TimestampValue{TimestampValue: "2024-03-20"}},
 						},
 						Kind: "insert",
 					},
@@ -235,7 +235,7 @@ func TestToSQL(t *testing.T) {
 		},
 		{
 			name: "unsupported change type",
-			change: &api.Change{
+			change: &proto.Change{
 				Data: nil,
 			},
 			wantErr: true,

@@ -6,12 +6,12 @@ import (
 	"log"
 	"time"
 
-	"pg-change-stream/api"
+	"kasho/proto"
 	"pg-change-stream/internal/types"
 )
 
 type ChangeStreamServer struct {
-	api.UnimplementedChangeStreamServer
+	proto.UnimplementedChangeStreamServer
 	buffer *RedisBuffer
 }
 
@@ -21,7 +21,7 @@ func NewChangeStreamServer(buffer *RedisBuffer) *ChangeStreamServer {
 	}
 }
 
-func (s *ChangeStreamServer) Stream(req *api.StreamRequest, stream api.ChangeStream_StreamServer) error {
+func (s *ChangeStreamServer) Stream(req *proto.StreamRequest, stream proto.ChangeStream_StreamServer) error {
 	// Send buffered changes first
 	if req.LastLsn != "" {
 		changes, err := s.buffer.GetChangesAfter(stream.Context(), req.LastLsn)
@@ -60,36 +60,36 @@ func (s *ChangeStreamServer) Stream(req *api.StreamRequest, stream api.ChangeStr
 	}
 }
 
-func convertToProtoChange(change types.Change) *api.Change {
-	protoChange := &api.Change{
+func convertToProtoChange(change types.Change) *proto.Change {
+	protoChange := &proto.Change{
 		Lsn:  change.LSN,
 		Type: change.Type(),
 	}
 
 	switch data := change.Data.(type) {
 	case *types.DMLData:
-		dml := &api.DMLData{
+		dml := &proto.DMLData{
 			Table:        data.Table,
 			ColumnNames:  data.ColumnNames,
-			ColumnValues: make([]*api.ColumnValue, len(data.ColumnValues)),
+			ColumnValues: make([]*proto.ColumnValue, len(data.ColumnValues)),
 			Kind:         data.Kind,
 		}
 		for i, cv := range data.ColumnValues {
 			dml.ColumnValues[i] = cv.ColumnValue
 		}
 		if data.OldKeys != nil {
-			dml.OldKeys = &api.OldKeys{
+			dml.OldKeys = &proto.OldKeys{
 				KeyNames:  data.OldKeys.KeyNames,
-				KeyValues: make([]*api.ColumnValue, len(data.OldKeys.KeyValues)),
+				KeyValues: make([]*proto.ColumnValue, len(data.OldKeys.KeyValues)),
 			}
 			for i, cv := range data.OldKeys.KeyValues {
 				dml.OldKeys.KeyValues[i] = cv.ColumnValue
 			}
 		}
-		protoChange.Data = &api.Change_Dml{Dml: dml}
+		protoChange.Data = &proto.Change_Dml{Dml: dml}
 	case *types.DDLData:
-		protoChange.Data = &api.Change_Ddl{
-			Ddl: &api.DDLData{
+		protoChange.Data = &proto.Change_Ddl{
+			Ddl: &proto.DDLData{
 				Id:       int32(data.ID),
 				Time:     data.Time.Format(time.RFC3339),
 				Username: data.Username,

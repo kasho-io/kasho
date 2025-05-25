@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"pg-change-stream/api"
+	"kasho/proto"
 )
 
 type ColumnValueWrapper struct {
-	*api.ColumnValue
+	*proto.ColumnValue
 }
 
 func (cv ColumnValueWrapper) MarshalJSON() ([]byte, error) {
@@ -17,15 +17,15 @@ func (cv ColumnValueWrapper) MarshalJSON() ([]byte, error) {
 		return json.Marshal(nil)
 	}
 	switch v := cv.Value.(type) {
-	case *api.ColumnValue_StringValue:
+	case *proto.ColumnValue_StringValue:
 		return json.Marshal(v.StringValue)
-	case *api.ColumnValue_IntValue:
+	case *proto.ColumnValue_IntValue:
 		return json.Marshal(v.IntValue)
-	case *api.ColumnValue_FloatValue:
+	case *proto.ColumnValue_FloatValue:
 		return json.Marshal(v.FloatValue)
-	case *api.ColumnValue_BoolValue:
+	case *proto.ColumnValue_BoolValue:
 		return json.Marshal(v.BoolValue)
-	case *api.ColumnValue_TimestampValue:
+	case *proto.ColumnValue_TimestampValue:
 		return json.Marshal(v.TimestampValue)
 	default:
 		return nil, fmt.Errorf("unknown column value type: %T", v)
@@ -34,41 +34,41 @@ func (cv ColumnValueWrapper) MarshalJSON() ([]byte, error) {
 
 func (cv *ColumnValueWrapper) UnmarshalJSON(data []byte) error {
 	if cv.ColumnValue == nil {
-		cv.ColumnValue = &api.ColumnValue{}
+		cv.ColumnValue = &proto.ColumnValue{}
 	}
 
 	// Try string first
 	var strVal string
 	if err := json.Unmarshal(data, &strVal); err == nil {
-		cv.Value = &api.ColumnValue_StringValue{StringValue: strVal}
+		cv.Value = &proto.ColumnValue_StringValue{StringValue: strVal}
 		return nil
 	}
 
 	// Try int
 	var intVal int64
 	if err := json.Unmarshal(data, &intVal); err == nil {
-		cv.Value = &api.ColumnValue_IntValue{IntValue: intVal}
+		cv.Value = &proto.ColumnValue_IntValue{IntValue: intVal}
 		return nil
 	}
 
 	// Try float
 	var floatVal float64
 	if err := json.Unmarshal(data, &floatVal); err == nil {
-		cv.Value = &api.ColumnValue_FloatValue{FloatValue: floatVal}
+		cv.Value = &proto.ColumnValue_FloatValue{FloatValue: floatVal}
 		return nil
 	}
 
 	// Try bool
 	var boolVal bool
 	if err := json.Unmarshal(data, &boolVal); err == nil {
-		cv.Value = &api.ColumnValue_BoolValue{BoolValue: boolVal}
+		cv.Value = &proto.ColumnValue_BoolValue{BoolValue: boolVal}
 		return nil
 	}
 
 	// Try timestamp
 	var timeVal time.Time
 	if err := json.Unmarshal(data, &timeVal); err == nil {
-		cv.Value = &api.ColumnValue_TimestampValue{TimestampValue: timeVal.Format(time.RFC3339)}
+		cv.Value = &proto.ColumnValue_TimestampValue{TimestampValue: timeVal.Format(time.RFC3339)}
 		return nil
 	}
 

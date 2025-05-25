@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v5.29.3
-// source: api/change_stream.proto
+// source: proto/change_stream.proto
 
-package api
+package proto
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -30,7 +30,7 @@ type StreamRequest struct {
 
 func (x *StreamRequest) Reset() {
 	*x = StreamRequest{}
-	mi := &file_api_change_stream_proto_msgTypes[0]
+	mi := &file_proto_change_stream_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -42,7 +42,7 @@ func (x *StreamRequest) String() string {
 func (*StreamRequest) ProtoMessage() {}
 
 func (x *StreamRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_change_stream_proto_msgTypes[0]
+	mi := &file_proto_change_stream_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -55,7 +55,7 @@ func (x *StreamRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamRequest.ProtoReflect.Descriptor instead.
 func (*StreamRequest) Descriptor() ([]byte, []int) {
-	return file_api_change_stream_proto_rawDescGZIP(), []int{0}
+	return file_proto_change_stream_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *StreamRequest) GetLastLsn() string {
@@ -80,7 +80,7 @@ type Change struct {
 
 func (x *Change) Reset() {
 	*x = Change{}
-	mi := &file_api_change_stream_proto_msgTypes[1]
+	mi := &file_proto_change_stream_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -92,7 +92,7 @@ func (x *Change) String() string {
 func (*Change) ProtoMessage() {}
 
 func (x *Change) ProtoReflect() protoreflect.Message {
-	mi := &file_api_change_stream_proto_msgTypes[1]
+	mi := &file_proto_change_stream_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -105,7 +105,7 @@ func (x *Change) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Change.ProtoReflect.Descriptor instead.
 func (*Change) Descriptor() ([]byte, []int) {
-	return file_api_change_stream_proto_rawDescGZIP(), []int{1}
+	return file_proto_change_stream_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Change) GetLsn() string {
@@ -179,7 +179,7 @@ type ColumnValue struct {
 
 func (x *ColumnValue) Reset() {
 	*x = ColumnValue{}
-	mi := &file_api_change_stream_proto_msgTypes[2]
+	mi := &file_proto_change_stream_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -191,7 +191,7 @@ func (x *ColumnValue) String() string {
 func (*ColumnValue) ProtoMessage() {}
 
 func (x *ColumnValue) ProtoReflect() protoreflect.Message {
-	mi := &file_api_change_stream_proto_msgTypes[2]
+	mi := &file_proto_change_stream_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -204,7 +204,7 @@ func (x *ColumnValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnValue.ProtoReflect.Descriptor instead.
 func (*ColumnValue) Descriptor() ([]byte, []int) {
-	return file_api_change_stream_proto_rawDescGZIP(), []int{2}
+	return file_proto_change_stream_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ColumnValue) GetValue() isColumnValue_Value {
@@ -306,7 +306,7 @@ type DMLData struct {
 
 func (x *DMLData) Reset() {
 	*x = DMLData{}
-	mi := &file_api_change_stream_proto_msgTypes[3]
+	mi := &file_proto_change_stream_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -318,7 +318,7 @@ func (x *DMLData) String() string {
 func (*DMLData) ProtoMessage() {}
 
 func (x *DMLData) ProtoReflect() protoreflect.Message {
-	mi := &file_api_change_stream_proto_msgTypes[3]
+	mi := &file_proto_change_stream_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -331,7 +331,7 @@ func (x *DMLData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DMLData.ProtoReflect.Descriptor instead.
 func (*DMLData) Descriptor() ([]byte, []int) {
-	return file_api_change_stream_proto_rawDescGZIP(), []int{3}
+	return file_proto_change_stream_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DMLData) GetTable() string {
@@ -379,7 +379,7 @@ type OldKeys struct {
 
 func (x *OldKeys) Reset() {
 	*x = OldKeys{}
-	mi := &file_api_change_stream_proto_msgTypes[4]
+	mi := &file_proto_change_stream_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -391,7 +391,7 @@ func (x *OldKeys) String() string {
 func (*OldKeys) ProtoMessage() {}
 
 func (x *OldKeys) ProtoReflect() protoreflect.Message {
-	mi := &file_api_change_stream_proto_msgTypes[4]
+	mi := &file_proto_change_stream_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -404,7 +404,7 @@ func (x *OldKeys) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OldKeys.ProtoReflect.Descriptor instead.
 func (*OldKeys) Descriptor() ([]byte, []int) {
-	return file_api_change_stream_proto_rawDescGZIP(), []int{4}
+	return file_proto_change_stream_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *OldKeys) GetKeyNames() []string {
@@ -434,7 +434,7 @@ type DDLData struct {
 
 func (x *DDLData) Reset() {
 	*x = DDLData{}
-	mi := &file_api_change_stream_proto_msgTypes[5]
+	mi := &file_proto_change_stream_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -446,7 +446,7 @@ func (x *DDLData) String() string {
 func (*DDLData) ProtoMessage() {}
 
 func (x *DDLData) ProtoReflect() protoreflect.Message {
-	mi := &file_api_change_stream_proto_msgTypes[5]
+	mi := &file_proto_change_stream_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -459,7 +459,7 @@ func (x *DDLData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DDLData.ProtoReflect.Descriptor instead.
 func (*DDLData) Descriptor() ([]byte, []int) {
-	return file_api_change_stream_proto_rawDescGZIP(), []int{5}
+	return file_proto_change_stream_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DDLData) GetId() int32 {
@@ -497,11 +497,11 @@ func (x *DDLData) GetDdl() string {
 	return ""
 }
 
-var File_api_change_stream_proto protoreflect.FileDescriptor
+var File_proto_change_stream_proto protoreflect.FileDescriptor
 
-const file_api_change_stream_proto_rawDesc = "" +
+const file_proto_change_stream_proto_rawDesc = "" +
 	"\n" +
-	"\x17api/change_stream.proto\x12\rchange_stream\"*\n" +
+	"\x19proto/change_stream.proto\x12\rchange_stream\"*\n" +
 	"\rStreamRequest\x12\x19\n" +
 	"\blast_lsn\x18\x01 \x01(\tR\alastLsn\"\x8e\x01\n" +
 	"\x06Change\x12\x10\n" +
@@ -536,22 +536,22 @@ const file_api_change_stream_proto_rawDesc = "" +
 	"\bdatabase\x18\x04 \x01(\tR\bdatabase\x12\x10\n" +
 	"\x03ddl\x18\x05 \x01(\tR\x03ddl2Q\n" +
 	"\fChangeStream\x12A\n" +
-	"\x06Stream\x12\x1c.change_stream.StreamRequest\x1a\x15.change_stream.Change\"\x000\x01B?Z=github.com/jeffreywescott/kasho/services/pg-change-stream/apib\x06proto3"
+	"\x06Stream\x12\x1c.change_stream.StreamRequest\x1a\x15.change_stream.Change\"\x000\x01B\x13Z\x11kasho/proto;protob\x06proto3"
 
 var (
-	file_api_change_stream_proto_rawDescOnce sync.Once
-	file_api_change_stream_proto_rawDescData []byte
+	file_proto_change_stream_proto_rawDescOnce sync.Once
+	file_proto_change_stream_proto_rawDescData []byte
 )
 
-func file_api_change_stream_proto_rawDescGZIP() []byte {
-	file_api_change_stream_proto_rawDescOnce.Do(func() {
-		file_api_change_stream_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_change_stream_proto_rawDesc), len(file_api_change_stream_proto_rawDesc)))
+func file_proto_change_stream_proto_rawDescGZIP() []byte {
+	file_proto_change_stream_proto_rawDescOnce.Do(func() {
+		file_proto_change_stream_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_change_stream_proto_rawDesc), len(file_proto_change_stream_proto_rawDesc)))
 	})
-	return file_api_change_stream_proto_rawDescData
+	return file_proto_change_stream_proto_rawDescData
 }
 
-var file_api_change_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-var file_api_change_stream_proto_goTypes = []any{
+var file_proto_change_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_proto_change_stream_proto_goTypes = []any{
 	(*StreamRequest)(nil), // 0: change_stream.StreamRequest
 	(*Change)(nil),        // 1: change_stream.Change
 	(*ColumnValue)(nil),   // 2: change_stream.ColumnValue
@@ -559,7 +559,7 @@ var file_api_change_stream_proto_goTypes = []any{
 	(*OldKeys)(nil),       // 4: change_stream.OldKeys
 	(*DDLData)(nil),       // 5: change_stream.DDLData
 }
-var file_api_change_stream_proto_depIdxs = []int32{
+var file_proto_change_stream_proto_depIdxs = []int32{
 	3, // 0: change_stream.Change.dml:type_name -> change_stream.DMLData
 	5, // 1: change_stream.Change.ddl:type_name -> change_stream.DDLData
 	2, // 2: change_stream.DMLData.column_values:type_name -> change_stream.ColumnValue
@@ -574,16 +574,16 @@ var file_api_change_stream_proto_depIdxs = []int32{
 	0, // [0:5] is the sub-list for field type_name
 }
 
-func init() { file_api_change_stream_proto_init() }
-func file_api_change_stream_proto_init() {
-	if File_api_change_stream_proto != nil {
+func init() { file_proto_change_stream_proto_init() }
+func file_proto_change_stream_proto_init() {
+	if File_proto_change_stream_proto != nil {
 		return
 	}
-	file_api_change_stream_proto_msgTypes[1].OneofWrappers = []any{
+	file_proto_change_stream_proto_msgTypes[1].OneofWrappers = []any{
 		(*Change_Dml)(nil),
 		(*Change_Ddl)(nil),
 	}
-	file_api_change_stream_proto_msgTypes[2].OneofWrappers = []any{
+	file_proto_change_stream_proto_msgTypes[2].OneofWrappers = []any{
 		(*ColumnValue_StringValue)(nil),
 		(*ColumnValue_IntValue)(nil),
 		(*ColumnValue_FloatValue)(nil),
@@ -594,17 +594,17 @@ func file_api_change_stream_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_change_stream_proto_rawDesc), len(file_api_change_stream_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_change_stream_proto_rawDesc), len(file_proto_change_stream_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_api_change_stream_proto_goTypes,
-		DependencyIndexes: file_api_change_stream_proto_depIdxs,
-		MessageInfos:      file_api_change_stream_proto_msgTypes,
+		GoTypes:           file_proto_change_stream_proto_goTypes,
+		DependencyIndexes: file_proto_change_stream_proto_depIdxs,
+		MessageInfos:      file_proto_change_stream_proto_msgTypes,
 	}.Build()
-	File_api_change_stream_proto = out.File
-	file_api_change_stream_proto_goTypes = nil
-	file_api_change_stream_proto_depIdxs = nil
+	File_proto_change_stream_proto = out.File
+	file_proto_change_stream_proto_goTypes = nil
+	file_proto_change_stream_proto_depIdxs = nil
 }

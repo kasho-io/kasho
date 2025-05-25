@@ -9,7 +9,7 @@ import (
 	"strings"
 	"syscall"
 
-	"pg-change-stream/api"
+	"kasho/proto"
 	"pg-change-stream/internal/server"
 
 	"google.golang.org/grpc"
@@ -35,7 +35,7 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	api.RegisterChangeStreamServer(s, server.NewChangeStreamServer(buffer))
+	proto.RegisterChangeStreamServer(s, server.NewChangeStreamServer(buffer))
 	go func() {
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("failed to serve: %v", err)
