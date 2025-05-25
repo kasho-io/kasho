@@ -12,10 +12,10 @@ import (
 
 type ChangeStreamServer struct {
 	proto.UnimplementedChangeStreamServer
-	buffer *RedisBuffer
+	buffer *KVBuffer
 }
 
-func NewChangeStreamServer(buffer *RedisBuffer) *ChangeStreamServer {
+func NewChangeStreamServer(buffer *KVBuffer) *ChangeStreamServer {
 	return &ChangeStreamServer{
 		buffer: buffer,
 	}

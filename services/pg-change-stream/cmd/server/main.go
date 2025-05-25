@@ -19,14 +19,14 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	redisURL := os.Getenv("REDIS_URL")
-	if redisURL == "" {
-		log.Fatal("REDIS_URL environment variable is required")
+	kvURL := os.Getenv("KV_URL")
+	if kvURL == "" {
+		log.Fatal("KV_URL environment variable is required")
 	}
 
-	buffer, err := server.NewRedisBuffer(redisURL)
+	buffer, err := server.NewKVBuffer(kvURL)
 	if err != nil {
-		log.Fatalf("Failed to create Redis buffer: %v", err)
+		log.Fatalf("Failed to create KV buffer: %v", err)
 	}
 	defer buffer.Close()
 
@@ -84,7 +84,7 @@ func main() {
 
 			for _, change := range changes {
 				if err := buffer.AddChange(ctx, change.LSN, change); err != nil {
-					log.Printf("Error storing change in Redis: %v", err)
+					log.Printf("Error storing change in KV: %v", err)
 				}
 			}
 		}
