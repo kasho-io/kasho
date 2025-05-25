@@ -28,8 +28,8 @@ services:
     env_file:
       - .env
     volumes:
+      - ./config:/app/config
       - ../../services/pg-translicator:/app/services/pg-translicator
-      - ../demo/config:/app/config
       - ../../proto:/app/proto
     depends_on:
       pg-change-stream:
@@ -54,7 +54,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres-primary-data:/var/lib/postgresql/data
-      - ../../environments/demo/primary-init.d:/docker-entrypoint-initdb.d
+      - ./primary-init.d:/docker-entrypoint-initdb.d
     command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
 
   postgres-replica:
@@ -67,7 +67,7 @@ services:
       - "5433:5432"
     volumes:
       - postgres-replica-data:/var/lib/postgresql/data
-      - ../../environments/demo/replica-init.d:/docker-entrypoint-initdb.d
+      - ./replica-init.d:/docker-entrypoint-initdb.d
     command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
 
 volumes:
