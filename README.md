@@ -33,11 +33,6 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - Supports custom transformation rules
 - Integrates with external systems
 
-#### replicate-poc (`services/replicate-poc/`)
-- Proof of concept for replication features
-- Experimental service for testing new replication patterns
-- Used for validating replication strategies
-
 ### Environments
 
 #### Development (`environments/development/`)
@@ -46,25 +41,19 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - Redis for caching
 - All core services configured for development
 
-#### Demo (`environments/demo/`)
-- Demo environment with PostgreSQL primary and replica databases
-- Configured for logical replication
-- Used for testing replication features
-- Includes initialization scripts for database setup
-
-#### POC (`environments/poc/`)
-- Environment for proof of concept testing
-- Used for validating new features
-- Includes experimental configurations
-
 ### Tools (`tools/`)
 - `generate-fake-saas-data`: Utility for generating realistic SaaS application test data
   - Creates sample organizations, users, subscriptions, and related data
   - Used for populating test databases with realistic data
 
-## Apps
+### SQL (`sql/`)
+- Scripts that will be needed to get a Postgres server ready to use kasho
+- They should be run in the order that they are numbered
+- `00-setup-wal-level.sql` is not necessary in development because the `docker-compose.yml` file handles it.
 
-### Homepage (`apps/homepage/`)
+### Apps
+
+#### Homepage (`apps/homepage/`)
 - Public-facing landing page for Kasho.
 - Shows the Kasho wordmark and a brief description.
 - To run locally:
@@ -73,7 +62,7 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
   ```
   (Runs on [http://localhost:3000](http://localhost:3000))
 
-### Demo (`apps/demo/`)
+#### Demo (`apps/demo/`)
 - Interactive demo app for showcasing Kasho's real-time database replication and transformation features.
 - Includes a UI for connecting to primary and replica databases, and visualizing real-time changes.
 - To run locally:
@@ -82,7 +71,9 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
   ```
   (Runs on [http://localhost:4000](http://localhost:4000))
 
-## Getting Started
+## Development
+
+The project uses Docker, Golang, and Task.
 
 1. Install dependencies:
    - Docker
@@ -94,19 +85,24 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 go install github.com/go-task/task/v3/cmd/task@latest
 ```
 
-3. Reset and restart the development environment:
+Type `task` by itself for a list of commands.
+
+## Getting Started
+
+1. Reset and start the development environment. In a dedicated terminal, run:
 ```bash
 task dev-reset
 ```
 
-4. Run tests:
+2. Setup replication and some test data. In a separate terminal, run:
 ```bash
-task test
+task dev-setup
 ```
 
-## Development
-
-The project uses Task for common development commands. Type `task` by itself for a list of commands.
+3. Run the demo. In a separate terminal, run:
+```bash
+task demo
+```
 
 ## Requirements
 

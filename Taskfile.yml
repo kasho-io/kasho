@@ -6,20 +6,10 @@ tasks:
     cmds:
       - task --list
 
-  dev:
-    desc: Start development environment
+  proto:
+    desc: Generate Go code from protobuf definitions
     cmds:
-      - cd environments/development && docker-compose up --build
-
-  dev-down:
-    desc: Stop development environment
-    cmds:
-      - cd environments/development && docker-compose down
-
-  dev-reset:
-    desc: Reset and restart development environment (removes volumes)
-    cmds:
-      - cd environments/development && docker-compose down -v && docker-compose up --build
+      - protoc --go_out=proto/kasho --go_opt=paths=source_relative --go-grpc_out=proto/kasho --go-grpc_opt=paths=source_relative proto/change_stream.proto
 
   test:
     desc: Run tests for all services
@@ -28,22 +18,41 @@ tasks:
       - cd services/pg-change-stream && go test ./... 
       - cd services/pg-translicator && go test ./...
 
-  proto:
-    desc: Generate Go code from protobuf definitions
+  dev:
+    desc: Start development environment
     cmds:
-      - cd services/pg-change-stream && protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative api/change_stream.proto
+      - cd environments/development && docker-compose up --build
+
+  dev-reset:
+    desc: Reset and restart development environment (removes volumes)
+    cmds:
+      - cd environments/development && docker-compose down -v && docker-compose up --build
+
+  dev-setup-replication:
+    desc: Setup replication for the development environment
+    cmds:
+      - cd environments/development && ./scripts/setup-replication.sh
+
+  dev-setup-fake-saas-data:
+    desc: Setup fake SaaS data for the development environment
+    cmds:
+      - cd environments/development && ./scripts/demo-fake-projmgmt-saas.sh
+
+  dev-setup:
+    desc: Setup the development environment
+    deps: [dev-setup-replication, dev-setup-fake-saas-data]
 
   gen-fake-saas-data:
     desc: Generate fake SaaSdata for the demo environment
     cmds:
       - go run tools/generate-fake-saas-data/main.go > environments/demo/sql/fake_projmgmt_saas.sql
 
-  demo:
+  app-demo:
     desc: Start the demo app
     cmds:
       - cd apps/demo && npm run dev
 
-  homepage:
+  app-homepage:
     desc: Start the homepage app
     cmds:
       - cd apps/homepage && npm run dev
