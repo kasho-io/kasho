@@ -16,7 +16,7 @@ RUN go mod edit -replace pg-change-stream=../../services/pg-change-stream
 COPY environments/development/.air.toml /app/.air.toml
 CMD ["air", "-c", "/app/.air.toml"]
 
-FROM alpine:latest
+FROM alpine:latest AS production
 WORKDIR /app
 COPY --from=builder /pg-translicator .
 CMD ["./pg-translicator"] 

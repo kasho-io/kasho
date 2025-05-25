@@ -3,7 +3,7 @@ services:
     build: 
       context: ../..
       dockerfile: services/pg-change-stream/Dockerfile
-      target: alpine
+      target: production
     ports:
       - "${PORT:-8080}:8080"
     env_file:
@@ -20,7 +20,7 @@ services:
     build:
       context: ../..
       dockerfile: services/pg-translicator/Dockerfile
-      target: alpine
+      target: production
     env_file:
       - .env
     depends_on:

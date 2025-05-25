@@ -15,7 +15,7 @@ COPY environments/development/.air.toml /app/.air.toml
 ENV KV_URL=redis://127.0.0.1:6379
 CMD ["sh", "-c", "redis-server --daemonize no --protected-mode no --logfile /dev/stdout & sleep 2 && air -c /app/.air.toml"]
 
-FROM alpine:latest AS alpine
+FROM alpine:latest AS production
 WORKDIR /app
 COPY --from=builder /pg-change-stream .
 RUN apk add --no-cache redis
