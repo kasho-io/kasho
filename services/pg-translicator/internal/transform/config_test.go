@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"pg-change-stream/api"
+	"kasho/proto"
 )
 
 func TestGetFakeValue(t *testing.T) {
@@ -22,19 +22,19 @@ func TestGetFakeValue(t *testing.T) {
 		name     string
 		table    string
 		column   string
-		original *api.ColumnValue
-		want     *api.ColumnValue
+		original *proto.ColumnValue
+		want     *proto.ColumnValue
 		wantErr  bool
 	}{
 		{
 			name:   "transform name",
 			table:  "users",
 			column: "name",
-			original: &api.ColumnValue{
-				Value: &api.ColumnValue_StringValue{StringValue: "John Doe"},
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"},
 			},
-			want: &api.ColumnValue{
-				Value: &api.ColumnValue_StringValue{StringValue: "Lucy Welch"},
+			want: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "Lucy Welch"},
 			},
 			wantErr: false,
 		},
@@ -42,11 +42,11 @@ func TestGetFakeValue(t *testing.T) {
 			name:   "transform age",
 			table:  "users",
 			column: "age",
-			original: &api.ColumnValue{
-				Value: &api.ColumnValue_IntValue{IntValue: 30},
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_IntValue{IntValue: 30},
 			},
-			want: &api.ColumnValue{
-				Value: &api.ColumnValue_IntValue{IntValue: 1906},
+			want: &proto.ColumnValue{
+				Value: &proto.ColumnValue_IntValue{IntValue: 1906},
 			},
 			wantErr: false,
 		},
@@ -54,11 +54,11 @@ func TestGetFakeValue(t *testing.T) {
 			name:   "transform email",
 			table:  "users",
 			column: "email",
-			original: &api.ColumnValue{
-				Value: &api.ColumnValue_StringValue{StringValue: "john@example.com"},
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "john@example.com"},
 			},
-			want: &api.ColumnValue{
-				Value: &api.ColumnValue_StringValue{StringValue: "zechariahkris@hackett.name"},
+			want: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "zechariahkris@hackett.name"},
 			},
 			wantErr: false,
 		},
@@ -66,8 +66,8 @@ func TestGetFakeValue(t *testing.T) {
 			name:   "no transform for unknown table",
 			table:  "unknown",
 			column: "name",
-			original: &api.ColumnValue{
-				Value: &api.ColumnValue_StringValue{StringValue: "John Doe"},
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"},
 			},
 			want:    nil,
 			wantErr: false,
@@ -76,8 +76,8 @@ func TestGetFakeValue(t *testing.T) {
 			name:   "no transform for unknown column",
 			table:  "users",
 			column: "unknown",
-			original: &api.ColumnValue{
-				Value: &api.ColumnValue_StringValue{StringValue: "John Doe"},
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"},
 			},
 			want:    nil,
 			wantErr: false,
@@ -86,8 +86,8 @@ func TestGetFakeValue(t *testing.T) {
 			name:   "type mismatch",
 			table:  "users",
 			column: "name",
-			original: &api.ColumnValue{
-				Value: &api.ColumnValue_IntValue{IntValue: 42},
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_IntValue{IntValue: 42},
 			},
 			want:    nil,
 			wantErr: true,

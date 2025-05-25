@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.29.3
-// source: api/change_stream.proto
+// source: proto/change_stream.proto
 
-package api
+package proto
 
 import (
 	context "context"
@@ -122,5 +122,5 @@ var ChangeStream_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "api/change_stream.proto",
+	Metadata: "proto/change_stream.proto",
 }

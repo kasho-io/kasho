@@ -8,15 +8,15 @@ import (
 	"strings"
 	"time"
 
-	"pg-change-stream/api"
+	"kasho/proto"
 )
 
 // ToSQL converts a Change into a SQL statement
-func ToSQL(change *api.Change) (string, error) {
+func ToSQL(change *proto.Change) (string, error) {
 	switch data := change.Data.(type) {
-	case *api.Change_Dml:
+	case *proto.Change_Dml:
 		return toDMLSQL(data.Dml)
-	case *api.Change_Ddl:
+	case *proto.Change_Ddl:
 		return data.Ddl.Ddl, nil
 	default:
 		return "", fmt.Errorf("unsupported change type: %T", change.Data)
@@ -24,7 +24,7 @@ func ToSQL(change *api.Change) (string, error) {
 }
 
 // toDMLSQL converts a DMLData into a SQL statement
-func toDMLSQL(dml *api.DMLData) (string, error) {
+func toDMLSQL(dml *proto.DMLData) (string, error) {
 	switch dml.Kind {
 	case "insert":
 		return toInsertSQL(dml)
@@ -38,21 +38,21 @@ func toDMLSQL(dml *api.DMLData) (string, error) {
 }
 
 // formatValue formats a value for SQL
-func formatValue(v *api.ColumnValue) (string, error) {
+func formatValue(v *proto.ColumnValue) (string, error) {
 	if v == nil || v.Value == nil {
 		return "NULL", nil
 	}
 
 	switch val := v.Value.(type) {
-	case *api.ColumnValue_StringValue:
+	case *proto.ColumnValue_StringValue:
 		return fmt.Sprintf("'%s'", strings.ReplaceAll(val.StringValue, "'", "''")), nil
-	case *api.ColumnValue_IntValue:
+	case *proto.ColumnValue_IntValue:
 		return fmt.Sprintf("%d", val.IntValue), nil
-	case *api.ColumnValue_FloatValue:
+	case *proto.ColumnValue_FloatValue:
 		return fmt.Sprintf("%f", val.FloatValue), nil
-	case *api.ColumnValue_BoolValue:
+	case *proto.ColumnValue_BoolValue:
 		return fmt.Sprintf("%t", val.BoolValue), nil
-	case *api.ColumnValue_TimestampValue:
+	case *proto.ColumnValue_TimestampValue:
 		// Try to parse as date first (YYYY-MM-DD)
 		if t, err := time.Parse("2006-01-02", val.TimestampValue); err == nil {
 			return fmt.Sprintf("'%s'", t.Format("2006-01-02")), nil
@@ -68,7 +68,7 @@ func formatValue(v *api.ColumnValue) (string, error) {
 }
 
 // toInsertSQL generates an INSERT SQL statement
-func toInsertSQL(dml *api.DMLData) (string, error) {
+func toInsertSQL(dml *proto.DMLData) (string, error) {
 	if len(dml.ColumnNames) != len(dml.ColumnValues) {
 		return "", fmt.Errorf("mismatched column names and values: %d names, %d values", len(dml.ColumnNames), len(dml.ColumnValues))
 	}
@@ -87,7 +87,7 @@ func toInsertSQL(dml *api.DMLData) (string, error) {
 }
 
 // toUpdateSQL generates an UPDATE SQL statement
-func toUpdateSQL(dml *api.DMLData) (string, error) {
+func toUpdateSQL(dml *proto.DMLData) (string, error) {
 	if len(dml.ColumnNames) != len(dml.ColumnValues) {
 		return "", fmt.Errorf("mismatched column names and values: %d names, %d values", len(dml.ColumnNames), len(dml.ColumnValues))
 	}
@@ -123,7 +123,7 @@ func toUpdateSQL(dml *api.DMLData) (string, error) {
 }
 
 // toDeleteSQL generates a DELETE SQL statement
-func toDeleteSQL(dml *api.DMLData) (string, error) {
+func toDeleteSQL(dml *proto.DMLData) (string, error) {
 	if dml.OldKeys == nil || len(dml.OldKeys.KeyNames) == 0 || len(dml.OldKeys.KeyValues) == 0 {
 		return "", fmt.Errorf("delete requires old keys")
 	}

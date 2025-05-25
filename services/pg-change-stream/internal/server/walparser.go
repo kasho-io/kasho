@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"pg-change-stream/api"
+	"kasho/proto"
 	"pg-change-stream/internal/types"
 
 	"github.com/jackc/pglogrepl"
@@ -117,22 +117,22 @@ func decodeColumnData(col *pglogrepl.TupleDataColumn, colType uint32) (any, erro
 func toColumnValue(value any) types.ColumnValueWrapper {
 	switch v := value.(type) {
 	case string:
-		return types.ColumnValueWrapper{ColumnValue: &api.ColumnValue{Value: &api.ColumnValue_StringValue{StringValue: v}}}
+		return types.ColumnValueWrapper{ColumnValue: &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: v}}}
 	case int32:
-		return types.ColumnValueWrapper{ColumnValue: &api.ColumnValue{Value: &api.ColumnValue_IntValue{IntValue: int64(v)}}}
+		return types.ColumnValueWrapper{ColumnValue: &proto.ColumnValue{Value: &proto.ColumnValue_IntValue{IntValue: int64(v)}}}
 	case int64:
-		return types.ColumnValueWrapper{ColumnValue: &api.ColumnValue{Value: &api.ColumnValue_IntValue{IntValue: v}}}
+		return types.ColumnValueWrapper{ColumnValue: &proto.ColumnValue{Value: &proto.ColumnValue_IntValue{IntValue: v}}}
 	case float32:
-		return types.ColumnValueWrapper{ColumnValue: &api.ColumnValue{Value: &api.ColumnValue_FloatValue{FloatValue: float64(v)}}}
+		return types.ColumnValueWrapper{ColumnValue: &proto.ColumnValue{Value: &proto.ColumnValue_FloatValue{FloatValue: float64(v)}}}
 	case float64:
-		return types.ColumnValueWrapper{ColumnValue: &api.ColumnValue{Value: &api.ColumnValue_FloatValue{FloatValue: v}}}
+		return types.ColumnValueWrapper{ColumnValue: &proto.ColumnValue{Value: &proto.ColumnValue_FloatValue{FloatValue: v}}}
 	case bool:
-		return types.ColumnValueWrapper{ColumnValue: &api.ColumnValue{Value: &api.ColumnValue_BoolValue{BoolValue: v}}}
+		return types.ColumnValueWrapper{ColumnValue: &proto.ColumnValue{Value: &proto.ColumnValue_BoolValue{BoolValue: v}}}
 	case time.Time:
-		return types.ColumnValueWrapper{ColumnValue: &api.ColumnValue{Value: &api.ColumnValue_TimestampValue{TimestampValue: v.Format(time.RFC3339)}}}
+		return types.ColumnValueWrapper{ColumnValue: &proto.ColumnValue{Value: &proto.ColumnValue_TimestampValue{TimestampValue: v.Format(time.RFC3339)}}}
 	default:
 		// For any other type, convert to string
-		return types.ColumnValueWrapper{ColumnValue: &api.ColumnValue{Value: &api.ColumnValue_StringValue{StringValue: fmt.Sprint(v)}}}
+		return types.ColumnValueWrapper{ColumnValue: &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: fmt.Sprint(v)}}}
 	}
 }
 
