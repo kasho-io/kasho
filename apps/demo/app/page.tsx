@@ -68,7 +68,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-base-200 relative">
+    <div className="min-h-screen flex flex-col bg-base-200 relative pt-14 sm:pt-0">
       {/* Mobile: centered, above everything */}
       <div className="fixed top-0 left-0 w-full flex justify-center z-20 sm:hidden bg-base-200 pt-2 pb-2">
         <Image src="/kasho-icon.png" alt="Kasho Icon" width={32} height={32} />
