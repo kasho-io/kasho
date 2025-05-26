@@ -69,7 +69,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-base-200 relative">
-      <div className="absolute top-2 left-2 z-10">
+      {/* Mobile: centered, above everything */}
+      <div className="fixed top-0 left-0 w-full flex justify-center z-20 sm:hidden bg-base-200 pt-2 pb-2">
+        <Image src="/kasho-icon.png" alt="Kasho Icon" width={32} height={32} />
+      </div>
+      {/* Desktop: top-left */}
+      <div className="absolute top-2 left-2 z-10 hidden sm:block">
         <Image src="/kasho-icon.png" alt="Kasho Icon" width={32} height={32} />
       </div>
       <div className="flex-1 border-b border-base-300 bg-base-200">
