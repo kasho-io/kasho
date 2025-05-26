@@ -28,6 +28,8 @@ services:
         condition: service_healthy
       postgres-replica:
         condition: service_started
+    volumes:
+      - ./config:/app/config
 
   postgres-primary:
     image: postgres:15
