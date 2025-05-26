@@ -26,7 +26,8 @@ export default function Home() {
         href={demoUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 text-sm text-blue-400 hover:text-blue-200 font-semibold underline"
+        className="absolute left-1/2 -translate-x-1/2 text-sm text-blue-400 hover:text-blue-200 font-semibold underline"
+        style={{ bottom: '1.5rem', paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         Try the live demo &rarr;
       </a>
