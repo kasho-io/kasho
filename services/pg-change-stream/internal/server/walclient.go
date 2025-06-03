@@ -21,6 +21,10 @@ type Client struct {
 	dbURL   string
 }
 
+const (
+	maxBackoff = 30 * time.Second
+)
+
 func (c *Client) Connect(ctx context.Context) error {
 	walURL := c.dbURL
 	if !strings.Contains(walURL, "replication=database") {
@@ -113,6 +117,9 @@ func (c *Client) ConnectWithRetry(ctx context.Context) error {
 			return ctx.Err()
 		case <-time.After(backoff):
 			backoff *= 2
+			if backoff > maxBackoff {
+				backoff = maxBackoff
+			}
 		}
 	}
 }
