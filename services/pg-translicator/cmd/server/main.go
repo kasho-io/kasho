@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	dbsql "database/sql"
+	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"kasho/proto"
@@ -55,16 +55,19 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	dbConnStr := os.Getenv("REPLICA_DATABASE_URL")
-	if dbConnStr == "" {
-		log.Fatal("REPLICA_DATABASE_URL environment variable is required")
+	dbUser := os.Getenv("REPLICA_DATABASE_KASHO_USER")
+	dbPassword := os.Getenv("REPLICA_DATABASE_KASHO_PASSWORD")
+	dbHost := os.Getenv("REPLICA_DATABASE_HOST")
+	dbPort := os.Getenv("REPLICA_DATABASE_PORT")
+	dbName := os.Getenv("REPLICA_DATABASE_DB")
+
+	if dbUser == "" || dbPassword == "" || dbHost == "" || dbPort == "" || dbName == "" {
+		log.Fatal("All database environment variables (REPLICA_DATABASE_*) are required")
 	}
-	if !strings.Contains(dbConnStr, "sslmode=") {
-		if strings.Contains(dbConnStr, "?") {
-			dbConnStr += "&sslmode=disable"
-		} else {
-			dbConnStr += "?sslmode=disable"
-		}
+
+	dbConnStr := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
+	if sslMode := os.Getenv("REPLICA_DATABASE_SSLMODE"); sslMode != "" {
+		dbConnStr += fmt.Sprintf("?sslmode=%s", sslMode)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -110,11 +113,13 @@ func main() {
 		}
 	}()
 
-	serverAddr := os.Getenv("CHANGE_STREAM_ADDR")
-	if serverAddr == "" {
-		serverAddr = "pg-change-stream:8080"
+	streamHost := os.Getenv("CHANGE_STREAM_HOST")
+	streamPort := os.Getenv("CHANGE_STREAM_PORT")
+	if streamHost == "" || streamPort == "" {
+		log.Fatal("CHANGE_STREAM_HOST and CHANGE_STREAM_PORT environment variables are required")
 	}
 
+	serverAddr := fmt.Sprintf("%s:%s", streamHost, streamPort)
 	client, err := connectWithRetry(ctx, func() (*grpc.ClientConn, error) {
 		log.Printf("Connecting to change stream service ...")
 		return grpc.NewClient(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))

@@ -5,7 +5,7 @@ services:
       dockerfile: services/pg-change-stream/Dockerfile
       target: development
     ports:
-      - "${PORT:-8080}:8080"
+      - "${CHANGE_STREAM_PORT:-8080}:8080"
     env_file:
       - .env
     volumes:
@@ -38,30 +38,30 @@ services:
         condition: service_started
 
   postgres-primary:
-    image: postgres:15
+    image: postgres:17
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: primary_db
+      POSTGRES_USER: ${PRIMARY_DATABASE_SU_USER}
+      POSTGRES_PASSWORD: ${PRIMARY_DATABASE_SU_PASSWORD}
+      POSTGRES_DB: ${PRIMARY_DATABASE_DB}
     ports:
-      - "5432:5432"
+      - "5432:${PRIMARY_DATABASE_PORT:-5432}"
     volumes:
       - postgres-primary-data:/var/lib/postgresql/data
       - ./primary-init.d:/docker-entrypoint-initdb.d
-    command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
+    command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 -c listen_addresses='*'
 
   postgres-replica:
-    image: postgres:15
+    image: postgres:17
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: replica_db
+      POSTGRES_USER: ${REPLICA_DATABASE_SU_USER}
+      POSTGRES_PASSWORD: ${REPLICA_DATABASE_SU_PASSWORD}
+      POSTGRES_DB: ${REPLICA_DATABASE_DB}
     ports:
-      - "5433:5432"
+      - "5433:${REPLICA_DATABASE_PORT:-5432}"
     volumes:
       - postgres-replica-data:/var/lib/postgresql/data
       - ./replica-init.d:/docker-entrypoint-initdb.d
-    command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
+    command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 -c listen_addresses='*'
 
 volumes:
   postgres-primary-data:

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -51,9 +52,19 @@ func main() {
 		cancel()
 	}()
 
-	dbURL := os.Getenv("PRIMARY_DATABASE_URL")
-	if dbURL == "" {
-		log.Fatal("PRIMARY_DATABASE_URL environment variable is required")
+	dbUser := os.Getenv("PRIMARY_DATABASE_KASHO_USER")
+	dbPassword := os.Getenv("PRIMARY_DATABASE_KASHO_PASSWORD")
+	dbHost := os.Getenv("PRIMARY_DATABASE_HOST")
+	dbPort := os.Getenv("PRIMARY_DATABASE_PORT")
+	dbName := os.Getenv("PRIMARY_DATABASE_DB")
+
+	if dbUser == "" || dbPassword == "" || dbHost == "" || dbPort == "" || dbName == "" {
+		log.Fatal("All database environment variables (PRIMARY_DATABASE_*) are required")
+	}
+
+	dbURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
+	if sslMode := os.Getenv("PRIMARY_DATABASE_SSLMODE"); sslMode != "" {
+		dbURL += fmt.Sprintf("?sslmode=%s", sslMode)
 	}
 
 	client, err := server.NewClient(ctx, dbURL)
