@@ -1,10 +1,10 @@
 DO $do_block$
 BEGIN
-  -- Drop and recreate translicate_ddl_log table
-  IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'translicate_ddl_log') THEN
-    DROP TABLE translicate_ddl_log;
+  -- Drop and recreate kasho_ddl_log table
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'kasho_ddl_log') THEN
+    DROP TABLE kasho_ddl_log;
   END IF;
-  CREATE TABLE translicate_ddl_log (
+  CREATE TABLE kasho_ddl_log (
     id SERIAL PRIMARY KEY,
     lsn pg_lsn NOT NULL,
     ts TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -20,7 +20,7 @@ BEGIN
   AS $cleanup_func$
   BEGIN
     -- Delete entries older than 7 days
-    DELETE FROM translicate_ddl_log WHERE ts < NOW() - INTERVAL '7 days';
+    DELETE FROM kasho_ddl_log WHERE ts < NOW() - INTERVAL '7 days';
   END;
   $cleanup_func$;
 
@@ -31,7 +31,7 @@ BEGIN
   AS $trigger_func$
   BEGIN
     -- Only run cleanup every 1000 inserts to avoid performance impact
-    IF (SELECT count(*) FROM translicate_ddl_log) % 1000 = 0 THEN
+    IF (SELECT count(*) FROM kasho_ddl_log) % 1000 = 0 THEN
       PERFORM cleanup_old_ddl_logs();
     END IF;
     RETURN NEW;
@@ -40,10 +40,10 @@ BEGIN
 
   -- Drop and recreate event triggers to capture and log DDL
   IF EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'cleanup_ddl_logs_trigger') THEN
-    DROP TRIGGER cleanup_ddl_logs_trigger ON translicate_ddl_log;
+    DROP TRIGGER cleanup_ddl_logs_trigger ON kasho_ddl_log;
   END IF;
   CREATE TRIGGER cleanup_ddl_logs_trigger
-    AFTER INSERT ON translicate_ddl_log
+    AFTER INSERT ON kasho_ddl_log
     FOR EACH ROW
     EXECUTE FUNCTION trigger_cleanup_ddl_logs();
 
@@ -61,7 +61,7 @@ BEGIN
     -- Get the full SQL statement
     SELECT current_setting('ddl.command', true) INTO ddl_stmt;
 
-    INSERT INTO translicate_ddl_log(lsn, ddl, username, database)
+    INSERT INTO kasho_ddl_log(lsn, ddl, username, database)
     VALUES (current_lsn, ddl_stmt, SESSION_USER, current_database());
   END;
   $log_func$;

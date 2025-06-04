@@ -42,7 +42,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: source_db
+      POSTGRES_DB: primary_db
     ports:
       - "5432:5432"
     volumes:

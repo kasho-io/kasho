@@ -46,7 +46,7 @@ func (c *Client) Connect(ctx context.Context) error {
 	var active bool
 	var restartLSN string
 	var confirmedFlushLSN string
-	if err := conn.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM pg_replication_slots WHERE slot_name = 'translicate_slot'), active, restart_lsn, confirmed_flush_lsn FROM pg_replication_slots WHERE slot_name = 'translicate_slot'").Scan(&slotExists, &active, &restartLSN, &confirmedFlushLSN); err != nil {
+	if err := conn.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM pg_replication_slots WHERE slot_name = 'kasho_slot'), active, restart_lsn, confirmed_flush_lsn FROM pg_replication_slots WHERE slot_name = 'kasho_slot'").Scan(&slotExists, &active, &restartLSN, &confirmedFlushLSN); err != nil {
 		conn.Close(ctx)
 		return fmt.Errorf("failed to check replication slot: %w", err)
 	}
@@ -54,7 +54,7 @@ func (c *Client) Connect(ctx context.Context) error {
 
 	if !slotExists {
 		conn.Close(ctx)
-		return fmt.Errorf("replication slot 'translicate_slot' does not exist")
+		return fmt.Errorf("replication slot 'kasho_slot' does not exist")
 	}
 
 	log.Printf("Connecting to WAL database...")
@@ -72,9 +72,9 @@ func (c *Client) Connect(ctx context.Context) error {
 	}
 
 	log.Printf("Starting replication from LSN: %s", startLSN)
-	if err := pglogrepl.StartReplication(ctx, walConn.PgConn(), "translicate_slot", startLSN, pglogrepl.StartReplicationOptions{
+	if err := pglogrepl.StartReplication(ctx, walConn.PgConn(), "kasho_slot", startLSN, pglogrepl.StartReplicationOptions{
 		Mode:       pglogrepl.LogicalReplication,
-		PluginArgs: []string{"proto_version '2'", "publication_names 'translicate_pub'"},
+		PluginArgs: []string{"proto_version '2'", "publication_names 'kasho_pub'"},
 	}); err != nil {
 		conn.Close(ctx)
 		walConn.Close(ctx)

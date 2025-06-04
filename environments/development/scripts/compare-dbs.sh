@@ -10,7 +10,7 @@ PRIMARY_DUMP="$TEMP_DIR/primary_dump.sql"
 REPLICA_DUMP="$TEMP_DIR/replica_dump.sql"
 
 echo "📥 Dumping users table schema from primary database..."
-docker exec -i development-postgres-primary-1 pg_dump -U postgres -d source_db --no-owner --no-acl --schema-only -t users > "$PRIMARY_DUMP"
+docker exec -i development-postgres-primary-1 pg_dump -U postgres -d primary_db --no-owner --no-acl --schema-only -t users > "$PRIMARY_DUMP"
 
 echo "📥 Dumping users table schema from replica database..."
 docker exec -i development-postgres-replica-1 pg_dump -U postgres -d replica_db --no-owner --no-acl --schema-only -t users > "$REPLICA_DUMP"
@@ -26,7 +26,7 @@ fi
 
 # Now compare data
 echo "📥 Dumping users table data from primary database..."
-docker exec -i development-postgres-primary-1 pg_dump -U postgres -d source_db --no-owner --no-acl --data-only --inserts --column-inserts -t users | sort > "$PRIMARY_DUMP"
+docker exec -i development-postgres-primary-1 pg_dump -U postgres -d primary_db --no-owner --no-acl --data-only --inserts --column-inserts -t users | sort > "$PRIMARY_DUMP"
 
 echo "📥 Dumping users table data from replica database..."
 docker exec -i development-postgres-replica-1 pg_dump -U postgres -d replica_db --no-owner --no-acl --data-only --inserts --column-inserts -t users | sort > "$REPLICA_DUMP"

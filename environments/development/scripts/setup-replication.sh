@@ -19,9 +19,9 @@ if [ ! -f "$SQL_DIR/20-setup-replication-slot.sql" ]; then
 fi
 
 echo "Setting up DDL replication log..."
-cat "$SQL_DIR/10-setup-ddl-replication-log.sql" | docker exec -i development-postgres-primary-1 psql -U postgres -d source_db
+cat "$SQL_DIR/10-setup-ddl-replication-log.sql" | docker exec -i development-postgres-primary-1 psql -U postgres -d primary_db
 
 echo "Setting up replication slot..."
-cat "$SQL_DIR/20-setup-replication-slot.sql" | docker exec -i development-postgres-primary-1 psql -U postgres -d source_db
+cat "$SQL_DIR/20-setup-replication-slot.sql" | docker exec -i development-postgres-primary-1 psql -U postgres -d primary_db
 
 echo "Replication setup complete!" 

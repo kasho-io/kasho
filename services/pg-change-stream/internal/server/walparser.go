@@ -155,7 +155,7 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]types.Change, error) {
 		}
 
 		tableName := fmt.Sprintf("%s.%s", rel.Namespace, rel.RelationName)
-		if tableName == "public.translicate_ddl_log" {
+		if tableName == "public.kasho_ddl_log" {
 			ddl := types.DDLData{}
 			for i, col := range rel.Columns {
 				if i < len(v.Tuple.Columns) {
