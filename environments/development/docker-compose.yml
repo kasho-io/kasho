@@ -11,6 +11,7 @@ services:
     volumes:
       - ../../services/pg-change-stream:/app/services/pg-change-stream
       - ../../proto:/app/proto
+      - redis-data:/data/redis
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "8080"]
       interval: 5s
@@ -66,4 +67,6 @@ volumes:
   postgres-primary-data:
     driver: local
   postgres-replica-data:
+    driver: local
+  redis-data:
     driver: local 

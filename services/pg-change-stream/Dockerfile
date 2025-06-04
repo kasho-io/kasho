@@ -13,7 +13,7 @@ RUN go mod download
 WORKDIR /app/services/pg-change-stream
 COPY environments/development/.air.toml /app/.air.toml
 ENV KV_URL=redis://127.0.0.1:6379
-CMD ["sh", "-c", "redis-server --daemonize no --protected-mode no --logfile /dev/stdout & sleep 2 && air -c /app/.air.toml"]
+CMD ["sh", "-c", "mkdir -p /data/redis && redis-server --daemonize no --protected-mode no --logfile /dev/stdout --dir /data/redis --dbfilename redis.rdb & sleep 2 && air -c /app/.air.toml"]
 
 FROM alpine:latest AS production
 WORKDIR /app
@@ -21,4 +21,4 @@ COPY --from=builder /pg-change-stream .
 RUN apk add --no-cache redis
 EXPOSE 8080
 ENV KV_URL=redis://127.0.0.1:6379
-CMD ["sh", "-c", "redis-server --daemonize no --protected-mode no --logfile /dev/stdout & sleep 2 && ./pg-change-stream"] 
+CMD ["sh", "-c", "mkdir -p /data/redis && redis-server --daemonize no --protected-mode no --logfile /dev/stdout --dir /data/redis --dbfilename redis.rdb & sleep 2 && ./pg-change-stream"] 
