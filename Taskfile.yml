@@ -31,12 +31,12 @@ tasks:
   dev-setup-replication:
     desc: Setup replication for the development environment
     cmds:
-      - cd environments/development && ./scripts/setup-replication.sh
+      - ./scripts/setup-replication.sh
 
   dev-setup-data:
     desc: Setup fake SaaS data for the development environment
     cmds:
-      - cd environments/development && ./scripts/demo-fake-projmgmt-saas.sh
+      - ./scripts/demo-fake-projmgmt-saas.sh
 
   gen-fake-saas-data:
     desc: Generate fake SaaSdata for the demo environment
