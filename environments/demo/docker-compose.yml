@@ -1,4 +1,21 @@
 services:
+  init-sql-templates:
+    image: golang:1.24
+    volumes:
+      - ../../tools:/app/tools
+      - ./:/app/environments/demo
+    working_dir: /app
+    env_file:
+      - .env
+    environment:
+      - ENV=demo
+    command: >
+      sh -c "
+        cd /app/tools/env-template &&
+        go build -o /app/tools/env-template/env-template &&
+        /app/tools/env-template/env-template --dirs '/app/environments/demo/primary-init.d,/app/environments/demo/replica-init.d'
+      "
+
   pg-change-stream:
     build: 
       context: ../..
@@ -45,6 +62,9 @@ services:
       - postgres-primary-data:/var/lib/postgresql/data
       - ./primary-init.d:/docker-entrypoint-initdb.d
     command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 -c listen_addresses='*'
+    depends_on:
+      init-sql-templates:
+        condition: service_completed_successfully
 
   postgres-replica:
     image: postgres:17
@@ -58,6 +78,9 @@ services:
       - postgres-replica-data:/var/lib/postgresql/data
       - ./replica-init.d:/docker-entrypoint-initdb.d
     command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 -c listen_addresses='*'
+    depends_on:
+      init-sql-templates:
+        condition: service_completed_successfully
 
 volumes:
   postgres-primary-data:

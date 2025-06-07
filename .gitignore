@@ -22,4 +22,7 @@ venv/
 docker-compose.override.yml
 
 # Project specific
-**/tmp/ 
+**/tmp/
+
+environments/**/primary-init.d/10-replication-role.sql
+environments/**/replica-init.d/10-replication-role.sql
