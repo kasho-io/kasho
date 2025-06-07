@@ -61,20 +61,29 @@ func main() {
 			continue
 		}
 
-		// Find all .template files
-		files, err := filepath.Glob(filepath.Join(dir, "*.template"))
+		var templateFiles []string
+		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() && strings.HasSuffix(path, ".template") {
+				templateFiles = append(templateFiles, path)
+			}
+			return nil
+		})
+
 		if err != nil {
-			fmt.Printf("Error finding templates in %s: %v\n", dir, err)
+			fmt.Printf("Error walking directory %s: %v\n", dir, err)
 			continue
 		}
 
-		if len(files) == 0 {
+		if len(templateFiles) == 0 {
 			fmt.Printf("No template files found in %s\n", dir)
 			continue
 		}
 
 		// Process each template file
-		for _, file := range files {
+		for _, file := range templateFiles {
 			if err := processTemplate(file, envMap); err != nil {
 				fmt.Printf("Error processing %s: %v\n", file, err)
 			}

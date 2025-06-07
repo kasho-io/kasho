@@ -26,3 +26,4 @@ docker-compose.override.yml
 
 environments/**/primary-init.d/10-replication-role.sql
 environments/**/replica-init.d/10-replication-role.sql
+tools/env-template/env-template
