@@ -3,7 +3,8 @@ services:
     image: golang:1.24
     volumes:
       - ../../tools:/app/tools
-      - ./:/app/environments/development
+      - ./primary-init.d:/app/primary-init.d
+      - ./replica-init.d:/app/replica-init.d
     working_dir: /app
     env_file:
       - .env
@@ -13,7 +14,7 @@ services:
       sh -c "
         cd /app/tools/env-template &&
         go build -o /app/tools/env-template/env-template &&
-        /app/tools/env-template/env-template --dirs '/app/environments/development/primary-init.d,/app/environments/development/replica-init.d'
+        /app/tools/env-template/env-template --dirs '/app/primary-init.d,/app/replica-init.d'
       "
 
   pg-change-stream:

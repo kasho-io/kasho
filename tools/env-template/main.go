@@ -66,7 +66,10 @@ func main() {
 			if err != nil {
 				return err
 			}
-			if !info.IsDir() && strings.HasSuffix(path, ".template") {
+			if info.IsDir() {
+				return nil
+			}
+			if strings.HasSuffix(path, ".template") {
 				templateFiles = append(templateFiles, path)
 			}
 			return nil
