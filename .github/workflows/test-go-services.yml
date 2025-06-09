@@ -32,9 +32,12 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum', 'go.work', 'go.work.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+
+      - name: Sync Go workspace
+        run: go work sync
 
       - name: Download dependencies
         run: go mod download
