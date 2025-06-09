@@ -11,7 +11,20 @@ on:
       - '.github/workflows/deploy-demo.yml'
 
 jobs:
+  # Wait for tests to complete before deploying
+  wait-for-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for test workflow
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: 'test-summary'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+
   deploy:
+    needs: wait-for-tests
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to DigitalOcean

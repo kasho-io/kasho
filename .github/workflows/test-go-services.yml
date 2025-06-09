@@ -1,0 +1,91 @@
+name: Test Go Services
+
+on:
+  workflow_call:
+
+jobs:
+  test-go-services:
+    runs-on: ubuntu-latest
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+          
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+        working-directory: .
+
+      - name: Verify Go modules
+        run: go mod verify
+        working-directory: .
+
+      - name: Install Task
+        run: |
+          curl -sL https://taskfile.dev/install.sh | sh
+          sudo mv ./bin/task /usr/local/bin/task
+
+      - name: Run linting
+        run: task lint:go
+
+      - name: Run Go service tests
+        run: task ci:test:go
+        env:
+          REDIS_URL: redis://localhost:6379
+
+      - name: Generate coverage report
+        run: |
+          # Combine coverage from all services
+          echo "mode: atomic" > combined-coverage.out
+          for service in services/pg-change-stream services/pg-translicator proto/kasho/proto; do
+            if [ -f "$service/coverage.out" ]; then
+              tail -n +2 "$service/coverage.out" >> combined-coverage.out
+            fi
+          done
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./combined-coverage.out
+          flags: go-services
+          name: go-services-coverage
+
+      - name: Check test coverage
+        run: |
+          coverage=$(go tool cover -func=combined-coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          echo "Total coverage: ${coverage}%"
+          # Fail if coverage is below threshold (adjust as needed)
+          if (( $(echo "$coverage < 70" | bc -l) )); then
+            echo "Coverage is below 70%. Current: ${coverage}%"
+            exit 1
+          fi
+
+      - name: Run integration tests
+        run: |
+          # Add integration tests here that might require multiple services
+          echo "Running integration tests..."
+          # Example: test gRPC communication between services

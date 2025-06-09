@@ -21,6 +21,11 @@ venv/
 # Docker
 docker-compose.override.yml
 
+# Testing
+coverage.out
+*.coverprofile
+combined-coverage.out
+
 # Project specific
 **/tmp/
 
