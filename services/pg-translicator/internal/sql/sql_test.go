@@ -258,3 +258,85 @@ func TestToSQL(t *testing.T) {
 		})
 	}
 }
+
+// TestToSQL_ComplexScenarios tests more complex SQL generation scenarios
+func TestToSQL_ComplexScenarios(t *testing.T) {
+	tests := []struct {
+		name    string
+		change  *proto.Change
+		wantSQL string
+		wantErr bool
+	}{
+		{
+			name: "update with composite primary key",
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
+						Table:       "user_roles",
+						ColumnNames: []string{"role_name", "permissions"},
+						ColumnValues: []*proto.ColumnValue{
+							{Value: &proto.ColumnValue_StringValue{StringValue: "admin"}},
+							{Value: &proto.ColumnValue_StringValue{StringValue: "read,write,delete"}},
+						},
+						Kind: "update",
+						OldKeys: &proto.OldKeys{
+							KeyNames: []string{"user_id", "org_id"},
+							KeyValues: []*proto.ColumnValue{
+								{Value: &proto.ColumnValue_IntValue{IntValue: 123}},
+								{Value: &proto.ColumnValue_IntValue{IntValue: 456}},
+							},
+						},
+					},
+				},
+			},
+			wantSQL: "UPDATE user_roles SET role_name = 'admin', permissions = 'read,write,delete' WHERE user_id = 123 AND org_id = 456;",
+			wantErr: false,
+		},
+		{
+			name: "string with single quotes",
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
+						Table:       "users",
+						ColumnNames: []string{"name", "bio"},
+						ColumnValues: []*proto.ColumnValue{
+							{Value: &proto.ColumnValue_StringValue{StringValue: "O'Connor"}},
+							{Value: &proto.ColumnValue_StringValue{StringValue: "He said 'Hello World'"}},
+						},
+						Kind: "insert",
+					},
+				},
+			},
+			wantSQL: "INSERT INTO users (name, bio) VALUES ('O''Connor', 'He said ''Hello World''');",
+			wantErr: false,
+		},
+		{
+			name: "unknown DML kind error",
+			change: &proto.Change{
+				Data: &proto.Change_Dml{
+					Dml: &proto.DMLData{
+						Table: "users",
+						Kind:  "merge", // unsupported operation
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ToSQL(tt.change)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ToSQL() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err != nil {
+				return
+			}
+			if got != tt.wantSQL {
+				t.Errorf("ToSQL() = %v, want %v", got, tt.wantSQL)
+			}
+		})
+	}
+}
