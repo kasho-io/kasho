@@ -58,4 +58,12 @@ jobs:
             EOL
             
             docker compose down -v
-            docker compose up --build -d 
+            docker compose up --build -d
+            
+            # Wait for services to be ready
+            sleep 10
+            
+            # Run setup scripts
+            cd ../..
+            ./scripts/setup-replication.sh demo
+            ./scripts/demo-fake-projmgmt-saas.sh demo 
