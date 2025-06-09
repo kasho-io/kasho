@@ -135,8 +135,15 @@ type TableConfig map[string]TransformType
 
 // Config represents the entire configuration
 type Config struct {
-	Tables map[string]TableConfig `yaml:"tables"`
+	Version string                   `yaml:"version"`
+	Tables  map[string]TableConfig `yaml:"tables"`
 }
+
+// Supported configuration versions
+const (
+	ConfigVersionV1 = "v1"
+	CurrentVersion  = ConfigVersionV1
+)
 
 // LoadConfig loads the configuration from a YAML file
 func LoadConfig(path string) (*Config, error) {
@@ -150,7 +157,30 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
+	// Handle version validation and migration
+	if err := validateAndMigrateConfig(&config); err != nil {
+		return nil, fmt.Errorf("config validation failed: %w", err)
+	}
+
 	return &config, nil
+}
+
+// validateAndMigrateConfig validates the config version and handles migrations
+func validateAndMigrateConfig(config *Config) error {
+	// Handle legacy configs without version field (assume v1)
+	if config.Version == "" {
+		fmt.Printf("Warning: No version specified in config, assuming %s\n", ConfigVersionV1)
+		config.Version = ConfigVersionV1
+	}
+
+	switch config.Version {
+	case ConfigVersionV1:
+		// Current version, no migration needed
+		return nil
+	default:
+		return fmt.Errorf("unsupported config version: %s (supported: %s)", 
+			config.Version, ConfigVersionV1)
+	}
 }
 
 // GetFakeValue generates a fake value for a given table, column, and original value

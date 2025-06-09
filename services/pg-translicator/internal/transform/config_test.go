@@ -9,6 +9,7 @@ import (
 
 func TestGetFakeValue(t *testing.T) {
 	config := &Config{
+		Version: ConfigVersionV1,
 		Tables: map[string]TableConfig{
 			"users": {
 				"name":  Name,
@@ -145,6 +146,59 @@ func TestGetTransformFunction(t *testing.T) {
 
 			if got == nil {
 				t.Error("GetTransformFunction() returned nil function")
+			}
+		})
+	}
+}
+
+func TestValidateAndMigrateConfig(t *testing.T) {
+	tests := []struct {
+		name      string
+		config    *Config
+		wantError bool
+	}{
+		{
+			name: "valid v1 config",
+			config: &Config{
+				Version: ConfigVersionV1,
+				Tables: map[string]TableConfig{
+					"users": {"name": Name},
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "config without version (legacy)",
+			config: &Config{
+				Tables: map[string]TableConfig{
+					"users": {"name": Name},
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "unsupported version",
+			config: &Config{
+				Version: "v2",
+				Tables: map[string]TableConfig{
+					"users": {"name": Name},
+				},
+			},
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateAndMigrateConfig(tt.config)
+			if (err != nil) != tt.wantError {
+				t.Errorf("validateAndMigrateConfig() error = %v, wantError %v", err, tt.wantError)
+				return
+			}
+
+			// For legacy configs, ensure version was set to v1
+			if tt.name == "config without version (legacy)" && tt.config.Version != ConfigVersionV1 {
+				t.Errorf("Expected version to be set to %s for legacy config, got %s", ConfigVersionV1, tt.config.Version)
 			}
 		})
 	}
