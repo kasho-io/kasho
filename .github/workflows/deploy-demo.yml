@@ -1,0 +1,61 @@
+name: Deploy Demo Environment
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'environments/demo/**'
+      - 'tools/**'
+      - 'services/**'
+      - '.github/workflows/deploy-demo.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to DigitalOcean
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USERNAME }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd ~
+            if [ ! -d "kasho" ]; then
+              git clone ${{ secrets.REPO_URL }} kasho
+            fi
+            cd kasho
+            git fetch --all
+            git reset --hard origin/main
+            git pull -f
+            
+            cd environments/demo
+            
+            # Create .env file from secrets
+            cat > .env << EOL
+            CHANGE_STREAM_HOST=${{ secrets.CHANGE_STREAM_HOST }}
+            CHANGE_STREAM_PORT=${{ secrets.CHANGE_STREAM_PORT }}
+            TRANSFORM_CONFIG_FILE=${{ secrets.TRANSFORM_CONFIG_FILE }}
+            
+            PRIMARY_DATABASE_SU_USER=${{ secrets.PRIMARY_DATABASE_SU_USER }}
+            PRIMARY_DATABASE_SU_PASSWORD=${{ secrets.PRIMARY_DATABASE_SU_PASSWORD }}
+            PRIMARY_DATABASE_KASHO_USER=${{ secrets.PRIMARY_DATABASE_KASHO_USER }}
+            PRIMARY_DATABASE_KASHO_PASSWORD=${{ secrets.PRIMARY_DATABASE_KASHO_PASSWORD }}
+            PRIMARY_DATABASE_HOST=${{ secrets.PRIMARY_DATABASE_HOST }}
+            PRIMARY_DATABASE_PORT=${{ secrets.PRIMARY_DATABASE_PORT }}
+            PRIMARY_DATABASE_DB=${{ secrets.PRIMARY_DATABASE_DB }}
+            PRIMARY_DATABASE_SSLMODE=${{ secrets.PRIMARY_DATABASE_SSLMODE }}
+            
+            REPLICA_DATABASE_SU_USER=${{ secrets.REPLICA_DATABASE_SU_USER }}
+            REPLICA_DATABASE_SU_PASSWORD=${{ secrets.REPLICA_DATABASE_SU_PASSWORD }}
+            REPLICA_DATABASE_KASHO_USER=${{ secrets.REPLICA_DATABASE_KASHO_USER }}
+            REPLICA_DATABASE_KASHO_PASSWORD=${{ secrets.REPLICA_DATABASE_KASHO_PASSWORD }}
+            REPLICA_DATABASE_HOST=${{ secrets.REPLICA_DATABASE_HOST }}
+            REPLICA_DATABASE_PORT=${{ secrets.REPLICA_DATABASE_PORT }}
+            REPLICA_DATABASE_DB=${{ secrets.REPLICA_DATABASE_DB }}
+            REPLICA_DATABASE_SSLMODE=${{ secrets.REPLICA_DATABASE_SSLMODE }}
+            EOL
+            
+            docker compose down -v
+            docker compose up --build -d 
