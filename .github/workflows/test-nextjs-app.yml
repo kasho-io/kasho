@@ -1,0 +1,62 @@
+name: Test Next.js App
+
+on:
+  workflow_call:
+    inputs:
+      app-directory:
+        required: true
+        type: string
+        description: 'Directory of the Next.js app (e.g., apps/demo)'
+      app-name:
+        required: true
+        type: string
+        description: 'Name of the app (e.g., demo)'
+
+jobs:
+  test-nextjs-app:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ${{ inputs.app-directory }}/package-lock.json
+
+      - name: Install Task
+        run: |
+          curl -sL https://taskfile.dev/install.sh | sh
+          sudo mv ./bin/task /usr/local/bin/task
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ${{ inputs.app-directory }}
+
+      - name: Run tests
+        run: task test:app-${{ inputs.app-name }}
+
+      - name: Build application
+        run: npm run build
+        working-directory: ${{ inputs.app-directory }}
+        env:
+          NODE_ENV: production
+
+      - name: Check build output
+        run: |
+          if [ ! -d ".next" ]; then
+            echo "Build failed - .next directory not found"
+            exit 1
+          fi
+          echo "Build successful for ${{ inputs.app-name }}"
+        working-directory: ${{ inputs.app-directory }}
+
+      - name: Upload build artifacts (optional)
+        uses: actions/upload-artifact@v3
+        if: success()
+        with:
+          name: ${{ inputs.app-name }}-build
+          path: ${{ inputs.app-directory }}/.next
+          retention-days: 1

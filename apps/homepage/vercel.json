@@ -1,0 +1,6 @@
+{
+  "buildCommand": "../../scripts/vercel-build-check.sh",
+  "devCommand": "npm run dev", 
+  "installCommand": "npm ci",
+  "framework": "nextjs"
+}

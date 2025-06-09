@@ -12,11 +12,61 @@ tasks:
       - protoc --go_out=proto/kasho --go_opt=paths=source_relative --go-grpc_out=proto/kasho --go-grpc_opt=paths=source_relative proto/change_stream.proto
 
   test:
-    desc: Run tests for all services
+    desc: Run all tests (Go services + Next.js apps)
+    deps: [test:go, test:apps]
+    cmds:
+      - echo "✅ All tests passed!"
+
+  test:go:
+    desc: Run tests for all Go services
     deps: [proto]
     cmds:
-      - cd services/pg-change-stream && go test ./... 
-      - cd services/pg-translicator && go test ./...
+      - task: test:pg-change-stream
+      - task: test:pg-translicator
+      - task: test:proto
+
+  test:pg-change-stream:
+    desc: Run tests for pg-change-stream service
+    dir: services/pg-change-stream
+    cmds:
+      - echo "🧪 Testing pg-change-stream..."
+      - go test -v -race -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out
+
+  test:pg-translicator:
+    desc: Run tests for pg-translicator service
+    dir: services/pg-translicator
+    cmds:
+      - echo "🧪 Testing pg-translicator..."
+      - go test -v -race -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out
+
+  test:proto:
+    desc: Test proto package (validates compilation)
+    dir: proto/kasho/proto
+    cmds:
+      - echo "🧪 Testing proto package..."
+      - go test -v -race .
+
+  test:apps:
+    desc: Run tests for all Next.js apps
+    cmds:
+      - task: test:app-demo
+      - task: test:app-homepage
+
+  test:app-demo:
+    desc: Run tests for demo app
+    dir: apps/demo
+    cmds:
+      - echo "🧪 Testing demo app..."
+      - npm run test
+
+  test:app-homepage:
+    desc: Run tests for homepage app
+    dir: apps/homepage
+    cmds:
+      - echo "🧪 Testing homepage app..."
+      - npm run test
 
   dev:
     desc: Start development environment
@@ -52,6 +102,60 @@ tasks:
     desc: Start the homepage app
     cmds:
       - cd apps/homepage && npm run dev
+
+  # Lint tasks
+  lint:
+    desc: Run linting for all code
+    cmds:
+      - task: lint:go
+      - task: lint:apps
+
+  lint:go:
+    desc: Run linting for Go services
+    cmds:
+      - echo "🔍 Linting Go code..."
+      - go vet ./...
+
+  lint:apps:
+    desc: Run linting for Next.js apps
+    cmds:
+      - task: lint:app-demo
+      - task: lint:app-homepage
+
+  lint:app-demo:
+    desc: Lint demo app
+    dir: apps/demo
+    cmds:
+      - echo "🔍 Linting demo app..."
+      - npm run lint
+
+  lint:app-homepage:
+    desc: Lint homepage app
+    dir: apps/homepage
+    cmds:
+      - echo "🔍 Linting homepage app..."
+      - npm run lint
+
+  # CI tasks (what CI/CD uses)
+  ci:test:
+    desc: Run tests with CI-specific options
+    deps: [proto]
+    cmds:
+      - task: ci:test:go
+      - task: ci:test:apps
+
+  ci:test:go:
+    desc: Run Go tests with coverage for CI
+    cmds:
+      - cd services/pg-change-stream && go test -v -race -coverprofile=coverage.out ./...
+      - cd services/pg-translicator && go test -v -race -coverprofile=coverage.out ./...
+      - cd proto/kasho/proto && go test -v -race -coverprofile=coverage.out .
+
+  ci:test:apps:
+    desc: Run Next.js app tests for CI
+    cmds:
+      - cd apps/demo && npm ci && npm run test:ci
+      - cd apps/homepage && npm ci && npm run test:ci
 
   gen-sql-init-files:
     desc: Substitute environment variables in SQL templates for a given environment

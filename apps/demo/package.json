@@ -6,7 +6,9 @@
     "dev": "next dev --port 4000 --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "npm run lint && npx tsc --noEmit",
+    "test:ci": "npm run test"
   },
   "dependencies": {
     "@types/pg": "^8.15.2",

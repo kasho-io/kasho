@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "npm run lint && npx tsc --noEmit",
+    "test:ci": "npm run test"
   },
   "dependencies": {
     "daisyui": "^5.0.37",
