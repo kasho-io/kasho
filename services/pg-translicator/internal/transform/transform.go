@@ -122,7 +122,7 @@ func TransformState(original string) string {
 
 func TransformStateAbbr(original string) string {
 	seed(original)
-	return gofakeit.Address().State
+	return gofakeit.StateAbr()
 }
 
 func TransformZip(original string) string {
