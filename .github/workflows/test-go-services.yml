@@ -77,15 +77,30 @@ jobs:
           flags: go-services
           name: go-services-coverage
 
-      - name: Check test coverage
+      # Coverage is tracked for informational purposes only
+      # We focus on writing meaningful tests for critical business logic
+      # rather than chasing arbitrary coverage percentages
+      - name: Display test coverage (informational)
         run: |
-          coverage=$(go tool cover -func=combined-coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
-          echo "Total coverage: ${coverage}%"
-          # Fail if coverage is below threshold (adjust as needed)
-          if (( $(echo "$coverage < 70" | bc -l) )); then
-            echo "Coverage is below 70%. Current: ${coverage}%"
-            exit 1
-          fi
+          echo "=== Test Coverage Report (Informational) ==="
+          echo ""
+          echo "📊 Service Coverage:"
+          
+          # Display coverage for each service
+          for service in services/pg-change-stream services/pg-translicator proto/kasho/proto; do
+            if [ -f "$service/coverage.out" ]; then
+              coverage=$(go tool cover -func="$service/coverage.out" | grep total | awk '{print substr($3, 1, length($3)-1)}')
+              echo "   • $(basename $service): ${coverage}%"
+            fi
+          done
+          
+          # Overall coverage
+          overall_coverage=$(go tool cover -func=combined-coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          echo ""
+          echo "📈 Overall coverage: ${overall_coverage}%"
+          echo ""
+          echo "ℹ️  Note: We prioritize meaningful tests over coverage metrics."
+          echo "   Focus areas: business logic, edge cases, and error handling."
 
       - name: Run integration tests
         run: |

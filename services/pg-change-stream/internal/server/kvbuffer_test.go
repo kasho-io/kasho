@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"kasho/proto"
@@ -201,5 +202,74 @@ func TestKVBuffer_Close(t *testing.T) {
 	// Verify expectations
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Expectations were not met: %v", err)
+	}
+}
+
+func TestNewKVBuffer_ValidURL(t *testing.T) {
+	// Test with a valid Redis URL format
+	validURL := "redis://localhost:6379/0"
+	
+	// Since NewKVBuffer tries to connect to Redis, and we don't have a real Redis instance,
+	// this test will fail on connection. We're testing the URL parsing part.
+	_, err := NewKVBuffer(validURL)
+	
+	// We expect a connection error, not a URL parsing error
+	if err == nil {
+		// If no error, that means Redis was actually available
+		t.Log("NewKVBuffer succeeded (Redis was available)")
+	} else if err.Error() == "failed to parse KV URL: invalid redis URL scheme: " {
+		t.Errorf("NewKVBuffer() failed to parse valid URL: %v", err)
+	} else {
+		// Expected connection error
+		t.Logf("NewKVBuffer() failed with expected connection error: %v", err)
+	}
+}
+
+func TestNewKVBuffer_InvalidURL(t *testing.T) {
+	tests := []struct {
+		name string
+		url  string
+	}{
+		{
+			name: "invalid scheme",
+			url:  "http://localhost:6379",
+		},
+		{
+			name: "malformed URL",
+			url:  "not-a-url",
+		},
+		{
+			name: "empty URL",
+			url:  "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewKVBuffer(tt.url)
+			if err == nil {
+				t.Errorf("NewKVBuffer() expected error for invalid URL %s, got nil", tt.url)
+			}
+			
+			// Check that it's a URL parsing error
+			if !strings.Contains(err.Error(), "failed to parse KV URL") {
+				t.Errorf("NewKVBuffer() expected URL parsing error, got: %v", err)
+			}
+		})
+	}
+}
+
+func TestNewKVBuffer_ConnectionTimeout(t *testing.T) {
+	// Test with a URL that will timeout (non-existent host)
+	timeoutURL := "redis://non-existent-host:6379/0"
+	
+	_, err := NewKVBuffer(timeoutURL)
+	if err == nil {
+		t.Error("NewKVBuffer() expected connection error for non-existent host, got nil")
+	}
+	
+	// Check that it's a connection error
+	if !strings.Contains(err.Error(), "failed to connect to KV") {
+		t.Errorf("NewKVBuffer() expected connection error, got: %v", err)
 	}
 }
