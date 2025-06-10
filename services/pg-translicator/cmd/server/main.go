@@ -45,9 +45,21 @@ func connectWithRetry[T any](ctx context.Context, connectFn func() (T, error)) (
 }
 
 func main() {
-	configFile := os.Getenv("TRANSFORM_CONFIG_FILE")
-	if configFile == "" {
-		log.Fatal("TRANSFORM_CONFIG_FILE environment variable is required")
+	// Use hardcoded config directory path - expects mounted /app/config directory
+	configFile := "/app/config/transforms.yml"
+	
+	// Verify config directory exists and is actually a directory
+	configDir := "/app/config"
+	if stat, err := os.Stat(configDir); os.IsNotExist(err) {
+		log.Fatal("Config directory /app/config does not exist. Please mount a config directory to /app/config")
+	} else if err != nil {
+		log.Fatalf("Error checking config directory: %v", err)
+	} else if !stat.IsDir() {
+		log.Fatal("/app/config exists but is not a directory. Please mount a config directory to /app/config")
+	}
+	
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		log.Fatal("Required config file /app/config/transforms.yml not found. Please ensure transforms.yml exists in the mounted config directory")
 	}
 
 	config, err := transform.LoadConfig(configFile)
