@@ -86,6 +86,10 @@ func (c Change) Type() string {
 	return c.Data.Type()
 }
 
+func (c Change) GetLSN() string {
+	return c.LSN
+}
+
 func (c Change) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(c.Data)
 	if err != nil {

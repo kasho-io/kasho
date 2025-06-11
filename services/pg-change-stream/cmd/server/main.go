@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	"kasho/pkg/kvbuffer"
 	"kasho/proto"
 	"pg-change-stream/internal/server"
 
@@ -25,7 +26,7 @@ func main() {
 		log.Fatal("KV_URL environment variable is required")
 	}
 
-	buffer, err := server.NewKVBuffer(kvURL)
+	buffer, err := kvbuffer.NewKVBuffer(kvURL)
 	if err != nil {
 		log.Fatalf("Failed to create KV buffer: %v", err)
 	}
@@ -94,7 +95,8 @@ func main() {
 			}
 
 			for _, change := range changes {
-				if err := buffer.AddChange(ctx, change.LSN, change); err != nil {
+				// Store change in KV buffer
+				if err := buffer.AddChange(ctx, change); err != nil {
 					log.Printf("Error storing change in KV: %v", err)
 				}
 			}
