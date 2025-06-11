@@ -39,31 +39,35 @@ kasho/
 
 ## Implementation Steps
 
-### Phase 1: Extract Shared KV Buffer Logic
+### Phase 1: Extract Shared KV Buffer Logic ✅
 
 #### Step 1.1: Create pkg directory structure ✅
-- [ ] Create `pkg/` directory at project root
-- [ ] Create `pkg/kvbuffer/` subdirectory
+- [x] Create `pkg/` directory at project root
+- [x] Create `pkg/kvbuffer/` subdirectory
 
-#### Step 1.2: Create shared kvbuffer module
-- [ ] Create `pkg/kvbuffer/go.mod` with module definition
-- [ ] Extract `KVBuffer` struct and methods from `services/pg-change-stream/internal/server/kvbuffer.go`
-- [ ] Move to `pkg/kvbuffer/buffer.go`
-- [ ] Extract and move unit tests to `pkg/kvbuffer/buffer_test.go`
-- [ ] Ensure tests pass in new location
+#### Step 1.2: Create shared kvbuffer module ✅
+- [x] Create `pkg/kvbuffer/go.mod` with module definition
+- [x] Extract `KVBuffer` struct and methods from `services/pg-change-stream/internal/server/kvbuffer.go`
+- [x] Move to `pkg/kvbuffer/buffer.go`
+- [x] Extract and move unit tests to `pkg/kvbuffer/buffer_test.go`
+- [x] Ensure tests pass in new location
+- [x] Added type-safe `Change` interface with `Type()` and `GetLSN()` methods
+- [x] Added bootstrap LSN support (format: `0/BOOTSTRAP00000001`)
+- [x] Added Subscribe method for Redis pubsub integration
 
-#### Step 1.3: Update pg-change-stream to use shared package
-- [ ] Update `services/pg-change-stream/go.mod` to reference `pkg/kvbuffer`
-- [ ] Update imports in `services/pg-change-stream/internal/server/grpc.go`
-- [ ] Update imports in `services/pg-change-stream/cmd/server/main.go`
-- [ ] Remove `services/pg-change-stream/internal/server/kvbuffer.go`
-- [ ] Remove `services/pg-change-stream/internal/server/kvbuffer_test.go`
-- [ ] Run tests to ensure pg-change-stream still works
+#### Step 1.3: Update pg-change-stream to use shared package ✅
+- [x] Update `services/pg-change-stream/go.mod` to reference `pkg/kvbuffer`
+- [x] Update imports in `services/pg-change-stream/internal/server/grpc.go`
+- [x] Update imports in `services/pg-change-stream/cmd/server/main.go`
+- [x] Remove `services/pg-change-stream/internal/server/kvbuffer.go`
+- [x] Remove `services/pg-change-stream/internal/server/kvbuffer_test.go`
+- [x] Run tests to ensure pg-change-stream still works
+- [x] Updated `types.Change` to implement `kvbuffer.Change` interface
 
-#### Step 1.4: Update workspace configuration
-- [ ] Add `./pkg/kvbuffer` to `go.work`
-- [ ] Run `go work sync` to update workspace
-- [ ] Verify all modules can resolve dependencies
+#### Step 1.4: Update workspace configuration ✅
+- [x] Add `./pkg/kvbuffer` to `go.work`
+- [x] Run `go work sync` to update workspace
+- [x] Verify all modules can resolve dependencies
 
 ### Phase 2: Create pg-bootstrap-sync CLI Tool
 
@@ -242,10 +246,11 @@ kasho/
 
 ## Checklist Summary
 
-- [ ] **Phase 1**: Extract shared KV buffer logic (4 steps)
+- [x] **Phase 1**: Extract shared KV buffer logic (4 steps) ✅
 - [ ] **Phase 2**: Create pg-bootstrap-sync CLI tool (6 steps)
 - [ ] **Phase 3**: Integration and configuration (3 steps)
 - [ ] **Phase 4**: Testing and validation (3 steps)
 - [ ] **Phase 5**: Documentation and deployment (3 steps)
 
-**Total**: 19 major steps across 5 phases
+**Total**: 19 major steps across 5 phases  
+**Completed**: 4 steps (Phase 1 complete)

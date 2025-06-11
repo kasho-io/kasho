@@ -1,6 +1,7 @@
 go 1.24.3
 
 use (
+	./pkg/kvbuffer
 	./proto/kasho/proto
 	./services/pg-change-stream
 	./services/pg-translicator

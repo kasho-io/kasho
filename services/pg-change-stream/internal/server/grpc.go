@@ -6,16 +6,17 @@ import (
 	"log"
 	"time"
 
+	"kasho/pkg/kvbuffer"
 	"kasho/proto"
 	"pg-change-stream/internal/types"
 )
 
 type ChangeStreamServer struct {
 	proto.UnimplementedChangeStreamServer
-	buffer *KVBuffer
+	buffer *kvbuffer.KVBuffer
 }
 
-func NewChangeStreamServer(buffer *KVBuffer) *ChangeStreamServer {
+func NewChangeStreamServer(buffer *kvbuffer.KVBuffer) *ChangeStreamServer {
 	return &ChangeStreamServer{
 		buffer: buffer,
 	}
@@ -24,12 +25,17 @@ func NewChangeStreamServer(buffer *KVBuffer) *ChangeStreamServer {
 func (s *ChangeStreamServer) Stream(req *proto.StreamRequest, stream proto.ChangeStream_StreamServer) error {
 	// Send buffered changes first
 	if req.LastLsn != "" {
-		changes, err := s.buffer.GetChangesAfter(stream.Context(), req.LastLsn)
+		rawChanges, err := s.buffer.GetChangesAfter(stream.Context(), req.LastLsn)
 		if err != nil {
 			return fmt.Errorf("failed to get buffered changes: %w", err)
 		}
 
-		for _, change := range changes {
+		for _, rawChange := range rawChanges {
+			var change types.Change
+			if err := json.Unmarshal(rawChange, &change); err != nil {
+				log.Printf("Error unmarshaling buffered change: %v", err)
+				continue
+			}
 			protoChange := convertToProtoChange(change)
 			if err := stream.Send(protoChange); err != nil {
 				return err
@@ -38,7 +44,7 @@ func (s *ChangeStreamServer) Stream(req *proto.StreamRequest, stream proto.Chang
 	}
 
 	// Subscribe to new changes
-	pubsub := s.buffer.client.Subscribe(stream.Context(), "pg:changes")
+	pubsub := s.buffer.Subscribe(stream.Context(), "pg:changes")
 	defer pubsub.Close()
 
 	// Keep the connection open and wait for new changes
