@@ -69,6 +69,10 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
   - Used by both pg-change-stream and pg-bootstrap-sync
   - Supports both real PostgreSQL LSNs and synthetic bootstrap LSNs
   - Provides type-safe Change interface
+- `types`: Common type definitions and utilities
+  - JSON marshaling wrappers for protobuf types
+  - Shared data structures across services
+  - Type conversion utilities for database change events
 
 ### SQL (`sql/`)
 - Scripts that will be needed to get a Postgres server ready to use kasho
