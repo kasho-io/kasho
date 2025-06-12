@@ -10,11 +10,17 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - Uses PostgreSQL's native logical replication for reliable change capture
 - Supports table creation, column additions, and other schema modifications
 
-## Plans
+## Roadmap / Ideas
 
-- Allow complex transforms on data
-  - Possibly use an LLM to help figure out what needs to be transformed
-- Support bootstrapping from an existing database with significant schema and data
+- Enhanced transformation capabilities
+  - Complex data transformation rules and filters
+  - Schema-aware transformation suggestions
+- Improved bootstrapping and migration tools
+  - Support for large existing databases
+  - Incremental synchronization capabilities
+- Monitoring and observability features
+  - Real-time replication metrics and health checks
+  - Alerting for replication lag and failures
 
 ## Components
 
@@ -39,7 +45,14 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - Docker Compose setup for local development
 - Includes PostgreSQL primary and replica databases
 - Redis for caching
-- All core services configured for development
+- All core services configured for development with hot reload
+
+#### Demo (`environments/demo/`)
+- Production-like environment for demonstration and testing
+- Uses production Docker image builds
+- Includes PostgreSQL primary and replica databases
+- All core services configured for production deployment
+- Automated deployment via GitHub Actions
 
 ### Tools (`tools/`)
 - `pg-bootstrap-sync`: CLI tool for bootstrapping replica databases from PostgreSQL dump files
@@ -69,7 +82,7 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - Shows the Kasho wordmark and a brief description.
 - To run locally:
   ```bash
-  task homepage
+  task dev:app-homepage
   ```
   (Runs on [http://localhost:3000](http://localhost:3000))
 
@@ -78,7 +91,7 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - Includes a UI for connecting to primary and replica databases, and visualizing real-time changes.
 - To run locally:
   ```bash
-  task demo
+  task dev:app-demo
   ```
   (Runs on [http://localhost:4000](http://localhost:4000))
 
@@ -128,22 +141,22 @@ cd environments/demo && docker-compose up
 
 1. Reset and start the development environment. In a dedicated terminal, run:
 ```bash
-task dev-reset
+task dev:reset
 ```
 
 2. Setup replication. In a separate terminal, run:
 ```bash
-task dev-setup-replication
+task dev:setup-replication
 ```
 
 3. Wait for the `pg-change-stream` service to connect to the primary by watching the output from the first terminal, then set up some test data. Run:
 ```bash
-task dev-setup-data
+task dev:setup-data
 ```
 
-3. Run the demo. In a separate terminal, run:
+4. Run the demo. In a separate terminal, run:
 ```bash
-task app-demo
+task dev:app-demo
 ```
 
 ## Requirements
@@ -151,7 +164,6 @@ task app-demo
 - Docker
 - Go 1.24 or later
 - Task (task runner)
-- Python 3.13 or later (for replicate-poc)
 
 ## License
 

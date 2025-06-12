@@ -239,8 +239,8 @@ task --summary test:go
 task dev
 
 # Start a specific app
-task app-demo
-task app-homepage
+task dev:app-demo
+task dev:app-homepage
 ```
 
 ### Before Pull Requests
