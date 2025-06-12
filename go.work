@@ -6,4 +6,5 @@ use (
 	./services/pg-change-stream
 	./services/pg-translicator
 	./tools/env-template
+	./tools/pg-bootstrap-sync
 )
