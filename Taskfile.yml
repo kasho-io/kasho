@@ -191,14 +191,3 @@ tasks:
     cmds:
       - cd apps/demo && npm ci && npm run test:ci
       - cd apps/homepage && npm ci && npm run test:ci
-
-  gen-sql-init-files:
-    desc: Substitute environment variables in SQL templates for a given environment
-    cmds:
-      - |
-        export $(cat environments/{{.ENV}}/.env | xargs) && \
-        tools/env-template/env-template --dirs "environments/{{.ENV}}/primary-init.d,environments/{{.ENV}}/replica-init.d"
-    vars:
-      ENV:
-        sh: 'echo ${ENV:-development}'
-    required_vars: [ENV]
