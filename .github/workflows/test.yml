@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   # Job to determine which parts of the codebase have changed
   detect-changes:
@@ -20,9 +24,12 @@ jobs:
       - uses: dorny/paths-filter@v2
         id: changes
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           filters: |
             go-services:
               - 'services/**'
+              - 'tools/**'
+              - 'pkg/**'
               - 'proto/**'
               - 'go.work'
               - 'go.work.sum'
