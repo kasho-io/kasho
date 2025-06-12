@@ -18,11 +18,14 @@ tasks:
       - echo "✅ All tests passed!"
 
   test:go:
-    desc: Run tests for all Go services
+    desc: Run tests for all Go services and packages
     deps: [proto]
     cmds:
+      - task: test:kvbuffer
       - task: test:pg-change-stream
       - task: test:pg-translicator
+      - task: test:pg-bootstrap-sync
+      - task: test:env-template
       - task: test:proto
 
   test:pg-change-stream:
@@ -40,6 +43,29 @@ tasks:
       - echo "🧪 Testing pg-translicator..."
       - go test -v -race -coverprofile=coverage.out ./...
       - go tool cover -func=coverage.out
+
+  test:kvbuffer:
+    desc: Run tests for shared kvbuffer package
+    dir: pkg/kvbuffer
+    cmds:
+      - echo "🧪 Testing kvbuffer package..."
+      - go test -v -race -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out
+
+  test:pg-bootstrap-sync:
+    desc: Run tests for pg-bootstrap-sync tool
+    dir: tools/pg-bootstrap-sync
+    cmds:
+      - echo "🧪 Testing pg-bootstrap-sync..."
+      - go test -v -race -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out
+
+  test:env-template:
+    desc: Run tests for env-template tool
+    dir: tools/env-template
+    cmds:
+      - echo "🧪 Testing env-template..."
+      - go test -v -race .
 
   test:proto:
     desc: Test proto package (validates compilation)
@@ -89,9 +115,10 @@ tasks:
       - ./scripts/demo-fake-projmgmt-saas.sh
 
   gen-fake-saas-data:
-    desc: Generate fake SaaSdata for the demo environment
+    desc: Generate fake SaaS data for the demo environment
     cmds:
       - go run tools/generate-fake-saas-data/main.go > environments/demo/sql/fake_projmgmt_saas.sql
+
 
   app-demo:
     desc: Start the demo app
@@ -111,13 +138,15 @@ tasks:
       - task: lint:apps
 
   lint:go:
-    desc: Run linting for Go services
+    desc: Run linting for Go services and packages
     cmds:
       - echo "🔍 Linting Go code..."
+      - cd pkg/kvbuffer && go vet ./...
       - cd services/pg-change-stream && go vet ./...
       - cd services/pg-translicator && go vet ./...
-      - cd proto/kasho/proto && go vet ./...
+      - cd tools/pg-bootstrap-sync && go vet ./...
       - cd tools/env-template && go vet ./...
+      - cd proto/kasho/proto && go vet ./...
 
   lint:apps:
     desc: Run linting for Next.js apps
@@ -150,8 +179,11 @@ tasks:
   ci:test:go:
     desc: Run Go tests with coverage for CI
     cmds:
+      - cd pkg/kvbuffer && go test -v -race -coverprofile=coverage.out ./...
       - cd services/pg-change-stream && go test -v -race -coverprofile=coverage.out ./...
       - cd services/pg-translicator && go test -v -race -coverprofile=coverage.out ./...
+      - cd tools/pg-bootstrap-sync && go test -v -race -coverprofile=coverage.out ./...
+      - cd tools/env-template && go test -v -race -coverprofile=coverage.out .
       - cd proto/kasho/proto && go test -v -race -coverprofile=coverage.out .
 
   ci:test:apps:

@@ -107,10 +107,10 @@ func (b *KVBuffer) GetChangesAfter(ctx context.Context, lsn string) ([]json.RawM
 
 // parseLSNToScore converts an LSN string to a float64 score for Redis sorted set
 func (b *KVBuffer) parseLSNToScore(lsn string) (float64, error) {
-	// Handle synthetic bootstrap LSNs first (e.g., "0/BOOTSTRAP00000001")
+	// Handle synthetic bootstrap LSNs first (e.g., "0/BOOTSTRAP0000000000000001")
 	if len(lsn) > 2 && lsn[:2] == "0/" && len(lsn) > 11 && lsn[2:11] == "BOOTSTRAP" {
 		var seq int64
-		if n, err := fmt.Sscanf(lsn[2:], "BOOTSTRAP%08d", &seq); n == 1 && err == nil {
+		if n, err := fmt.Sscanf(lsn[2:], "BOOTSTRAP%016d", &seq); n == 1 && err == nil {
 			// Use negative scores for bootstrap LSNs to ensure they sort before real LSNs
 			return float64(-1000000 + seq), nil
 		}
