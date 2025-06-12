@@ -24,8 +24,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/env-template ./tools/env-template
 # Development stage with hot reload
 FROM golang:1.24-alpine AS development
 
-# Install development dependencies
-RUN apk add --no-cache git ca-certificates tzdata redis
+# Install development dependencies including C compiler for CGO
+RUN apk add --no-cache git ca-certificates tzdata redis gcc musl-dev
 RUN go install github.com/air-verse/air@latest
 
 WORKDIR /app
@@ -37,9 +37,9 @@ COPY environments/development/.air.toml /app/.air.toml
 # Download dependencies
 RUN go work sync
 
-# Build essential tools that are needed immediately (like env-template for init)
+# Build essential tools that are needed immediately
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/env-template ./tools/env-template
-# Note: pg-bootstrap-sync requires CGO for pg_query_go, so it's built on-demand in development
+RUN CGO_ENABLED=1 GOOS=linux go build -o /app/pg-bootstrap-sync ./tools/pg-bootstrap-sync
 
 # Create data directory for Redis
 RUN mkdir -p /data/redis

@@ -6,6 +6,11 @@ tasks:
     cmds:
       - task --list
 
+  build:
+    desc: Build the kasho Docker image for development
+    cmds:
+      - docker build -t kasho --target development .
+
   proto:
     desc: Generate Go code from protobuf definitions
     cmds:
@@ -95,37 +100,40 @@ tasks:
       - npm run test
 
   dev:
+    desc: Start development environment (alias for dev:start)
+    deps: [dev:start]
+
+  dev:start:
     desc: Start development environment
+    deps: [build]
     cmds:
-      - cd environments/development && docker-compose up --build
+      - cd environments/development && docker-compose up
 
-  dev-reset:
+  dev:stop:
+    desc: Stop development environment and remove volumes
+    cmds:
+      - cd environments/development && docker-compose down -v
+
+  dev:reset:
     desc: Reset and restart development environment (removes volumes)
-    cmds:
-      - cd environments/development && docker-compose down -v && docker-compose up --build
+    deps: [dev:stop, dev:start]
 
-  dev-setup-replication:
+  dev:setup-replication:
     desc: Setup replication for the development environment
     cmds:
       - ./scripts/setup-replication.sh
 
-  dev-setup-data:
+  dev:setup-data:
     desc: Setup fake SaaS data for the development environment
     cmds:
       - ./scripts/demo-fake-projmgmt-saas.sh
 
-  gen-fake-saas-data:
-    desc: Generate fake SaaS data for the demo environment
-    cmds:
-      - go run tools/generate-fake-saas-data/main.go > environments/demo/sql/fake_projmgmt_saas.sql
-
-
-  app-demo:
+  dev:app-demo:
     desc: Start the demo app
     cmds:
       - cd apps/demo && npm run dev
 
-  app-homepage:
+  dev:app-homepage:
     desc: Start the homepage app
     cmds:
       - cd apps/homepage && npm run dev

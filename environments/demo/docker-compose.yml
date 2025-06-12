@@ -1,8 +1,6 @@
 services:
   init-sql-templates:
-    build:
-      context: ../..
-      target: production
+    image: kasho
     volumes:
       - ./primary-init.d:/app/primary-init.d
       - ./replica-init.d:/app/replica-init.d
@@ -13,9 +11,7 @@ services:
     command: ["./env-template", "--dirs", "/app/primary-init.d,/app/replica-init.d"]
 
   pg-change-stream:
-    build: 
-      context: ../..
-      target: production
+    image: kasho
     ports:
       - "${CHANGE_STREAM_PORT:-8080}:8080"
     env_file:
@@ -31,9 +27,7 @@ services:
       - postgres-primary
 
   pg-translicator:
-    build:
-      context: ../..
-      target: production
+    image: kasho
     command: ["./pg-translicator"]
     env_file:
       - .env
@@ -47,9 +41,7 @@ services:
 
   # Bootstrap sync tool (run manually with: docker-compose run --rm pg-bootstrap-sync)
   pg-bootstrap-sync:
-    build:
-      context: ../..
-      target: production
+    image: kasho
     command: [
       "./pg-bootstrap-sync",
       "--help"
