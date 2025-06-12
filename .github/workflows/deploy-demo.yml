@@ -54,6 +54,9 @@ jobs:
             git reset --hard origin/main
             git pull -f
             
+            # Build the kasho image for production
+            docker build -t kasho --target production .
+            
             cd environments/demo
             
             # Create .env file from secrets
