@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"kasho/pkg/kvbuffer"
-	"kasho/proto"
+	"kasho/pkg/types"
 	"pg-bootstrap-sync/internal/converter"
 	"pg-bootstrap-sync/internal/parser"
 )
@@ -124,7 +124,7 @@ func (b *Bootstrapper) Bootstrap(ctx context.Context) error {
 	// Update final statistics
 	b.stats.EndTime = time.Now()
 	if len(changes) > 0 {
-		b.stats.LastLSN = changes[len(changes)-1].Lsn
+		b.stats.LastLSN = changes[len(changes)-1].LSN
 	}
 	b.stats.TablesProcessed = parseResult.Metadata.TablesFound
 	b.stats.DDLCount = parseResult.Metadata.DDLCount
@@ -135,7 +135,7 @@ func (b *Bootstrapper) Bootstrap(ctx context.Context) error {
 }
 
 // storeChanges stores changes in the KV buffer with progress tracking
-func (b *Bootstrapper) storeChanges(ctx context.Context, changes []*proto.Change) error {
+func (b *Bootstrapper) storeChanges(ctx context.Context, changes []*types.Change) error {
 	batchSize := b.config.BatchSize
 	if batchSize <= 0 {
 		batchSize = 1000 // Default batch size
@@ -155,13 +155,13 @@ func (b *Bootstrapper) storeChanges(ctx context.Context, changes []*proto.Change
 		default:
 		}
 
-		// Store the change
-		err := b.kvBuffer.AddChange(ctx, &BootstrapChange{change})
+		// Store the change directly (no conversion needed)
+		err := b.kvBuffer.AddChange(ctx, change)
 		if err != nil {
 			b.stats.ErrorsEncountered++
 			slog.Error("Failed to store change",
 				"change_index", i+1,
-				"lsn", change.Lsn,
+				"lsn", change.LSN,
 				"error", err)
 			continue
 		}
@@ -240,17 +240,5 @@ func (b *Bootstrapper) Close() error {
 	return nil
 }
 
-// BootstrapChange wraps a proto.Change to implement the kvbuffer.Change interface
-type BootstrapChange struct {
-	*proto.Change
-}
 
-// Type implements kvbuffer.Change interface
-func (bc *BootstrapChange) Type() string {
-	return bc.Change.Type
-}
 
-// GetLSN implements kvbuffer.Change interface  
-func (bc *BootstrapChange) GetLSN() string {
-	return bc.Change.Lsn
-}

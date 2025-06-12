@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"kasho/pkg/types"
 	"kasho/proto"
 	"pg-bootstrap-sync/internal/parser"
 )
@@ -25,8 +26,8 @@ func NewChangeConverter() *ChangeConverter {
 }
 
 // ConvertStatements converts a list of parsed statements to Change objects
-func (c *ChangeConverter) ConvertStatements(statements []parser.Statement) ([]*proto.Change, error) {
-	changes := make([]*proto.Change, 0, len(statements))
+func (c *ChangeConverter) ConvertStatements(statements []parser.Statement) ([]*types.Change, error) {
+	changes := make([]*types.Change, 0, len(statements))
 
 	for _, stmt := range statements {
 		switch s := stmt.(type) {
@@ -55,31 +56,28 @@ func (c *ChangeConverter) ConvertStatements(statements []parser.Statement) ([]*p
 }
 
 // convertDDLStatement converts a DDL statement to a Change object
-func (c *ChangeConverter) convertDDLStatement(stmt parser.DDLStatement) (*proto.Change, error) {
+func (c *ChangeConverter) convertDDLStatement(stmt parser.DDLStatement) (*types.Change, error) {
 	lsn := c.lsnGenerator.Next()
 
-	ddlData := &proto.DDLData{
-		Id:       int32(c.lsnGenerator.GetSequence()), // Use sequence as ID
-		Time:     stmt.Time.Format(time.RFC3339),
+	ddlData := &types.DDLData{
+		ID:       int(c.lsnGenerator.GetSequence()), // Use sequence as ID
+		Time:     stmt.Time,
 		Username: "bootstrap", // Bootstrap user
 		Database: stmt.Database,
-		Ddl:      stmt.SQL,
+		DDL:      stmt.SQL,
 	}
 
-	change := &proto.Change{
-		Lsn:  lsn,
-		Type: "ddl",
-		Data: &proto.Change_Ddl{
-			Ddl: ddlData,
-		},
+	change := &types.Change{
+		LSN:  lsn,
+		Data: ddlData,
 	}
 
 	return change, nil
 }
 
 // convertDMLStatement converts a DML statement to Change objects (one per row)
-func (c *ChangeConverter) convertDMLStatement(stmt parser.DMLStatement) ([]*proto.Change, error) {
-	changes := make([]*proto.Change, 0, len(stmt.ColumnValues))
+func (c *ChangeConverter) convertDMLStatement(stmt parser.DMLStatement) ([]*types.Change, error) {
+	changes := make([]*types.Change, 0, len(stmt.ColumnValues))
 
 	for _, row := range stmt.ColumnValues {
 		// Allow empty column names (INSERT without explicit columns)
@@ -89,8 +87,8 @@ func (c *ChangeConverter) convertDMLStatement(stmt parser.DMLStatement) ([]*prot
 
 		lsn := c.lsnGenerator.Next()
 
-		// Convert row values to ColumnValue protobuf objects
-		columnValues := make([]*proto.ColumnValue, len(row))
+		// Convert row values to ColumnValueWrapper objects
+		columnValues := make([]types.ColumnValueWrapper, len(row))
 		for i, value := range row {
 			columnValue, err := c.convertValue(value)
 			if err != nil {
@@ -102,10 +100,10 @@ func (c *ChangeConverter) convertDMLStatement(stmt parser.DMLStatement) ([]*prot
 				}
 				return nil, fmt.Errorf("failed to convert value for column %s: %w", colName, err)
 			}
-			columnValues[i] = columnValue
+			columnValues[i] = types.ColumnValueWrapper{ColumnValue: columnValue}
 		}
 
-		dmlData := &proto.DMLData{
+		dmlData := &types.DMLData{
 			Table:        stmt.Table,
 			ColumnNames:  stmt.ColumnNames,
 			ColumnValues: columnValues,
@@ -113,12 +111,9 @@ func (c *ChangeConverter) convertDMLStatement(stmt parser.DMLStatement) ([]*prot
 			OldKeys:      nil,      // No old keys for inserts
 		}
 
-		change := &proto.Change{
-			Lsn:  lsn,
-			Type: "dml",
-			Data: &proto.Change_Dml{
-				Dml: dmlData,
-			},
+		change := &types.Change{
+			LSN:  lsn,
+			Data: dmlData,
 		}
 
 		changes = append(changes, change)

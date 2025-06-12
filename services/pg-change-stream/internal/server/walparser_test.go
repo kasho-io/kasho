@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"kasho/proto"
-	"pg-change-stream/internal/types"
+	"kasho/pkg/types"
 
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgproto3"

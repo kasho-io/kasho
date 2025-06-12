@@ -3,6 +3,7 @@ package converter
 import (
 	"testing"
 
+	"kasho/pkg/types"
 	"kasho/proto"
 	"pg-bootstrap-sync/internal/parser"
 )
@@ -22,21 +23,21 @@ func TestChangeConverter_ConvertDDLStatement(t *testing.T) {
 	}
 	
 	// Verify change structure
-	if change.Type != "ddl" {
-		t.Errorf("Expected type 'ddl', got %q", change.Type)
+	if change.Type() != "ddl" {
+		t.Errorf("Expected type 'ddl', got %q", change.Type())
 	}
 	
-	if change.Lsn != "0/BOOTSTRAP0000000000000001" {
-		t.Errorf("Expected LSN '0/BOOTSTRAP0000000000000001', got %q", change.Lsn)
+	if change.LSN != "0/BOOTSTRAP0000000000000001" {
+		t.Errorf("Expected LSN '0/BOOTSTRAP0000000000000001', got %q", change.LSN)
 	}
 	
-	ddlData := change.GetDdl()
-	if ddlData == nil {
-		t.Fatal("DDL data is nil")
+	ddlData, ok := change.Data.(*types.DDLData)
+	if !ok {
+		t.Fatal("Change data is not DDLData")
 	}
 	
-	if ddlData.Ddl != ddlStmt.SQL {
-		t.Errorf("Expected DDL %q, got %q", ddlStmt.SQL, ddlData.Ddl)
+	if ddlData.DDL != ddlStmt.SQL {
+		t.Errorf("Expected DDL %q, got %q", ddlStmt.SQL, ddlData.DDL)
 	}
 	
 	if ddlData.Username != "bootstrap" {
@@ -68,17 +69,17 @@ func TestChangeConverter_ConvertDMLStatement(t *testing.T) {
 	
 	// Verify first change
 	change1 := changes[0]
-	if change1.Type != "dml" {
-		t.Errorf("Expected type 'dml', got %q", change1.Type)
+	if change1.Type() != "dml" {
+		t.Errorf("Expected type 'dml', got %q", change1.Type())
 	}
 	
-	if change1.Lsn != "0/BOOTSTRAP0000000000000001" {
-		t.Errorf("Expected LSN '0/BOOTSTRAP0000000000000001', got %q", change1.Lsn)
+	if change1.LSN != "0/BOOTSTRAP0000000000000001" {
+		t.Errorf("Expected LSN '0/BOOTSTRAP0000000000000001', got %q", change1.LSN)
 	}
 	
-	dmlData1 := change1.GetDml()
-	if dmlData1 == nil {
-		t.Fatal("DML data is nil")
+	dmlData1, ok := change1.Data.(*types.DMLData)
+	if !ok {
+		t.Fatal("Change data is not DMLData")
 	}
 	
 	if dmlData1.Table != "users" {
@@ -99,8 +100,8 @@ func TestChangeConverter_ConvertDMLStatement(t *testing.T) {
 	
 	// Verify second change has incremented LSN
 	change2 := changes[1]
-	if change2.Lsn != "0/BOOTSTRAP0000000000000002" {
-		t.Errorf("Expected LSN '0/BOOTSTRAP0000000000000002', got %q", change2.Lsn)
+	if change2.LSN != "0/BOOTSTRAP0000000000000002" {
+		t.Errorf("Expected LSN '0/BOOTSTRAP0000000000000002', got %q", change2.LSN)
 	}
 }
 
@@ -200,14 +201,14 @@ func TestChangeConverter_ConvertStatements(t *testing.T) {
 	}
 	
 	// First change should be DDL
-	if changes[0].Type != "ddl" {
-		t.Errorf("First change should be DDL, got %q", changes[0].Type)
+	if changes[0].Type() != "ddl" {
+		t.Errorf("First change should be DDL, got %q", changes[0].Type())
 	}
 	
 	// Remaining changes should be DML
 	for i := 1; i < len(changes); i++ {
-		if changes[i].Type != "dml" {
-			t.Errorf("Change %d should be DML, got %q", i, changes[i].Type)
+		if changes[i].Type() != "dml" {
+			t.Errorf("Change %d should be DML, got %q", i, changes[i].Type())
 		}
 	}
 	
@@ -219,8 +220,8 @@ func TestChangeConverter_ConvertStatements(t *testing.T) {
 	}
 	
 	for i, expected := range expectedLSNs {
-		if changes[i].Lsn != expected {
-			t.Errorf("Change %d: expected LSN %q, got %q", i, expected, changes[i].Lsn)
+		if changes[i].LSN != expected {
+			t.Errorf("Change %d: expected LSN %q, got %q", i, expected, changes[i].LSN)
 		}
 	}
 }
