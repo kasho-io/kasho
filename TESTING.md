@@ -51,13 +51,6 @@ task lint
 | `task lint:app-demo` | Lint demo app only |
 | `task lint:app-homepage` | Lint homepage app only |
 
-### CI/CD Tasks
-
-| Task | Description |
-|------|-------------|
-| `task ci:test` | Run tests with CI-specific options |
-| `task ci:test:go` | Run Go tests with coverage for CI |
-| `task ci:test:apps` | Run Next.js tests for CI (includes `npm ci`) |
 
 ## Testing Philosophy
 
@@ -106,11 +99,11 @@ The GitHub Actions workflows use these tasks:
 ```yaml
 # In .github/workflows/test-go-services.yml
 - name: Run Go tests
-  run: task ci:test:go
+  run: task test:go
 
 # In .github/workflows/test-nextjs-app.yml  
 - name: Run app tests
-  run: task ci:test:apps
+  run: task test:app-{app-name}
 ```
 
 ### Deployment Integration

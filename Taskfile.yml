@@ -1,5 +1,15 @@
 version: '3'
 
+vars:
+  SERVICES:
+    sh: find services -maxdepth 2 -name go.mod -exec dirname {} \; | sort
+  TOOLS:
+    sh: find tools -maxdepth 2 -name go.mod -exec dirname {} \; | sort
+  PACKAGES:
+    sh: find pkg -maxdepth 2 -name go.mod -exec dirname {} \; | sort
+  APPS:
+    sh: find apps -maxdepth 2 -name package.json -exec dirname {} \; | grep -v node_modules | sort
+
 tasks:
   default:
     desc: List all available tasks
@@ -26,77 +36,72 @@ tasks:
     desc: Run tests for all Go services and packages
     deps: [proto]
     cmds:
-      - task: test:kvbuffer
-      - task: test:pg-change-stream
-      - task: test:pg-translicator
-      - task: test:pg-bootstrap-sync
-      - task: test:env-template
-      - task: test:proto
-
-  test:pg-change-stream:
-    desc: Run tests for pg-change-stream service
-    dir: services/pg-change-stream
-    cmds:
-      - echo "🧪 Testing pg-change-stream..."
-      - go test -v -race -coverprofile=coverage.out ./...
-      - go tool cover -func=coverage.out
-
-  test:pg-translicator:
-    desc: Run tests for pg-translicator service
-    dir: services/pg-translicator
-    cmds:
-      - echo "🧪 Testing pg-translicator..."
-      - go test -v -race -coverprofile=coverage.out ./...
-      - go tool cover -func=coverage.out
-
-  test:kvbuffer:
-    desc: Run tests for shared kvbuffer package
-    dir: pkg/kvbuffer
-    cmds:
-      - echo "🧪 Testing kvbuffer package..."
-      - go test -v -race -coverprofile=coverage.out ./...
-      - go tool cover -func=coverage.out
-
-  test:pg-bootstrap-sync:
-    desc: Run tests for pg-bootstrap-sync tool
-    dir: tools/pg-bootstrap-sync
-    cmds:
-      - echo "🧪 Testing pg-bootstrap-sync..."
-      - go test -v -race -coverprofile=coverage.out ./...
-      - go tool cover -func=coverage.out
-
-  test:env-template:
-    desc: Run tests for env-template tool
-    dir: tools/env-template
-    cmds:
-      - echo "🧪 Testing env-template..."
-      - go test -v -race .
-
-  test:proto:
-    desc: Test proto package (validates compilation)
-    dir: proto/kasho/proto
-    cmds:
-      - echo "🧪 Testing proto package..."
-      - go test -v -race .
+      - |
+        dirs="{{.SERVICES}} {{.TOOLS}} {{.PACKAGES}} proto/kasho/proto"
+        for dir in $dirs; do
+          echo "🧪 Testing $(basename $dir)..."
+          if [ -n "$(find "$dir" -name '*_test.go' -print -quit)" ]; then
+            (cd "$dir" && go test -v -race -coverprofile=coverage.out ./... && go tool cover -func=coverage.out)
+          else
+            echo "  ⏭️  No test files found, skipping..."
+          fi
+        done
 
   test:apps:
     desc: Run tests for all Next.js apps
     cmds:
-      - task: test:app-demo
-      - task: test:app-homepage
+      - |
+        dirs="{{.APPS}}"
+        for dir in $dirs; do
+          echo "🧪 Testing $(basename $dir) app..."
+          (cd "$dir" && npm run test)
+        done
 
-  test:app-demo:
-    desc: Run tests for demo app
-    dir: apps/demo
+  # Individual component testing (for convenience)
+  test:service:*:
+    desc: Run tests for a specific service
+    dir: services/{{.MATCH}}
     cmds:
-      - echo "🧪 Testing demo app..."
-      - npm run test
+      - echo "🧪 Testing {{.MATCH}} service..."
+      - |
+        if [ -n "$(find . -name '*_test.go' -print -quit)" ]; then
+          go test -v -race -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out
+        else
+          echo "  ⏭️  No test files found"
+        fi
 
-  test:app-homepage:
-    desc: Run tests for homepage app
-    dir: apps/homepage
+  test:tool:*:
+    desc: Run tests for a specific tool
+    dir: tools/{{.MATCH}}
     cmds:
-      - echo "🧪 Testing homepage app..."
+      - echo "🧪 Testing {{.MATCH}} tool..."
+      - |
+        if [ -n "$(find . -name '*_test.go' -print -quit)" ]; then
+          go test -v -race -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out
+        else
+          echo "  ⏭️  No test files found"
+        fi
+
+  test:pkg:*:
+    desc: Run tests for a specific package
+    dir: pkg/{{.MATCH}}
+    cmds:
+      - echo "🧪 Testing {{.MATCH}} package..."
+      - |
+        if [ -n "$(find . -name '*_test.go' -print -quit)" ]; then
+          go test -v -race -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out
+        else
+          echo "  ⏭️  No test files found"
+        fi
+
+  test:app:*:
+    desc: Run tests for a specific app
+    dir: apps/{{.MATCH}}
+    cmds:
+      - echo "🧪 Testing {{.MATCH}} app..."
       - npm run test
 
   dev:
@@ -128,15 +133,11 @@ tasks:
     cmds:
       - ./scripts/demo-fake-projmgmt-saas.sh
 
-  dev:app-demo:
-    desc: Start the demo app
+  dev:app:*:
+    desc: Start a specific app in development mode
+    dir: apps/{{.MATCH}}
     cmds:
-      - cd apps/demo && npm run dev
-
-  dev:app-homepage:
-    desc: Start the homepage app
-    cmds:
-      - cd apps/homepage && npm run dev
+      - npm run dev
 
   # Lint tasks
   lint:
@@ -148,54 +149,27 @@ tasks:
   lint:go:
     desc: Run linting for Go services and packages
     cmds:
-      - echo "🔍 Linting Go code..."
-      - cd pkg/kvbuffer && go vet ./...
-      - cd services/pg-change-stream && go vet ./...
-      - cd services/pg-translicator && go vet ./...
-      - cd tools/pg-bootstrap-sync && go vet ./...
-      - cd tools/env-template && go vet ./...
-      - cd proto/kasho/proto && go vet ./...
+      - |
+        dirs="{{.SERVICES}} {{.TOOLS}} {{.PACKAGES}} proto/kasho/proto"
+        for dir in $dirs; do
+          echo "🔍 Linting $(basename $dir)..."
+          (cd "$dir" && go vet ./...)
+        done
 
   lint:apps:
     desc: Run linting for Next.js apps
     cmds:
-      - task: lint:app-demo
-      - task: lint:app-homepage
+      - |
+        dirs="{{.APPS}}"
+        for dir in $dirs; do
+          echo "🔍 Linting $(basename $dir) app..."
+          (cd "$dir" && npm run lint)
+        done
 
-  lint:app-demo:
-    desc: Lint demo app
-    dir: apps/demo
+  lint:app:*:
+    desc: Lint a specific app
+    dir: apps/{{.MATCH}}
     cmds:
-      - echo "🔍 Linting demo app..."
+      - echo "🔍 Linting {{.MATCH}} app..."
       - npm run lint
 
-  lint:app-homepage:
-    desc: Lint homepage app
-    dir: apps/homepage
-    cmds:
-      - echo "🔍 Linting homepage app..."
-      - npm run lint
-
-  # CI tasks (what CI/CD uses)
-  ci:test:
-    desc: Run tests with CI-specific options
-    deps: [proto]
-    cmds:
-      - task: ci:test:go
-      - task: ci:test:apps
-
-  ci:test:go:
-    desc: Run Go tests with coverage for CI
-    cmds:
-      - cd pkg/kvbuffer && go test -v -race -coverprofile=coverage.out ./...
-      - cd services/pg-change-stream && go test -v -race -coverprofile=coverage.out ./...
-      - cd services/pg-translicator && go test -v -race -coverprofile=coverage.out ./...
-      - cd tools/pg-bootstrap-sync && go test -v -race -coverprofile=coverage.out ./...
-      - cd tools/env-template && go test -v -race -coverprofile=coverage.out .
-      - cd proto/kasho/proto && go test -v -race -coverprofile=coverage.out .
-
-  ci:test:apps:
-    desc: Run Next.js app tests for CI
-    cmds:
-      - cd apps/demo && npm ci && npm run test:ci
-      - cd apps/homepage && npm ci && npm run test:ci

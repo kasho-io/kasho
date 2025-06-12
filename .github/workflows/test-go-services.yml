@@ -56,7 +56,7 @@ jobs:
         run: task lint:go
 
       - name: Run Go service tests
-        run: task ci:test:go
+        run: task test:go
         env:
           REDIS_URL: redis://localhost:6379
 
