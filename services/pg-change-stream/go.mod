@@ -7,6 +7,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.4
 	google.golang.org/grpc v1.72.1
 	kasho/pkg/kvbuffer v0.0.0-00010101000000-000000000000
+	kasho/pkg/types v0.0.0-00010101000000-000000000000
 	kasho/proto v0.0.0-00010101000000-000000000000
 )
 
@@ -26,5 +27,7 @@ require (
 )
 
 replace kasho/pkg/kvbuffer => ../../pkg/kvbuffer
+
+replace kasho/pkg/types => ../../pkg/types
 
 replace kasho/proto => ../../proto/kasho/proto

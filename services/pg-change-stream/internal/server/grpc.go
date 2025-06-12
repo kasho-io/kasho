@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"kasho/pkg/kvbuffer"
+	"kasho/pkg/types"
 	"kasho/proto"
-	"pg-change-stream/internal/types"
 )
 
 type ChangeStreamServer struct {
@@ -36,6 +36,7 @@ func (s *ChangeStreamServer) Stream(req *proto.StreamRequest, stream proto.Chang
 				log.Printf("Error unmarshaling buffered change: %v", err)
 				continue
 			}
+			
 			protoChange := convertToProtoChange(change)
 			if err := stream.Send(protoChange); err != nil {
 				return err
@@ -58,6 +59,7 @@ func (s *ChangeStreamServer) Stream(req *proto.StreamRequest, stream proto.Chang
 				log.Printf("Error unmarshaling change: %v", err)
 				continue
 			}
+			
 			protoChange := convertToProtoChange(change)
 			if err := stream.Send(protoChange); err != nil {
 				return err
@@ -68,7 +70,7 @@ func (s *ChangeStreamServer) Stream(req *proto.StreamRequest, stream proto.Chang
 
 func convertToProtoChange(change types.Change) *proto.Change {
 	protoChange := &proto.Change{
-		Lsn:  change.LSN,
+		Lsn:  change.GetLSN(),
 		Type: change.Type(),
 	}
 

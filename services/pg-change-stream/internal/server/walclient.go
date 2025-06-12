@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"pg-change-stream/internal/types"
+	"kasho/pkg/types"
 
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5"

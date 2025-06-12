@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"kasho/proto"
-	"pg-change-stream/internal/types"
+	"kasho/pkg/types"
 )
 
 func TestConvertToProtoChange_DMLData(t *testing.T) {

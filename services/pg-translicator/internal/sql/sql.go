@@ -33,7 +33,7 @@ func toDMLSQL(dml *proto.DMLData) (string, error) {
 	case "delete":
 		return toDeleteSQL(dml)
 	default:
-		return "", fmt.Errorf("unsupported DML kind: %s", dml.Kind)
+		return "", fmt.Errorf("unsupported DML kind: '%s' (length: %d)", dml.Kind, len(dml.Kind))
 	}
 }
 
