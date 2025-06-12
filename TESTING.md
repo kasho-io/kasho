@@ -34,6 +34,9 @@ task lint
 |------|-------------|
 | `task test:pg-change-stream` | Test pg-change-stream service with coverage |
 | `task test:pg-translicator` | Test pg-translicator service with coverage |
+| `task test:pg-bootstrap-sync` | Test pg-bootstrap-sync tool with coverage |
+| `task test:kvbuffer` | Test shared kvbuffer package with coverage |
+| `task test:env-template` | Test env-template tool |
 | `task test:proto` | Test proto package |
 | `task test:app-demo` | Test demo Next.js app |
 | `task test:app-homepage` | Test homepage Next.js app |
@@ -58,11 +61,12 @@ task lint
 
 ## Testing Philosophy
 
-### Go Services
+### Go Services and Tools
 - **Unit Tests**: Test individual functions and components
-- **Integration Tests**: Test service interactions (with Redis, databases)
+- **Integration Tests**: Test service interactions (with Redis, databases)  
 - **Coverage**: Generate coverage reports with each test run
 - **Race Detection**: All tests run with `-race` flag
+- **Comprehensive Coverage**: Tests cover services (pg-change-stream, pg-translicator), tools (pg-bootstrap-sync, env-template), and shared packages (kvbuffer, proto)
 
 ### Next.js Apps
 - **Type Checking**: Ensures TypeScript compilation succeeds

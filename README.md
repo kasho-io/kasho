@@ -42,9 +42,20 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - All core services configured for development
 
 ### Tools (`tools/`)
+- `pg-bootstrap-sync`: CLI tool for bootstrapping replica databases from PostgreSQL dump files
+  - Parses pg_dump files and converts them to Change objects for the replication system
+  - Supports both COPY and INSERT format dump files
+  - Integrates with the shared kvbuffer for seamless data flow
+- `env-template`: Environment variable substitution utility for configuration templates
 - `generate-fake-saas-data`: Utility for generating realistic SaaS application test data
   - Creates sample organizations, users, subscriptions, and related data
   - Used for populating test databases with realistic data
+
+### Shared Packages (`pkg/`)
+- `kvbuffer`: Shared Redis-based buffer for change events
+  - Used by both pg-change-stream and pg-bootstrap-sync
+  - Supports both real PostgreSQL LSNs and synthetic bootstrap LSNs
+  - Provides type-safe Change interface
 
 ### SQL (`sql/`)
 - Scripts that will be needed to get a Postgres server ready to use kasho
@@ -71,6 +82,15 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
   ```
   (Runs on [http://localhost:4000](http://localhost:4000))
 
+## Architecture
+
+Kasho uses a consolidated Docker approach for simplified deployment:
+
+- **Single Dockerfile** at the root builds all services and tools into one image
+- **Multi-stage builds** with development and production targets
+- **Environment-specific configurations** in `environments/` directory
+- **Task-based development** workflow for local development and testing
+
 ## Development
 
 The project uses Docker, Golang, and Task.
@@ -86,6 +106,23 @@ go install github.com/go-task/task/v3/cmd/task@latest
 ```
 
 Type `task` by itself for a list of commands.
+
+## Deployment
+
+Kasho is packaged as a single container image containing all services and tools:
+
+```bash
+# Build the consolidated image
+docker build -t kasho .
+
+# Run individual services
+docker run kasho ./pg-change-stream
+docker run kasho ./pg-translicator  
+docker run kasho ./pg-bootstrap-sync --help
+
+# Or use environment-specific docker-compose files
+cd environments/demo && docker-compose up
+```
 
 ## Getting Started
 
