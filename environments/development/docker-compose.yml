@@ -1,27 +1,22 @@
 services:
   init-sql-templates:
-    image: golang:1.24
+    build:
+      context: ../..
+      target: development
     volumes:
-      - ../../tools:/app/tools
       - ./primary-init.d:/app/primary-init.d
       - ./replica-init.d:/app/replica-init.d
-    working_dir: /app
     env_file:
       - .env
     environment:
       - ENV=development
-    command: >
-      sh -c "
-        cd /app/tools/env-template &&
-        go build -o /app/tools/env-template/env-template &&
-        /app/tools/env-template/env-template --dirs '/app/primary-init.d,/app/replica-init.d'
-      "
+    command: ["./env-template", "--dirs", "/app/primary-init.d,/app/replica-init.d"]
 
   pg-change-stream:
     build: 
       context: ../..
-      dockerfile: services/pg-change-stream/Dockerfile
       target: development
+    command: ["sh", "-c", "redis-server --daemonize yes --protected-mode no --logfile /dev/stdout --dir /data/redis --dbfilename redis.rdb && cd /app/services/pg-change-stream && air -c /app/.air.toml"]
     ports:
       - "${CHANGE_STREAM_PORT:-8080}:8080"
     env_file:
@@ -41,8 +36,8 @@ services:
   pg-translicator:
     build:
       context: ../..
-      dockerfile: services/pg-translicator/Dockerfile
       target: development
+    command: ["sh", "-c", "cd /app/services/pg-translicator && air -c /app/.air.toml"]
     env_file:
       - .env
     volumes:
@@ -54,6 +49,26 @@ services:
         condition: service_healthy
       postgres-replica:
         condition: service_started
+
+  # Bootstrap sync tool (run manually with: docker-compose run --rm pg-bootstrap-sync)
+  pg-bootstrap-sync:
+    build:
+      context: ../..
+      target: development
+    command: [
+      "./pg-bootstrap-sync",
+      "--help"
+    ]
+    env_file:
+      - .env
+    volumes:
+      - ../../sql/demo:/dumps:ro
+      - ./config:/app/config:ro
+      - ../../tools/pg-bootstrap-sync:/app/tools/pg-bootstrap-sync
+    depends_on:
+      pg-change-stream:
+        condition: service_healthy
+    profiles: ["bootstrap"]
 
   postgres-primary:
     image: postgres:17
