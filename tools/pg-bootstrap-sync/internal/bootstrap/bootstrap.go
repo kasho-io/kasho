@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"kasho/pkg/kvbuffer"
@@ -80,40 +80,44 @@ func NewBootstrapper(config Config) (*Bootstrapper, error) {
 // Bootstrap executes the full bootstrap process
 func (b *Bootstrapper) Bootstrap(ctx context.Context) error {
 	b.stats.StartTime = time.Now()
-	log.Printf("Starting bootstrap process for dump file: %s", b.config.DumpFile)
+	slog.Info("Starting bootstrap process",
+		"dump_file", b.config.DumpFile)
 
 	// Parse the dump file
-	log.Println("Parsing dump file...")
+	slog.Info("Parsing dump file")
 	parseResult, err := b.parser.Parse(b.config.DumpFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse dump file: %w", err)
 	}
 
 	b.stats.StatementsRead = len(parseResult.Statements)
-	log.Printf("Parsed %d statements (%d DDL, %d DML)", 
-		parseResult.Metadata.StatementCount, 
-		parseResult.Metadata.DDLCount, 
-		parseResult.Metadata.DMLCount)
+	slog.Info("Parsed statements successfully",
+		"total_statements", parseResult.Metadata.StatementCount,
+		"ddl_count", parseResult.Metadata.DDLCount,
+		"dml_count", parseResult.Metadata.DMLCount,
+		"tables_found", len(parseResult.Metadata.TablesFound))
 
 	// Convert statements to changes
-	log.Println("Converting statements to changes...")
+	slog.Info("Converting statements to changes")
 	changes, err := b.converter.ConvertStatements(parseResult.Statements)
 	if err != nil {
 		return fmt.Errorf("failed to convert statements: %w", err)
 	}
 
 	b.stats.ChangesGenerated = len(changes)
-	log.Printf("Generated %d changes", len(changes))
+	slog.Info("Generated changes",
+		"change_count", len(changes))
 
 	// Store changes in KV buffer
 	if !b.config.DryRun {
-		log.Println("Storing changes in KV buffer...")
+		slog.Info("Storing changes in KV buffer",
+			"batch_size", b.config.BatchSize)
 		err = b.storeChanges(ctx, changes)
 		if err != nil {
 			return fmt.Errorf("failed to store changes: %w", err)
 		}
 	} else {
-		log.Println("Dry run mode: skipping KV buffer storage")
+		slog.Info("Dry run mode - skipping KV buffer storage")
 		b.stats.ChangesStored = len(changes)
 	}
 
@@ -155,7 +159,10 @@ func (b *Bootstrapper) storeChanges(ctx context.Context, changes []*proto.Change
 		err := b.kvBuffer.AddChange(ctx, &BootstrapChange{change})
 		if err != nil {
 			b.stats.ErrorsEncountered++
-			log.Printf("Failed to store change %d (LSN: %s): %v", i+1, change.Lsn, err)
+			slog.Error("Failed to store change",
+				"change_index", i+1,
+				"lsn", change.Lsn,
+				"error", err)
 			continue
 		}
 
@@ -166,7 +173,11 @@ func (b *Bootstrapper) storeChanges(ctx context.Context, changes []*proto.Change
 		if (i+1)%progressInterval == 0 {
 			elapsed := time.Since(b.stats.StartTime)
 			rate := float64(stored) / elapsed.Seconds()
-			log.Printf("Stored %d/%d changes (%.1f changes/sec)", stored, len(changes), rate)
+			slog.Info("Storage progress",
+				"stored", stored,
+				"total", len(changes),
+				"rate", fmt.Sprintf("%.1f changes/sec", rate),
+				"percentage", fmt.Sprintf("%.1f%%", float64(stored)/float64(len(changes))*100))
 		}
 
 		// Optional: Add small delay between batches to avoid overwhelming Redis
@@ -175,7 +186,10 @@ func (b *Bootstrapper) storeChanges(ctx context.Context, changes []*proto.Change
 		}
 	}
 
-	log.Printf("Successfully stored %d/%d changes", stored, len(changes))
+	slog.Info("Storage completed",
+		"stored", stored,
+		"total", len(changes),
+		"success_rate", fmt.Sprintf("%.1f%%", float64(stored)/float64(len(changes))*100))
 	return nil
 }
 
@@ -183,20 +197,33 @@ func (b *Bootstrapper) storeChanges(ctx context.Context, changes []*proto.Change
 func (b *Bootstrapper) logFinalStatistics() {
 	duration := b.stats.EndTime.Sub(b.stats.StartTime)
 	
-	log.Println("Bootstrap completed successfully!")
-	log.Printf("Duration: %v", duration)
-	log.Printf("Statements read: %d", b.stats.StatementsRead)
-	log.Printf("Changes generated: %d", b.stats.ChangesGenerated)
-	log.Printf("Changes stored: %d", b.stats.ChangesStored)
-	log.Printf("DDL changes: %d", b.stats.DDLCount)
-	log.Printf("DML changes: %d", b.stats.DMLCount)
-	log.Printf("Tables processed: %d (%v)", len(b.stats.TablesProcessed), b.stats.TablesProcessed)
-	log.Printf("Last LSN: %s", b.stats.LastLSN)
-	log.Printf("Errors encountered: %d", b.stats.ErrorsEncountered)
+	logLevel := slog.LevelInfo
+	if b.stats.ErrorsEncountered > 0 {
+		logLevel = slog.LevelWarn
+	}
+	
+	logFields := []interface{}{
+		"duration", duration,
+		"statements_read", b.stats.StatementsRead,
+		"changes_generated", b.stats.ChangesGenerated,
+		"changes_stored", b.stats.ChangesStored,
+		"ddl_count", b.stats.DDLCount,
+		"dml_count", b.stats.DMLCount,
+		"tables_processed_count", len(b.stats.TablesProcessed),
+		"tables_list", b.stats.TablesProcessed,
+		"last_lsn", b.stats.LastLSN,
+		"errors_encountered", b.stats.ErrorsEncountered,
+	}
 	
 	if b.stats.ChangesStored > 0 && duration.Seconds() > 0 {
 		rate := float64(b.stats.ChangesStored) / duration.Seconds()
-		log.Printf("Average rate: %.1f changes/sec", rate)
+		logFields = append(logFields, "average_rate", fmt.Sprintf("%.1f changes/sec", rate))
+	}
+	
+	if b.stats.ErrorsEncountered > 0 {
+		slog.Log(nil, logLevel, "Bootstrap completed with errors", logFields...)
+	} else {
+		slog.Log(nil, logLevel, "Bootstrap completed successfully", logFields...)
 	}
 }
 

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -54,20 +54,42 @@ replica databases with historical data before starting real-time WAL replication
 
 	// Execute the command
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatalf("Error: %v", err)
+		// Note: slog might not be initialized here, so we'll use fmt
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
 }
 
 func runBootstrap(cmd *cobra.Command, args []string) error {
-	// Set up logging
+	// Set up structured logging
+	logLevel := slog.LevelInfo
 	if verbose {
-		log.SetFlags(log.LstdFlags | log.Lshortfile)
-	} else {
-		log.SetFlags(log.LstdFlags)
+		logLevel = slog.LevelDebug
 	}
+	
+	opts := &slog.HandlerOptions{
+		Level: logLevel,
+		AddSource: verbose,
+	}
+	
+	handler := slog.NewTextHandler(os.Stderr, opts)
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+
+	// Log startup configuration
+	slog.Info("Starting pg-bootstrap-sync",
+		"version", "1.0.0",
+		"dump_file", dumpFile,
+		"batch_size", batchSize,
+		"max_rows_per_table", maxRowsPerTable,
+		"progress_interval", progressInterval,
+		"dry_run", dryRun,
+		"verbose", verbose,
+	)
 
 	// Validate dump file exists
 	if _, err := os.Stat(dumpFile); os.IsNotExist(err) {
+		slog.Error("Dump file does not exist", "path", dumpFile)
 		return fmt.Errorf("dump file does not exist: %s", dumpFile)
 	}
 
@@ -97,7 +119,7 @@ func runBootstrap(cmd *cobra.Command, args []string) error {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigChan
-		log.Println("Received shutdown signal, cancelling bootstrap...")
+		slog.Warn("Received shutdown signal, cancelling bootstrap...")
 		cancel()
 	}()
 
@@ -109,11 +131,25 @@ func runBootstrap(cmd *cobra.Command, args []string) error {
 
 	// Log final statistics
 	stats := bootstrapper.GetStatistics()
+	
+	duration := stats.EndTime.Sub(stats.StartTime)
+	
+	slog.Info("Bootstrap completed",
+		"duration", duration,
+		"statements_read", stats.StatementsRead,
+		"changes_generated", stats.ChangesGenerated,
+		"changes_stored", stats.ChangesStored,
+		"ddl_count", stats.DDLCount,
+		"dml_count", stats.DMLCount,
+		"tables_processed", len(stats.TablesProcessed),
+		"errors_encountered", stats.ErrorsEncountered,
+		"average_rate", fmt.Sprintf("%.1f changes/sec", float64(stats.ChangesStored)/duration.Seconds()),
+	)
+	
 	if stats.ErrorsEncountered > 0 {
-		log.Printf("Bootstrap completed with %d errors", stats.ErrorsEncountered)
-		return fmt.Errorf("bootstrap completed with errors")
+		slog.Error("Bootstrap completed with errors", "error_count", stats.ErrorsEncountered)
+		return fmt.Errorf("bootstrap completed with %d errors", stats.ErrorsEncountered)
 	}
 
-	log.Println("Bootstrap completed successfully!")
 	return nil
 }
