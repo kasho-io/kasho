@@ -32,5 +32,6 @@ combined-coverage.out
 
 environments/**/primary-init.d/10-replication-role.sql
 environments/**/replica-init.d/10-replication-role.sql
+services/**/server
 tools/env-template/env-template
 tools/pg-bootstrap-sync/pg-bootstrap-sync
