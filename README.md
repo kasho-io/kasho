@@ -10,18 +10,6 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - Uses PostgreSQL's native logical replication for reliable change capture
 - Supports table creation, column additions, and other schema modifications
 
-## Roadmap / Ideas
-
-- Enhanced transformation capabilities
-  - Complex data transformation rules and filters
-  - Schema-aware transformation suggestions
-- Improved bootstrapping and migration tools
-  - Support for large existing databases
-  - Incremental synchronization capabilities
-- Monitoring and observability features
-  - Real-time replication metrics and health checks
-  - Alerting for replication lag and failures
-
 ## Components
 
 ### Services
