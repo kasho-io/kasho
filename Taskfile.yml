@@ -60,10 +60,10 @@ tasks:
   # Individual component testing (for convenience)
   test:service:*:
     desc: Run tests for a specific service
-    dir: services/{{.MATCH}}
     cmds:
-      - echo "🧪 Testing {{.MATCH}} service..."
+      - echo "🧪 Testing {{index .MATCH 0}} service..."
       - |
+        cd services/{{index .MATCH 0}}
         if [ -n "$(find . -name '*_test.go' -print -quit)" ]; then
           go test -v -race -coverprofile=coverage.out ./...
           go tool cover -func=coverage.out
@@ -73,10 +73,10 @@ tasks:
 
   test:tool:*:
     desc: Run tests for a specific tool
-    dir: tools/{{.MATCH}}
     cmds:
-      - echo "🧪 Testing {{.MATCH}} tool..."
+      - echo "🧪 Testing {{index .MATCH 0}} tool..."
       - |
+        cd tools/{{index .MATCH 0}}
         if [ -n "$(find . -name '*_test.go' -print -quit)" ]; then
           go test -v -race -coverprofile=coverage.out ./...
           go tool cover -func=coverage.out
@@ -86,10 +86,10 @@ tasks:
 
   test:pkg:*:
     desc: Run tests for a specific package
-    dir: pkg/{{.MATCH}}
     cmds:
-      - echo "🧪 Testing {{.MATCH}} package..."
+      - echo "🧪 Testing {{index .MATCH 0}} package..."
       - |
+        cd pkg/{{index .MATCH 0}}
         if [ -n "$(find . -name '*_test.go' -print -quit)" ]; then
           go test -v -race -coverprofile=coverage.out ./...
           go tool cover -func=coverage.out
@@ -99,10 +99,9 @@ tasks:
 
   test:app:*:
     desc: Run tests for a specific app
-    dir: apps/{{.MATCH}}
     cmds:
-      - echo "🧪 Testing {{.MATCH}} app..."
-      - npm run test
+      - echo "🧪 Testing {{index .MATCH 0}} app..."
+      - cd apps/{{index .MATCH 0}} && npm run test
 
   dev:
     desc: Start development environment (alias for dev:start)
@@ -135,9 +134,8 @@ tasks:
 
   dev:app:*:
     desc: Start a specific app in development mode
-    dir: apps/{{.MATCH}}
     cmds:
-      - npm run dev
+      - cd apps/{{index .MATCH 0}} && npm run dev
 
   # Lint tasks
   lint:
@@ -168,8 +166,7 @@ tasks:
 
   lint:app:*:
     desc: Lint a specific app
-    dir: apps/{{.MATCH}}
     cmds:
-      - echo "🔍 Linting {{.MATCH}} app..."
-      - npm run lint
+      - echo "🔍 Linting {{index .MATCH 0}} app..."
+      - cd apps/{{index .MATCH 0}} && npm run lint
 
