@@ -61,34 +61,84 @@ jobs:
             
             # Create .env file from secrets
             cat > .env << EOL
-            CHANGE_STREAM_HOST=${{ secrets.CHANGE_STREAM_HOST }}
-            CHANGE_STREAM_PORT=${{ secrets.CHANGE_STREAM_PORT }}
-            TRANSFORM_CONFIG_FILE=${{ secrets.TRANSFORM_CONFIG_FILE }}
+            # Redis connection for pg-change-stream
+            KV_URL=${{ secrets.KV_URL }}
             
+            # Change stream service for pg-translicator
+            CHANGE_STREAM_SERVICE=${{ secrets.CHANGE_STREAM_SERVICE }}
+            
+            # Primary database URL for pg-change-stream
+            PRIMARY_DATABASE_URL=${{ secrets.PRIMARY_DATABASE_URL }}
+            
+            # Replica database URL for pg-translicator
+            REPLICA_DATABASE_URL=${{ secrets.REPLICA_DATABASE_URL }}
+            
+            # Database configuration for docker-compose PostgreSQL containers
             PRIMARY_DATABASE_SU_USER=${{ secrets.PRIMARY_DATABASE_SU_USER }}
             PRIMARY_DATABASE_SU_PASSWORD=${{ secrets.PRIMARY_DATABASE_SU_PASSWORD }}
-            PRIMARY_DATABASE_KASHO_USER=${{ secrets.PRIMARY_DATABASE_KASHO_USER }}
-            PRIMARY_DATABASE_KASHO_PASSWORD=${{ secrets.PRIMARY_DATABASE_KASHO_PASSWORD }}
-            PRIMARY_DATABASE_HOST=${{ secrets.PRIMARY_DATABASE_HOST }}
-            PRIMARY_DATABASE_PORT=${{ secrets.PRIMARY_DATABASE_PORT }}
             PRIMARY_DATABASE_DB=${{ secrets.PRIMARY_DATABASE_DB }}
-            PRIMARY_DATABASE_SSLMODE=${{ secrets.PRIMARY_DATABASE_SSLMODE }}
-            
             REPLICA_DATABASE_SU_USER=${{ secrets.REPLICA_DATABASE_SU_USER }}
             REPLICA_DATABASE_SU_PASSWORD=${{ secrets.REPLICA_DATABASE_SU_PASSWORD }}
-            REPLICA_DATABASE_KASHO_USER=${{ secrets.REPLICA_DATABASE_KASHO_USER }}
-            REPLICA_DATABASE_KASHO_PASSWORD=${{ secrets.REPLICA_DATABASE_KASHO_PASSWORD }}
-            REPLICA_DATABASE_HOST=${{ secrets.REPLICA_DATABASE_HOST }}
-            REPLICA_DATABASE_PORT=${{ secrets.REPLICA_DATABASE_PORT }}
             REPLICA_DATABASE_DB=${{ secrets.REPLICA_DATABASE_DB }}
-            REPLICA_DATABASE_SSLMODE=${{ secrets.REPLICA_DATABASE_SSLMODE }}
             EOL
             
             docker compose down -v
             docker compose up --build -d
             
-            # Wait for services to be ready
+            # Wait for services to start
             sleep 10
+            
+            # Verify critical services are running
+            echo "🔍 Checking service status..."
+            docker compose ps --format "table {{.Name}}\t{{.Status}}"
+            
+            # Check pg-change-stream service
+            if ! docker compose ps pg-change-stream | grep -q "Up"; then
+              echo "❌ pg-change-stream failed to start"
+              echo "📋 pg-change-stream logs:"
+              docker compose logs --tail=50 pg-change-stream
+              exit 1
+            else
+              echo "✅ pg-change-stream is running"
+            fi
+            
+            # Check pg-translicator service
+            if ! docker compose ps pg-translicator | grep -q "Up"; then
+              echo "❌ pg-translicator failed to start"
+              echo "📋 pg-translicator logs:"
+              docker compose logs --tail=50 pg-translicator
+              exit 1
+            else
+              echo "✅ pg-translicator is running"
+            fi
+            
+            # Check database services
+            if ! docker compose ps postgres-primary | grep -q "Up"; then
+              echo "❌ postgres-primary failed to start"
+              docker compose logs --tail=30 postgres-primary
+              exit 1
+            else
+              echo "✅ postgres-primary is running"
+            fi
+            
+            if ! docker compose ps postgres-replica | grep -q "Up"; then
+              echo "❌ postgres-replica failed to start"
+              docker compose logs --tail=30 postgres-replica
+              exit 1
+            else
+              echo "✅ postgres-replica is running"
+            fi
+            
+            # Check redis service
+            if ! docker compose ps redis | grep -q "Up"; then
+              echo "❌ redis failed to start"
+              docker compose logs --tail=30 redis
+              exit 1
+            else
+              echo "✅ redis is running"
+            fi
+            
+            echo "🎉 All services are running successfully"
             
             # Run setup scripts
             cd ../..
