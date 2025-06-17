@@ -20,6 +20,7 @@ services:
 
   pg-change-stream:
     image: kasho
+    command: ["./pg-change-stream"]
     ports:
       - "${CHANGE_STREAM_PORT:-8080}:8080"
     env_file:
