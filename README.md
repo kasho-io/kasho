@@ -74,7 +74,7 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - Shows the Kasho wordmark and a brief description.
 - To run locally:
   ```bash
-  task dev:app-homepage
+  task dev:app:homepage
   ```
   (Runs on [http://localhost:3000](http://localhost:3000))
 
@@ -83,7 +83,7 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - Includes a UI for connecting to primary and replica databases, and visualizing real-time changes.
 - To run locally:
   ```bash
-  task dev:app-demo
+  task dev:app:demo
   ```
   (Runs on [http://localhost:4000](http://localhost:4000))
 
@@ -148,7 +148,7 @@ task dev:setup-data
 
 4. Run the demo. In a separate terminal, run:
 ```bash
-task dev:app-demo
+task dev:app:demo
 ```
 
 ## Requirements
