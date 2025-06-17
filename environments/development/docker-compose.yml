@@ -1,5 +1,5 @@
 services:
-  init-sql-templates:
+  init-templates:
     image: kasho
     volumes:
       - ./primary-init.d:/app/primary-init.d
@@ -8,11 +8,19 @@ services:
       - .env
     environment:
       - ENV=development
-    command: ["./env-template", "--dirs", "/app/primary-init.d,/app/replica-init.d"]
+    command: ["./env-template-wrapper.sh", "--dirs", "/app/primary-init.d,/app/replica-init.d"]
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
 
   pg-change-stream:
     image: kasho
-    command: ["sh", "-c", "redis-server --daemonize yes --protected-mode no --logfile /dev/stdout --dir /data/redis --dbfilename redis.rdb && cd /app/services/pg-change-stream && air -c /app/.air.toml"]
+    command: ["sh", "-c", "cd /app/services/pg-change-stream && air -c /app/.air.toml"]
     ports:
       - "${CHANGE_STREAM_PORT:-8080}:8080"
     env_file:
@@ -28,6 +36,7 @@ services:
       retries: 5
     depends_on:
       - postgres-primary
+      - redis
 
   pg-translicator:
     image: kasho
@@ -77,7 +86,7 @@ services:
       - ./primary-init.d:/docker-entrypoint-initdb.d
     command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 -c listen_addresses='*'
     depends_on:
-      init-sql-templates:
+      init-templates:
         condition: service_completed_successfully
 
   postgres-replica:
@@ -95,7 +104,7 @@ services:
       - ./replica-init.d:/docker-entrypoint-initdb.d
     command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 -c listen_addresses='*'
     depends_on:
-      init-sql-templates:
+      init-templates:
         condition: service_completed_successfully
 
 volumes:
