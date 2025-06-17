@@ -34,7 +34,6 @@ tasks:
 
   test:go:
     desc: Run tests for all Go services and packages
-    deps: [proto]
     cmds:
       - |
         dirs="{{.SERVICES}} {{.TOOLS}} {{.PACKAGES}} proto/kasho/proto"
