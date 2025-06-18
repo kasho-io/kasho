@@ -72,6 +72,9 @@ const (
 
 	// Boolean
 	Bool TransformType = "Bool"
+
+	// Pattern-based
+	Regex TransformType = "Regex"
 )
 
 var transformFunctions = map[TransformType]any{
@@ -130,8 +133,36 @@ var transformFunctions = map[TransformType]any{
 func init() {
 }
 
+// ColumnTransform represents a transform configuration for a column
+// It can be either a simple string (transform type) or a complex object
+type ColumnTransform struct {
+	Type        TransformType `yaml:"type"`
+	Pattern     string        `yaml:"pattern,omitempty"`     // For Regex transforms
+	Replacement string        `yaml:"replacement,omitempty"` // For Regex transforms
+}
+
+// UnmarshalYAML handles both string and object formats
+func (ct *ColumnTransform) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Try to unmarshal as a string first (simple format)
+	var transformType string
+	if err := unmarshal(&transformType); err == nil {
+		ct.Type = TransformType(transformType)
+		return nil
+	}
+
+	// If that fails, try as a struct (object format)
+	type rawColumnTransform ColumnTransform
+	var raw rawColumnTransform
+	if err := unmarshal(&raw); err != nil {
+		return err
+	}
+
+	*ct = ColumnTransform(raw)
+	return nil
+}
+
 // TableConfig represents the configuration for a single table
-type TableConfig map[string]TransformType
+type TableConfig map[string]ColumnTransform
 
 // Config represents the entire configuration
 type Config struct {
@@ -190,12 +221,27 @@ func GetFakeValue(c *Config, table string, column string, original *proto.Column
 		return nil, nil // not an error, just no transform for this table
 	}
 
-	fakeType, exists := tableConfig[column]
+	colTransform, exists := tableConfig[column]
 	if !exists {
 		return nil, nil // not an error, just no transform for this column
 	}
 
-	fn, err := fakeType.GetTransformFunction()
+	// Handle Regex transform specially
+	if colTransform.Type == Regex {
+		// Regex only works on string values
+		if v, ok := original.Value.(*proto.ColumnValue_StringValue); ok {
+			transformFunc := TransformRegex(colTransform.Pattern, colTransform.Replacement)
+			transformed, err := transformFunc(v.StringValue)
+			if err != nil {
+				return nil, fmt.Errorf("regex transform failed: %w", err)
+			}
+			return &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: transformed}}, nil
+		}
+		return nil, fmt.Errorf("regex transform requires string value, got %T", original.Value)
+	}
+
+	// For other transforms, use the existing logic
+	fn, err := colTransform.Type.GetTransformFunction()
 	if err != nil {
 		return nil, err
 	}

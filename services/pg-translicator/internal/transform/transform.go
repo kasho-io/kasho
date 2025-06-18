@@ -3,6 +3,8 @@ package transform
 import (
 	"fmt"
 	"hash/fnv"
+	"regexp"
+	"sync"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
@@ -218,4 +220,44 @@ func TransformCurrency(original string) string {
 func TransformBool(original bool) bool {
 	seed := hash(original)
 	return seed%2 == 1
+}
+
+// Regex transform support
+var (
+	regexCache   = make(map[string]*regexp.Regexp)
+	regexCacheMu sync.RWMutex
+)
+
+// getCompiledRegex returns a compiled regex from cache or compiles and caches it
+func getCompiledRegex(pattern string) (*regexp.Regexp, error) {
+	regexCacheMu.RLock()
+	if compiled, exists := regexCache[pattern]; exists {
+		regexCacheMu.RUnlock()
+		return compiled, nil
+	}
+	regexCacheMu.RUnlock()
+
+	// Compile regex
+	compiled, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("invalid regex pattern: %w", err)
+	}
+
+	// Cache it
+	regexCacheMu.Lock()
+	regexCache[pattern] = compiled
+	regexCacheMu.Unlock()
+
+	return compiled, nil
+}
+
+// TransformRegex applies a regex pattern and replacement to a string
+func TransformRegex(pattern, replacement string) func(string) (string, error) {
+	return func(original string) (string, error) {
+		re, err := getCompiledRegex(pattern)
+		if err != nil {
+			return "", err
+		}
+		return re.ReplaceAllString(original, replacement), nil
+	}
 }
