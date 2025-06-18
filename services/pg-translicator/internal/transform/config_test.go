@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"kasho/proto"
+	"gopkg.in/yaml.v3"
 )
 
 func TestGetFakeValue(t *testing.T) {
@@ -13,9 +14,9 @@ func TestGetFakeValue(t *testing.T) {
 		Version: ConfigVersionV1,
 		Tables: map[string]TableConfig{
 			"users": {
-				"name":  Name,
-				"age":   Year,
-				"email": Email,
+				"name":  {Type: Name},
+				"age":   {Type: Year},
+				"email": {Type: Email},
 			},
 		},
 	}
@@ -163,7 +164,7 @@ func TestValidateAndMigrateConfig(t *testing.T) {
 			config: &Config{
 				Version: ConfigVersionV1,
 				Tables: map[string]TableConfig{
-					"users": {"name": Name},
+					"users": {"name": {Type: Name}},
 				},
 			},
 			wantError: false,
@@ -172,7 +173,7 @@ func TestValidateAndMigrateConfig(t *testing.T) {
 			name: "config without version (legacy)",
 			config: &Config{
 				Tables: map[string]TableConfig{
-					"users": {"name": Name},
+					"users": {"name": {Type: Name}},
 				},
 			},
 			wantError: false,
@@ -182,7 +183,7 @@ func TestValidateAndMigrateConfig(t *testing.T) {
 			config: &Config{
 				Version: "v2",
 				Tables: map[string]TableConfig{
-					"users": {"name": Name},
+					"users": {"name": {Type: Name}},
 				},
 			},
 			wantError: true,
@@ -293,12 +294,12 @@ func TestGetFakeValueExtended(t *testing.T) {
 		Version: ConfigVersionV1,
 		Tables: map[string]TableConfig{
 			"users": {
-				"name":      Name,        // string->string
-				"age":       Year,        // int->int (Year transform takes int, returns int)
-				"balance":   Currency,    // string->string (Currency is string transform)
-				"active":    Bool,        // bool->bool (Bool transform takes bool, returns bool)
-				"latitude":  Latitude,    // float64->float64 (Latitude transform takes float64, returns float64)
-				"timestamp": DateOfBirth, // string->string (DateOfBirth is string transform)
+				"name":      {Type: Name},        // string->string
+				"age":       {Type: Year},        // int->int (Year transform takes int, returns int)
+				"balance":   {Type: Currency},    // string->string (Currency is string transform)
+				"active":    {Type: Bool},        // bool->bool (Bool transform takes bool, returns bool)
+				"latitude":  {Type: Latitude},    // float64->float64 (Latitude transform takes float64, returns float64)
+				"timestamp": {Type: DateOfBirth}, // string->string (DateOfBirth is string transform)
 			},
 		},
 	}
@@ -408,8 +409,8 @@ func TestTransformChange(t *testing.T) {
 		Version: ConfigVersionV1,
 		Tables: map[string]TableConfig{
 			"public.users": {
-				"name":  Name,
-				"email": Email,
+				"name":  {Type: Name},
+				"email": {Type: Email},
 			},
 		},
 	}
@@ -535,6 +536,215 @@ func TestTransformChange(t *testing.T) {
 							len(dmlData.ColumnValues), len(originalDML.ColumnValues))
 					}
 				}
+			}
+		})
+	}
+}
+
+func TestRegexTransform(t *testing.T) {
+	tests := []struct {
+		name        string
+		pattern     string
+		replacement string
+		input       string
+		want        string
+		wantErr     bool
+	}{
+		{
+			name:        "phone number masking",
+			pattern:     `\(\d{3}\) \d{3}-\d{4}`,
+			replacement: "(XXX) XXX-XXXX",
+			input:       "(123) 456-7890",
+			want:        "(XXX) XXX-XXXX",
+		},
+		{
+			name:        "credit card partial masking",
+			pattern:     `(\d{4})-(\d{4})-(\d{4})-(\d{4})`,
+			replacement: "XXXX-XXXX-XXXX-$4",
+			input:       "1234-5678-9012-3456",
+			want:        "XXXX-XXXX-XXXX-3456",
+		},
+		{
+			name:        "email domain replacement",
+			pattern:     `@[\w.-]+\.[\w.-]+`,
+			replacement: "@example.com",
+			input:       "john.doe@company.org",
+			want:        "john.doe@example.com",
+		},
+		{
+			name:        "IP address masking",
+			pattern:     `\d+\.\d+\.\d+\.\d+`,
+			replacement: "XXX.XXX.XXX.XXX",
+			input:       "192.168.1.100",
+			want:        "XXX.XXX.XXX.XXX",
+		},
+		{
+			name:        "invalid regex pattern",
+			pattern:     `[`,
+			replacement: "replacement",
+			input:       "test",
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			transformFunc := TransformRegex(tt.pattern, tt.replacement)
+			got, err := transformFunc(tt.input)
+			
+			if (err != nil) != tt.wantErr {
+				t.Errorf("TransformRegex() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			
+			if !tt.wantErr && got != tt.want {
+				t.Errorf("TransformRegex() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetFakeValueWithRegex(t *testing.T) {
+	config := &Config{
+		Version: ConfigVersionV1,
+		Tables: map[string]TableConfig{
+			"users": {
+				"phone": {
+					Type:        Regex,
+					Pattern:     `\d{3}-\d{3}-\d{4}`,
+					Replacement: "XXX-XXX-XXXX",
+				},
+				"ssn": {
+					Type:        Regex,
+					Pattern:     `(\d{3})-(\d{2})-(\d{4})`,
+					Replacement: "XXX-XX-$3",
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		table    string
+		column   string
+		original *proto.ColumnValue
+		want     *proto.ColumnValue
+		wantErr  bool
+	}{
+		{
+			name:   "regex transform phone",
+			table:  "users",
+			column: "phone",
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "123-456-7890"},
+			},
+			want: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "XXX-XXX-XXXX"},
+			},
+		},
+		{
+			name:   "regex transform ssn with capture group",
+			table:  "users",
+			column: "ssn",
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "123-45-6789"},
+			},
+			want: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "XXX-XX-6789"},
+			},
+		},
+		{
+			name:   "regex transform on non-string value",
+			table:  "users",
+			column: "phone",
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_IntValue{IntValue: 1234567890},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetFakeValue(config, tt.table, tt.column, tt.original)
+			
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetFakeValue() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			
+			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetFakeValue() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestColumnTransformUnmarshalYAML(t *testing.T) {
+	tests := []struct {
+		name    string
+		yaml    string
+		want    TableConfig
+		wantErr bool
+	}{
+		{
+			name: "simple string format",
+			yaml: `
+name: Name
+email: Email
+phone: Phone`,
+			want: TableConfig{
+				"name":  {Type: Name},
+				"email": {Type: Email},
+				"phone": {Type: Phone},
+			},
+		},
+		{
+			name: "object format",
+			yaml: `
+name:
+  type: Name
+email:
+  type: Email
+phone:
+  type: Regex
+  pattern: '\d{3}-\d{3}-\d{4}'
+  replacement: 'XXX-XXX-XXXX'`,
+			want: TableConfig{
+				"name":  {Type: Name},
+				"email": {Type: Email},
+				"phone": {Type: Regex, Pattern: `\d{3}-\d{3}-\d{4}`, Replacement: "XXX-XXX-XXXX"},
+			},
+		},
+		{
+			name: "mixed format",
+			yaml: `
+name: Name
+phone:
+  type: Regex
+  pattern: '\d+'
+  replacement: 'XXX'
+email: Email`,
+			want: TableConfig{
+				"name":  {Type: Name},
+				"phone": {Type: Regex, Pattern: `\d+`, Replacement: "XXX"},
+				"email": {Type: Email},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got TableConfig
+			err := yaml.Unmarshal([]byte(tt.yaml), &got)
+			
+			if (err != nil) != tt.wantErr {
+				t.Errorf("UnmarshalYAML() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			
+			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("UnmarshalYAML() = %v, want %v", got, tt.want)
 			}
 		})
 	}
