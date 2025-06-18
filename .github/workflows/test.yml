@@ -93,12 +93,11 @@ jobs:
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
       - name: Validate proto compilation
         run: |
-          cd proto
-          protoc --go_out=kasho/proto --go_opt=paths=source_relative \
-                 --go-grpc_out=kasho/proto --go-grpc_opt=paths=source_relative \
-                 change_stream.proto
+          protoc --go_out=proto/kasho --go_opt=paths=source_relative \
+                 --go-grpc_out=proto/kasho --go-grpc_opt=paths=source_relative \
+                 proto/change_stream.proto
           # Check if generated files match committed files
-          git diff --exit-code kasho/proto/ || (echo "Proto files are not up to date. Run 'make proto' and commit changes." && exit 1)
+          git diff --exit-code proto/kasho/proto/ || (echo "Proto files are not up to date. Run 'task proto' and commit changes." && exit 1)
 
   # Summary job that all other workflows depend on
   test-summary:
