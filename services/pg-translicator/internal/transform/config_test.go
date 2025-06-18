@@ -14,9 +14,9 @@ func TestGetFakeValue(t *testing.T) {
 		Version: ConfigVersionV1,
 		Tables: map[string]TableConfig{
 			"users": {
-				"name":  {Type: Name},
-				"age":   {Type: Year},
-				"email": {Type: Email},
+				"name":  {Type: FakeName},
+				"age":   {Type: FakeYear},
+				"email": {Type: FakeEmail},
 			},
 		},
 	}
@@ -122,11 +122,11 @@ func TestGetTransformFunction(t *testing.T) {
 	}{
 		{
 			name:      "valid transform",
-			transform: Name,
+			transform: FakeName,
 		},
 		{
 			name:      "valid transform",
-			transform: Email,
+			transform: FakeEmail,
 		},
 		{
 			name:      "invalid transform",
@@ -164,7 +164,7 @@ func TestValidateAndMigrateConfig(t *testing.T) {
 			config: &Config{
 				Version: ConfigVersionV1,
 				Tables: map[string]TableConfig{
-					"users": {"name": {Type: Name}},
+					"users": {"name": {Type: FakeName}},
 				},
 			},
 			wantError: false,
@@ -173,7 +173,7 @@ func TestValidateAndMigrateConfig(t *testing.T) {
 			name: "config without version (legacy)",
 			config: &Config{
 				Tables: map[string]TableConfig{
-					"users": {"name": {Type: Name}},
+					"users": {"name": {Type: FakeName}},
 				},
 			},
 			wantError: false,
@@ -183,7 +183,7 @@ func TestValidateAndMigrateConfig(t *testing.T) {
 			config: &Config{
 				Version: "v2",
 				Tables: map[string]TableConfig{
-					"users": {"name": {Type: Name}},
+					"users": {"name": {Type: FakeName}},
 				},
 			},
 			wantError: true,
@@ -220,15 +220,15 @@ func TestLoadConfig(t *testing.T) {
 			content: `version: v1
 tables:
   users:
-    name: Name
-    email: Email`,
+    name: FakeName
+    email: FakeEmail`,
 			wantError: false,
 		},
 		{
 			name: "legacy config file without version",
 			content: `tables:
   users:
-    name: Name`,
+    name: FakeName`,
 			wantError: false,
 		},
 		{
@@ -236,7 +236,7 @@ tables:
 			content: `version: v1
 tables:
   users
-    name: Name`,
+    name: FakeName`,
 			wantError: true,
 		},
 		{
@@ -244,7 +244,7 @@ tables:
 			content: `version: v2
 tables:
   users:
-    name: Name`,
+    name: FakeName`,
 			wantError: true,
 		},
 	}
@@ -294,12 +294,12 @@ func TestGetFakeValueExtended(t *testing.T) {
 		Version: ConfigVersionV1,
 		Tables: map[string]TableConfig{
 			"users": {
-				"name":      {Type: Name},        // string->string
-				"age":       {Type: Year},        // int->int (Year transform takes int, returns int)
-				"balance":   {Type: Currency},    // string->string (Currency is string transform)
+				"name":      {Type: FakeName},        // string->string
+				"age":       {Type: FakeYear},        // int->int (Year transform takes int, returns int)
+				"balance":   {Type: FakeCurrency},    // string->string (FakeCurrency is string transform)
 				"active":    {Type: Bool},        // bool->bool (Bool transform takes bool, returns bool)
-				"latitude":  {Type: Latitude},    // float64->float64 (Latitude transform takes float64, returns float64)
-				"timestamp": {Type: DateOfBirth}, // string->string (DateOfBirth is string transform)
+				"latitude":  {Type: FakeLatitude},    // float64->float64 (FakeLatitude transform takes float64, returns float64)
+				"timestamp": {Type: FakeDateOfBirth}, // string->string (FakeDateOfBirth is string transform)
 			},
 		},
 	}
@@ -354,7 +354,7 @@ func TestGetFakeValueExtended(t *testing.T) {
 			original: &proto.ColumnValue{
 				Value: &proto.ColumnValue_TimestampValue{TimestampValue: "2023-01-01T00:00:00Z"},
 			},
-			expectError: true, // Valid timestamp gets parsed to time.Time, but DateOfBirth expects string
+			expectError: true, // Valid timestamp gets parsed to time.Time, but FakeDateOfBirth expects string
 		},
 		{
 			name:   "invalid timestamp format",
@@ -409,8 +409,8 @@ func TestTransformChange(t *testing.T) {
 		Version: ConfigVersionV1,
 		Tables: map[string]TableConfig{
 			"public.users": {
-				"name":  {Type: Name},
-				"email": {Type: Email},
+				"name":  {Type: FakeName},
+				"email": {Type: FakeEmail},
 			},
 		},
 	}
@@ -690,45 +690,45 @@ func TestColumnTransformUnmarshalYAML(t *testing.T) {
 		{
 			name: "simple string format",
 			yaml: `
-name: Name
-email: Email
-phone: Phone`,
+name: FakeName
+email: FakeEmail
+phone: FakePhone`,
 			want: TableConfig{
-				"name":  {Type: Name},
-				"email": {Type: Email},
-				"phone": {Type: Phone},
+				"name":  {Type: FakeName},
+				"email": {Type: FakeEmail},
+				"phone": {Type: FakePhone},
 			},
 		},
 		{
 			name: "object format",
 			yaml: `
 name:
-  type: Name
+  type: FakeName
 email:
-  type: Email
+  type: FakeEmail
 phone:
   type: Regex
   pattern: '\d{3}-\d{3}-\d{4}'
   replacement: 'XXX-XXX-XXXX'`,
 			want: TableConfig{
-				"name":  {Type: Name},
-				"email": {Type: Email},
+				"name":  {Type: FakeName},
+				"email": {Type: FakeEmail},
 				"phone": {Type: Regex, Pattern: `\d{3}-\d{3}-\d{4}`, Replacement: "XXX-XXX-XXXX"},
 			},
 		},
 		{
 			name: "mixed format",
 			yaml: `
-name: Name
+name: FakeName
 phone:
   type: Regex
   pattern: '\d+'
   replacement: 'XXX'
-email: Email`,
+email: FakeEmail`,
 			want: TableConfig{
-				"name":  {Type: Name},
+				"name":  {Type: FakeName},
 				"phone": {Type: Regex, Pattern: `\d+`, Replacement: "XXX"},
-				"email": {Type: Email},
+				"email": {Type: FakeEmail},
 			},
 		},
 	}

@@ -25,28 +25,28 @@ func seed[T ScalarValue](value T) {
 	gofakeit.Seed(hash(value))
 }
 
-// Personal Information
-func TransformName(original string) string {
+// Personal Information (Gofakeit-based)
+func TransformFakeName(original string) string {
 	seed(original)
 	return gofakeit.Name()
 }
 
-func TransformFirstName(original string) string {
+func TransformFakeFirstName(original string) string {
 	seed(original)
 	return gofakeit.FirstName()
 }
 
-func TransformLastName(original string) string {
+func TransformFakeLastName(original string) string {
 	seed(original)
 	return gofakeit.LastName()
 }
 
-func TransformEmail(original string) string {
+func TransformFakeEmail(original string) string {
 	seed(original)
 	return gofakeit.Email()
 }
 
-func TransformSSN(original string) string {
+func TransformFakeSSN(original string) string {
 	seed(original)
 	ssn := gofakeit.SSN()
 	if len(ssn) == 9 {
@@ -55,163 +55,163 @@ func TransformSSN(original string) string {
 	return ssn
 }
 
-func TransformDateOfBirth(original string) string {
+func TransformFakeDateOfBirth(original string) string {
 	seed(original)
 	date := gofakeit.Date()
 	return date.Format("2006-01-02")
 }
 
-func TransformPhone(original string) string {
+func TransformFakePhone(original string) string {
 	seed(original)
 	return gofakeit.Phone()
 }
 
-func TransformGender(original string) string {
+func TransformFakeGender(original string) string {
 	seed(original)
 	return gofakeit.Gender()
 }
 
-func TransformTitle(original string) string {
+func TransformFakeTitle(original string) string {
 	seed(original)
 	return gofakeit.NamePrefix()
 }
 
-func TransformJobTitle(original string) string {
+func TransformFakeJobTitle(original string) string {
 	seed(original)
 	return gofakeit.JobTitle()
 }
 
-func TransformIndustry(original string) string {
+func TransformFakeIndustry(original string) string {
 	seed(original)
 	return gofakeit.Company() + " Industry"
 }
 
-func TransformDomainName(original string) string {
+func TransformFakeDomainName(original string) string {
 	seed(original)
 	return gofakeit.DomainName()
 }
 
-func TransformUsername(original string) string {
+func TransformFakeUsername(original string) string {
 	seed(original)
 	return gofakeit.Username()
 }
 
-func TransformPassword(original string) string {
+func TransformFakePassword(original string) string {
 	seed(original)
 	return gofakeit.Password(true, true, true, true, true, 12)
 }
 
-// Address Information
-func TransformStreetAddress(original string) string {
+// Address Information (Gofakeit-based)
+func TransformFakeStreetAddress(original string) string {
 	seed(original)
 	return gofakeit.Address().Address
 }
 
-func TransformStreet(original string) string {
+func TransformFakeStreet(original string) string {
 	seed(original)
 	return gofakeit.Address().Street
 }
 
-func TransformCity(original string) string {
+func TransformFakeCity(original string) string {
 	seed(original)
 	return gofakeit.Address().City
 }
 
-func TransformState(original string) string {
+func TransformFakeState(original string) string {
 	seed(original)
 	return gofakeit.Address().State
 }
 
-func TransformStateAbbr(original string) string {
+func TransformFakeStateAbbr(original string) string {
 	seed(original)
 	return gofakeit.StateAbr()
 }
 
-func TransformZip(original string) string {
+func TransformFakeZip(original string) string {
 	seed(original)
 	return gofakeit.Address().Zip
 }
 
-func TransformCountry(original string) string {
+func TransformFakeCountry(original string) string {
 	seed(original)
 	return gofakeit.Address().Country
 }
 
-func TransformLatitude(original float64) float64 {
+func TransformFakeLatitude(original float64) float64 {
 	seed(original)
 	return gofakeit.Latitude()
 }
 
-func TransformLongitude(original float64) float64 {
+func TransformFakeLongitude(original float64) float64 {
 	seed(original)
 	return gofakeit.Longitude()
 }
 
-// Product Information
-func TransformCompany(original string) string {
+// Product Information (Gofakeit-based)
+func TransformFakeCompany(original string) string {
 	seed(original)
 	return gofakeit.Company()
 }
 
-func TransformProduct(original string) string {
+func TransformFakeProduct(original string) string {
 	seed(original)
 	return gofakeit.Product().Name
 }
 
-func TransformProductName(original string) string {
+func TransformFakeProductName(original string) string {
 	seed(original)
 	return gofakeit.ProductName()
 }
 
-func TransformProductDescription(original string) string {
+func TransformFakeProductDescription(original string) string {
 	seed(original)
 	return gofakeit.ProductDescription()
 }
 
-// Text Content
-func TransformParagraph(original string) string {
+// Text Content (Gofakeit-based)
+func TransformFakeParagraph(original string) string {
 	seed(original)
 	return gofakeit.Paragraph(1, 3, 5, "\n")
 }
 
-func TransformWord(original string) string {
+func TransformFakeWord(original string) string {
 	seed(original)
 	return gofakeit.Word()
 }
 
-// Date and Time
-func TransformMonth(original string) string {
+// Date and Time (Gofakeit-based)
+func TransformFakeMonth(original string) string {
 	seed(original)
 	return gofakeit.MonthString()
 }
 
-func TransformMonthNum(original int) int {
+func TransformFakeMonthNum(original int) int {
 	seed(original)
 	return int(gofakeit.Date().Month())
 }
 
-func TransformWeekDay(original string) string {
+func TransformFakeWeekDay(original string) string {
 	seed(original)
 	return gofakeit.WeekDay()
 }
 
-func TransformYear(original int) int {
+func TransformFakeYear(original int) int {
 	seed(original)
 	return gofakeit.Date().Year()
 }
 
-// Financial Information
-func TransformCreditCardType(original string) string {
+// Financial Information (Gofakeit-based)
+func TransformFakeCreditCardType(original string) string {
 	seed(original)
 	return gofakeit.CreditCardType()
 }
 
-func TransformCreditCardNum(original string) string {
+func TransformFakeCreditCardNum(original string) string {
 	seed(original)
 	return gofakeit.CreditCardNumber(nil)
 }
 
-func TransformCurrency(original string) string {
+func TransformFakeCurrency(original string) string {
 	seed(original)
 	return gofakeit.Currency().Short
 }

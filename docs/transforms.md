@@ -24,12 +24,12 @@ version: v1
 tables:
   public.users:
     # Simple string transforms (shorthand format)
-    name: Name
-    email: Email
+    name: FakeName
+    email: FakeEmail
     
     # Object notation (equivalent to above)
     company:
-      type: Company
+      type: FakeCompany
     
     # Regex transforms require object notation
     phone:
@@ -40,36 +40,41 @@ tables:
 
 ## Available Transform Types
 
-**Personal Information:**
-- `Name` - Full name generation
-- `FirstName`, `LastName` - Individual name components
-- `Email` - Email address generation
-- `Phone` - Phone number generation
-- `SSN` - Social Security Number (XXX-XX-XXXX format)
-- `DateOfBirth` - Date of birth (YYYY-MM-DD format)
-- `Username`, `Password` - Account credentials
+**Personal Information (Gofakeit-based):**
+- `FakeName` - Full name generation
+- `FakeFirstName`, `FakeLastName` - Individual name components
+- `FakeEmail` - Email address generation
+- `FakePhone` - Phone number generation
+- `FakeSSN` - Social Security Number (XXX-XX-XXXX format)
+- `FakeDateOfBirth` - Date of birth (YYYY-MM-DD format)
+- `FakeUsername`, `FakePassword` - Account credentials
 
-**Address Information:**
-- `StreetAddress` - Full street address
-- `City`, `State`, `StateAbbr` - Location components
-- `Zip` - ZIP codes (XXXXX or XXXXX-XXXX format)
-- `Country` - Country names
-- `Latitude`, `Longitude` - Geographic coordinates
+**Address Information (Gofakeit-based):**
+- `FakeStreetAddress` - Full street address
+- `FakeCity`, `FakeState`, `FakeStateAbbr` - Location components
+- `FakeZip` - ZIP codes (XXXXX or XXXXX-XXXX format)
+- `FakeCountry` - Country names
+- `FakeLatitude`, `FakeLongitude` - Geographic coordinates
 
-**Business Information:**
-- `Company` - Company names
-- `JobTitle` - Job/position titles
-- `Industry` - Industry names
-- `Product`, `ProductName` - Product information
+**Business Information (Gofakeit-based):**
+- `FakeCompany` - Company names
+- `FakeJobTitle` - Job/position titles
+- `FakeIndustry` - Industry names
+- `FakeProduct`, `FakeProductName` - Product information
 
-**Text and Content:**
-- `Paragraph`, `Sentence`, `Word` - Text generation
-- `Characters`, `Digits` - String generation
+**Text and Content (Gofakeit-based):**
+- `FakeParagraph`, `FakeSentence`, `FakeWord` - Text generation
+- `FakeCharacters`, `FakeDigits` - String generation
 
-**Other Types:**
-- `Bool` - Boolean values
-- `CreditCardType`, `CreditCardNum` - Financial data
-- `Currency` - Currency codes
+**Financial Information (Gofakeit-based):**
+- `FakeCreditCardType`, `FakeCreditCardNum` - Financial data
+- `FakeCurrency` - Currency codes
+
+**Date and Time (Gofakeit-based):**
+- `FakeMonth`, `FakeMonthNum`, `FakeWeekDay`, `FakeYear` - Date/time components
+
+**Custom Transforms:**
+- `Bool` - Boolean values (deterministic custom implementation)
 
 **Pattern-Based Transforms:**
 - `Regex` - Apply custom regular expression patterns and replacements
@@ -134,7 +139,7 @@ card_number:
    version: v1
    tables:
      public.users:
-       email: Email
+       email: FakeEmail
    ```
 
 2. **Identify Sensitive Data**: Focus on columns containing:
@@ -151,9 +156,9 @@ card_number:
 4. **Consider Relationships**: Use consistent transforms for related data:
    ```yaml
    public.users:
-     email: Email
+     email: FakeEmail
    public.user_profiles:
-     user_email: Email  # Same transform maintains relationship
+     user_email: FakeEmail  # Same transform maintains relationship
    ```
 
 ## Example Configurations
@@ -163,20 +168,20 @@ card_number:
 version: v1
 tables:
   public.customers:
-    first_name: FirstName
-    last_name: LastName
-    email: Email
-    phone: Phone
-    street_address: StreetAddress
-    city: City
-    state: StateAbbr
-    zip_code: Zip
+    first_name: FakeFirstName
+    last_name: FakeLastName
+    email: FakeEmail
+    phone: FakePhone
+    street_address: FakeStreetAddress
+    city: FakeCity
+    state: FakeStateAbbr
+    zip_code: FakeZip
   public.orders:
-    customer_email: Email
-    billing_address: StreetAddress
+    customer_email: FakeEmail
+    billing_address: FakeStreetAddress
   public.payments:
-    cardholder_name: Name
-    card_number: CreditCardNum
+    cardholder_name: FakeName
+    card_number: FakeCreditCardNum
 ```
 
 **Comprehensive Example with Regex:**
@@ -185,12 +190,12 @@ version: v1
 tables:
   public.users:
     # Simple string transforms (shorthand format)
-    name: Name
-    email: Email
+    name: FakeName
+    email: FakeEmail
     
     # Object notation (equivalent to above)
     company:
-      type: Company
+      type: FakeCompany
     
     # Regex transforms require object notation
     phone:
@@ -209,7 +214,7 @@ tables:
       replacement: 'XXX.XXX.XXX.XXX'
   
   public.credit_cards:
-    cardholder_name: Name
+    cardholder_name: FakeName
     
     # Partial masking - keeps last 4 digits visible
     card_number:

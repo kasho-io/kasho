@@ -1,5 +1,5 @@
 version: v1
 tables:
   public.users:
-    name: Name
-    email: Email
+    name: FakeName
+    email: FakeEmail
