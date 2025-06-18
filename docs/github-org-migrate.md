@@ -11,9 +11,9 @@ Moving to a GitHub organization provides better collaboration features and profe
 ### 1. Document Current Configuration
 
 **GitHub Secrets (❗ Critical):**
-- [ ] List all repository secrets: `Settings > Secrets and variables > Actions`
-- [ ] Document secret names and values (store securely)
-- [ ] Current secrets include:
+- [x] List all repository secrets: `Settings > Secrets and variables > Actions`
+- [x] Document secret names and values (store securely)
+- [x] Current secrets include:
   - `DROPLET_HOST`, `DROPLET_USERNAME`, `DROPLET_SSH_KEY`
   - `KV_URL`, `CHANGE_STREAM_SERVICE`
   - `PRIMARY_DATABASE_URL`, `REPLICA_DATABASE_URL`
@@ -22,9 +22,9 @@ Moving to a GitHub organization provides better collaboration features and profe
   - `REPO_URL`
 
 **GitHub Settings:**
-- [ ] Note branch protection rules
-- [ ] Document any webhooks or integrations
-- [ ] Check collaborators and their permissions
+- [x] Note branch protection rules
+- [x] Document any webhooks or integrations
+- [x] Check collaborators and their permissions
 
 **Vercel Projects:**
 - [ ] List all connected Vercel projects (demo app, homepage app)
@@ -32,7 +32,7 @@ Moving to a GitHub organization provides better collaboration features and profe
 - [ ] Document environment variables for each project
 
 **DigitalOcean:**
-- [ ] Note the current `REPO_URL` being used in deployment
+- [x] Note the current `REPO_URL` being used in deployment
 - [ ] Verify SSH keys and access
 
 ## Migration Steps
@@ -59,10 +59,10 @@ Moving to a GitHub organization provides better collaboration features and profe
    - Click "I understand, transfer this repository"
 
 2. **Verify Transfer:**
-   - [ ] Repository appears in new organization
-   - [ ] All code, history, and branches transferred
-   - [ ] Issues and PRs transferred
-   - [ ] GitHub Actions workflows present (but secrets are missing)
+   - [x] Repository appears in new organization
+   - [x] All code, history, and branches transferred
+   - [x] Issues and PRs transferred
+   - [x] GitHub Actions workflows present (but secrets are missing)
 
 ### Phase 3: Reconfigure GitHub Actions
 
@@ -96,8 +96,8 @@ Moving to a GitHub organization provides better collaboration features and profe
    ```
 
 2. **Update Documentation:**
-   - [ ] Update README.md with new repository URLs
-   - [ ] Update any other docs referencing old repo URL
+   - [x] Update README.md with new repository URLs
+   - [x] Update any other docs referencing old repo URL
    - [ ] Commit and push changes
 
 ### Phase 5: Reconfigure Vercel
