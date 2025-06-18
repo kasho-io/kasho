@@ -123,8 +123,8 @@ Moving to a GitHub organization provides better collaboration features and profe
    - Delete old project after verification
 
 3. **Verify Vercel Integration:**
-   - [ ] Test auto-deployment by pushing a change to apps
-   - [ ] Verify custom domains still work
+   - [x] Test auto-deployment by pushing a change to apps
+   - [x] Verify custom domains still work
    - [x] Check environment variables are present
    - [x] Confirm build settings are correct
 
@@ -179,20 +179,20 @@ The deployment will automatically use the new repository URL from the updated `R
 ### Test Full Pipeline:
 
 1. **Code Changes:**
-   - [ ] Make a small change to a service
-   - [ ] Push to main branch
-   - [ ] Verify GitHub Actions run successfully
-   - [ ] Confirm auto-deployment to DigitalOcean works
+   - [x] Make a small change to a service
+   - [x] Push to main branch
+   - [x] Verify GitHub Actions run successfully
+   - [x] Confirm auto-deployment to DigitalOcean works
 
 2. **App Deployments:**
-   - [ ] Make a change to demo app
-   - [ ] Verify Vercel auto-deployment works
-   - [ ] Check that custom domains still work
+   - [x] Make a change to demo app
+   - [x] Verify Vercel auto-deployment works
+   - [x] Check that custom domains still work
 
 3. **Infrastructure:**
-   - [ ] Verify demo environment is accessible
-   - [ ] Test that all services are running
-   - [ ] Confirm database replication is working
+   - [x] Verify demo environment is accessible
+   - [x] Test that all services are running
+   - [x] Confirm database replication is working
 
 ## Troubleshooting
 
