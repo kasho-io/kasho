@@ -32,14 +32,13 @@ task lint
 
 | Task | Description |
 |------|-------------|
-| `task test:pg-change-stream` | Test pg-change-stream service with coverage |
-| `task test:pg-translicator` | Test pg-translicator service with coverage |
-| `task test:pg-bootstrap-sync` | Test pg-bootstrap-sync tool with coverage |
-| `task test:kvbuffer` | Test shared kvbuffer package with coverage |
-| `task test:env-template` | Test env-template tool |
-| `task test:proto` | Test proto package |
-| `task test:app-demo` | Test demo Next.js app |
-| `task test:app-homepage` | Test homepage Next.js app |
+| `task test:service:pg-change-stream` | Test pg-change-stream service with coverage |
+| `task test:service:pg-translicator` | Test pg-translicator service with coverage |
+| `task test:tool:pg-bootstrap-sync` | Test pg-bootstrap-sync tool with coverage |
+| `task test:pkg:kvbuffer` | Test shared kvbuffer package with coverage |
+| `task test:tool:env-template` | Test env-template tool |
+| `task test:app:demo` | Test demo Next.js app |
+| `task test:app:homepage` | Test homepage Next.js app |
 
 ### Linting Tasks
 
@@ -48,8 +47,8 @@ task lint
 | `task lint` | Run linting for all code |
 | `task lint:go` | Lint Go services (`go vet`) |
 | `task lint:apps` | Lint all Next.js apps |
-| `task lint:app-demo` | Lint demo app only |
-| `task lint:app-homepage` | Lint homepage app only |
+| `task lint:app:demo` | Lint demo app only |
+| `task lint:app:homepage` | Lint homepage app only |
 
 
 ## Testing Philosophy
@@ -86,10 +85,10 @@ task lint
 3. **Quick feedback loop**:
    ```bash
    # Test just one service
-   task test:pg-change-stream
+   task test:service:pg-change-stream
    
    # Test just one app
-   task test:app-demo
+   task test:app:demo
    ```
 
 ## GitHub Actions Integration
@@ -103,7 +102,7 @@ The GitHub Actions workflows use these tasks:
 
 # In .github/workflows/test-nextjs-app.yml  
 - name: Run app tests
-  run: task test:app-{app-name}
+  run: task test:app:{app-name}
 ```
 
 ### Deployment Integration
@@ -129,7 +128,7 @@ This ensures the demo environment only receives tested, working code.
 2. **What the build script does**:
    ```bash
    # The script runs these task equivalents:
-   npm run lint      # Same as: task lint:app-demo
+   npm run lint      # Same as: task lint:app:demo
    npx tsc --noEmit  # Type checking
    npm run build     # Final build step
    ```
@@ -173,7 +172,7 @@ Each app has a `vercel.json`:
    }
    ```
 
-3. The test will be run by `task test:app-demo`
+3. The test will be run by `task test:app:demo`
 
 ## Coverage Reports
 
@@ -181,7 +180,7 @@ Go services generate coverage reports automatically:
 
 ```bash
 # View coverage for a specific service
-task test:pg-change-stream
+task test:service:pg-change-stream
 # This generates: services/pg-change-stream/coverage.out
 
 # View coverage in browser (after running tests)
@@ -232,8 +231,8 @@ task --summary test:go
 task dev
 
 # Start a specific app
-task dev:app-demo
-task dev:app-homepage
+task dev:app:demo
+task dev:app:homepage
 ```
 
 ### Before Pull Requests

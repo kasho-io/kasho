@@ -36,7 +36,7 @@ jobs:
         working-directory: ${{ inputs.app-directory }}
 
       - name: Run tests
-        run: task test:app-${{ inputs.app-name }}
+        run: task test:app:${{ inputs.app-name }}
 
       - name: Build application
         run: npm run build
