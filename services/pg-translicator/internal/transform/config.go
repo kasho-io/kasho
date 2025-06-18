@@ -17,116 +17,116 @@ type TransformFunction[T ScalarValue] func(original string) T
 type TransformType string
 
 const (
-	// Personal Information
-	Name        TransformType = "Name"
-	FirstName   TransformType = "FirstName"
-	LastName    TransformType = "LastName"
-	Email       TransformType = "Email"
-	SSN         TransformType = "SSN"
-	DateOfBirth TransformType = "DateOfBirth"
-	Phone       TransformType = "Phone"
-	Gender      TransformType = "Gender"
-	Title       TransformType = "Title"
-	JobTitle    TransformType = "JobTitle"
-	Industry    TransformType = "Industry"
-	DomainName  TransformType = "DomainName"
-	Username    TransformType = "Username"
-	Password    TransformType = "Password"
+	// Personal Information (Gofakeit-based)
+	FakeName        TransformType = "FakeName"
+	FakeFirstName   TransformType = "FakeFirstName"
+	FakeLastName    TransformType = "FakeLastName"
+	FakeEmail       TransformType = "FakeEmail"
+	FakeSSN         TransformType = "FakeSSN"
+	FakeDateOfBirth TransformType = "FakeDateOfBirth"
+	FakePhone       TransformType = "FakePhone"
+	FakeGender      TransformType = "FakeGender"
+	FakeTitle       TransformType = "FakeTitle"
+	FakeJobTitle    TransformType = "FakeJobTitle"
+	FakeIndustry    TransformType = "FakeIndustry"
+	FakeDomainName  TransformType = "FakeDomainName"
+	FakeUsername    TransformType = "FakeUsername"
+	FakePassword    TransformType = "FakePassword"
 
-	// Address Information
-	StreetAddress TransformType = "StreetAddress"
-	Street        TransformType = "Street"
-	City          TransformType = "City"
-	State         TransformType = "State"
-	StateAbbr     TransformType = "StateAbbr"
-	Zip           TransformType = "Zip"
-	Country       TransformType = "Country"
-	Latitude      TransformType = "Latitude"
-	Longitude     TransformType = "Longitude"
+	// Address Information (Gofakeit-based)
+	FakeStreetAddress TransformType = "FakeStreetAddress"
+	FakeStreet        TransformType = "FakeStreet"
+	FakeCity          TransformType = "FakeCity"
+	FakeState         TransformType = "FakeState"
+	FakeStateAbbr     TransformType = "FakeStateAbbr"
+	FakeZip           TransformType = "FakeZip"
+	FakeCountry       TransformType = "FakeCountry"
+	FakeLatitude      TransformType = "FakeLatitude"
+	FakeLongitude     TransformType = "FakeLongitude"
 
-	// Product Information
-	Company            TransformType = "Company"
-	Product            TransformType = "Product"
-	ProductName        TransformType = "ProductName"
-	ProductDescription TransformType = "ProductDescription"
+	// Product Information (Gofakeit-based)
+	FakeCompany            TransformType = "FakeCompany"
+	FakeProduct            TransformType = "FakeProduct"
+	FakeProductName        TransformType = "FakeProductName"
+	FakeProductDescription TransformType = "FakeProductDescription"
 
-	// Text Content
-	Paragraph  TransformType = "Paragraph"
-	Sentence   TransformType = "Sentence"
-	Word       TransformType = "Word"
-	Words      TransformType = "Words"
-	Characters TransformType = "Characters"
-	Character  TransformType = "Character"
-	Digits     TransformType = "Digits"
+	// Text Content (Gofakeit-based)
+	FakeParagraph  TransformType = "FakeParagraph"
+	FakeSentence   TransformType = "FakeSentence"
+	FakeWord       TransformType = "FakeWord"
+	FakeWords      TransformType = "FakeWords"
+	FakeCharacters TransformType = "FakeCharacters"
+	FakeCharacter  TransformType = "FakeCharacter"
+	FakeDigits     TransformType = "FakeDigits"
 
-	// Date and Time
-	Month    TransformType = "Month"
-	MonthNum TransformType = "MonthNum"
-	WeekDay  TransformType = "WeekDay"
-	Year     TransformType = "Year"
+	// Date and Time (Gofakeit-based)
+	FakeMonth    TransformType = "FakeMonth"
+	FakeMonthNum TransformType = "FakeMonthNum"
+	FakeWeekDay  TransformType = "FakeWeekDay"
+	FakeYear     TransformType = "FakeYear"
 
-	// Financial Information
-	CreditCardType TransformType = "CreditCardType"
-	CreditCardNum  TransformType = "CreditCardNum"
-	Currency       TransformType = "Currency"
+	// Financial Information (Gofakeit-based)
+	FakeCreditCardType TransformType = "FakeCreditCardType"
+	FakeCreditCardNum  TransformType = "FakeCreditCardNum"
+	FakeCurrency       TransformType = "FakeCurrency"
 
-	// Boolean
+	// Custom transforms (non-gofakeit)
 	Bool TransformType = "Bool"
 
-	// Pattern-based
+	// Pattern-based transforms
 	Regex TransformType = "Regex"
 )
 
 var transformFunctions = map[TransformType]any{
-	// Personal Information
-	Name:        TransformName,
-	FirstName:   TransformFirstName,
-	LastName:    TransformLastName,
-	Email:       TransformEmail,
-	SSN:         TransformSSN,
-	DateOfBirth: TransformDateOfBirth,
-	Phone:       TransformPhone,
-	Gender:      TransformGender,
-	Title:       TransformTitle,
-	JobTitle:    TransformJobTitle,
-	Industry:    TransformIndustry,
-	DomainName:  TransformDomainName,
-	Username:    TransformUsername,
-	Password:    TransformPassword,
+	// Personal Information (Gofakeit-based)
+	FakeName:        TransformFakeName,
+	FakeFirstName:   TransformFakeFirstName,
+	FakeLastName:    TransformFakeLastName,
+	FakeEmail:       TransformFakeEmail,
+	FakeSSN:         TransformFakeSSN,
+	FakeDateOfBirth: TransformFakeDateOfBirth,
+	FakePhone:       TransformFakePhone,
+	FakeGender:      TransformFakeGender,
+	FakeTitle:       TransformFakeTitle,
+	FakeJobTitle:    TransformFakeJobTitle,
+	FakeIndustry:    TransformFakeIndustry,
+	FakeDomainName:  TransformFakeDomainName,
+	FakeUsername:    TransformFakeUsername,
+	FakePassword:    TransformFakePassword,
 
-	// Address Information
-	StreetAddress: TransformStreetAddress,
-	Street:        TransformStreet,
-	City:          TransformCity,
-	State:         TransformState,
-	StateAbbr:     TransformStateAbbr,
-	Zip:           TransformZip,
-	Country:       TransformCountry,
-	Latitude:      TransformLatitude,
-	Longitude:     TransformLongitude,
+	// Address Information (Gofakeit-based)
+	FakeStreetAddress: TransformFakeStreetAddress,
+	FakeStreet:        TransformFakeStreet,
+	FakeCity:          TransformFakeCity,
+	FakeState:         TransformFakeState,
+	FakeStateAbbr:     TransformFakeStateAbbr,
+	FakeZip:           TransformFakeZip,
+	FakeCountry:       TransformFakeCountry,
+	FakeLatitude:      TransformFakeLatitude,
+	FakeLongitude:     TransformFakeLongitude,
 
-	// Product Information
-	Company:            TransformCompany,
-	Product:            TransformProduct,
-	ProductName:        TransformProductName,
-	ProductDescription: TransformProductDescription,
+	// Product Information (Gofakeit-based)
+	FakeCompany:            TransformFakeCompany,
+	FakeProduct:            TransformFakeProduct,
+	FakeProductName:        TransformFakeProductName,
+	FakeProductDescription: TransformFakeProductDescription,
 
-	// Text Content
-	Paragraph: TransformParagraph,
-	Word:      TransformWord,
+	// Text Content (Gofakeit-based)
+	FakeParagraph: TransformFakeParagraph,
+	FakeWord:      TransformFakeWord,
 
-	// Date and Time
-	Month:    TransformMonth,
-	MonthNum: TransformMonthNum,
-	WeekDay:  TransformWeekDay,
-	Year:     TransformYear,
+	// Date and Time (Gofakeit-based)
+	FakeMonth:    TransformFakeMonth,
+	FakeMonthNum: TransformFakeMonthNum,
+	FakeWeekDay:  TransformFakeWeekDay,
+	FakeYear:     TransformFakeYear,
 
-	// Financial Information
-	CreditCardType: TransformCreditCardType,
-	CreditCardNum:  TransformCreditCardNum,
-	Currency:       TransformCurrency,
+	// Financial Information (Gofakeit-based)
+	FakeCreditCardType: TransformFakeCreditCardType,
+	FakeCreditCardNum:  TransformFakeCreditCardNum,
+	FakeCurrency:       TransformFakeCurrency,
 
-	// Boolean
+	// Custom transforms (non-gofakeit)
 	Bool: TransformBool,
 }
 

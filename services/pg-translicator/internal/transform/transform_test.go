@@ -66,148 +66,148 @@ func testLimitedTransform[T comparable](t *testing.T, name string, transform fun
 	})
 }
 
-func TestTransformName(t *testing.T) {
-	testTransform(t, "Name", TransformName, "test123")
+func TestTransformFakeName(t *testing.T) {
+	testTransform(t, "Name", TransformFakeName, "test123")
 }
 
-func TestTransformFirstName(t *testing.T) {
-	testTransform(t, "FirstName", TransformFirstName, "test123")
+func TestTransformFakeFirstName(t *testing.T) {
+	testTransform(t, "FirstName", TransformFakeFirstName, "test123")
 }
 
-func TestTransformLastName(t *testing.T) {
-	testTransform(t, "LastName", TransformLastName, "test123")
+func TestTransformFakeLastName(t *testing.T) {
+	testTransform(t, "LastName", TransformFakeLastName, "test123")
 }
 
-func TestTransformEmail(t *testing.T) {
-	testTransform(t, "Email", TransformEmail, "test123")
+func TestTransformFakeEmail(t *testing.T) {
+	testTransform(t, "Email", TransformFakeEmail, "test123")
 }
 
-func TestTransformSSN(t *testing.T) {
-	testTransform(t, "SSN", TransformSSN, "test123")
+func TestTransformFakeSSN(t *testing.T) {
+	testTransform(t, "SSN", TransformFakeSSN, "test123")
 }
 
-func TestTransformDateOfBirth(t *testing.T) {
-	testTransform(t, "DateOfBirth", TransformDateOfBirth, "2024-03-20")
+func TestTransformFakeDateOfBirth(t *testing.T) {
+	testTransform(t, "DateOfBirth", TransformFakeDateOfBirth, "2024-03-20")
 }
 
-func TestTransformPhone(t *testing.T) {
-	testTransform(t, "Phone", TransformPhone, "test123")
+func TestTransformFakePhone(t *testing.T) {
+	testTransform(t, "Phone", TransformFakePhone, "test123")
 }
 
-func TestTransformGender(t *testing.T) {
-	testLimitedTransform(t, "Gender", TransformGender, "test123", []string{"male", "female", "other"})
+func TestTransformFakeGender(t *testing.T) {
+	testLimitedTransform(t, "Gender", TransformFakeGender, "test123", []string{"male", "female", "other"})
 }
 
-func TestTransformTitle(t *testing.T) {
-	testTransform(t, "Title", TransformTitle, "test123")
+func TestTransformFakeTitle(t *testing.T) {
+	testTransform(t, "Title", TransformFakeTitle, "test123")
 }
 
-func TestTransformJobTitle(t *testing.T) {
-	testTransform(t, "JobTitle", TransformJobTitle, "test123")
+func TestTransformFakeJobTitle(t *testing.T) {
+	testTransform(t, "JobTitle", TransformFakeJobTitle, "test123")
 }
 
-func TestTransformIndustry(t *testing.T) {
-	testTransform(t, "Industry", TransformIndustry, "test123")
+func TestTransformFakeIndustry(t *testing.T) {
+	testTransform(t, "Industry", TransformFakeIndustry, "test123")
 }
 
-func TestTransformDomainName(t *testing.T) {
-	testTransform(t, "DomainName", TransformDomainName, "test123")
+func TestTransformFakeDomainName(t *testing.T) {
+	testTransform(t, "DomainName", TransformFakeDomainName, "test123")
 }
 
-func TestTransformUsername(t *testing.T) {
-	testTransform(t, "Username", TransformUsername, "test123")
+func TestTransformFakeUsername(t *testing.T) {
+	testTransform(t, "Username", TransformFakeUsername, "test123")
 }
 
-func TestTransformPassword(t *testing.T) {
-	testTransform(t, "Password", TransformPassword, "test123")
+func TestTransformFakePassword(t *testing.T) {
+	testTransform(t, "Password", TransformFakePassword, "test123")
 }
 
-func TestTransformStreetAddress(t *testing.T) {
-	testTransform(t, "StreetAddress", TransformStreetAddress, "test123")
+func TestTransformFakeStreetAddress(t *testing.T) {
+	testTransform(t, "StreetAddress", TransformFakeStreetAddress, "test123")
 }
 
-func TestTransformStreet(t *testing.T) {
-	testTransform(t, "Street", TransformStreet, "test123")
+func TestTransformFakeStreet(t *testing.T) {
+	testTransform(t, "Street", TransformFakeStreet, "test123")
 }
 
-func TestTransformCity(t *testing.T) {
-	testTransform(t, "City", TransformCity, "test123")
+func TestTransformFakeCity(t *testing.T) {
+	testTransform(t, "City", TransformFakeCity, "test123")
 }
 
-func TestTransformState(t *testing.T) {
-	testTransform(t, "State", TransformState, "test123")
+func TestTransformFakeState(t *testing.T) {
+	testTransform(t, "State", TransformFakeState, "test123")
 }
 
-func TestTransformStateAbbr(t *testing.T) {
-	testTransform(t, "StateAbbr", TransformStateAbbr, "test123")
+func TestTransformFakeStateAbbr(t *testing.T) {
+	testTransform(t, "StateAbbr", TransformFakeStateAbbr, "test123")
 }
 
-func TestTransformZip(t *testing.T) {
-	testTransform(t, "Zip", TransformZip, "test123")
+func TestTransformFakeZip(t *testing.T) {
+	testTransform(t, "Zip", TransformFakeZip, "test123")
 }
 
-func TestTransformCountry(t *testing.T) {
-	testTransform(t, "Country", TransformCountry, "test123")
+func TestTransformFakeCountry(t *testing.T) {
+	testTransform(t, "Country", TransformFakeCountry, "test123")
 }
 
-func TestTransformLatitude(t *testing.T) {
-	testTransform(t, "Latitude", TransformLatitude, 0.0)
+func TestTransformFakeLatitude(t *testing.T) {
+	testTransform(t, "Latitude", TransformFakeLatitude, 0.0)
 }
 
-func TestTransformLongitude(t *testing.T) {
-	testTransform(t, "Longitude", TransformLongitude, 0.0)
+func TestTransformFakeLongitude(t *testing.T) {
+	testTransform(t, "Longitude", TransformFakeLongitude, 0.0)
 }
 
-func TestTransformCompany(t *testing.T) {
-	testTransform(t, "Company", TransformCompany, "test123")
+func TestTransformFakeCompany(t *testing.T) {
+	testTransform(t, "Company", TransformFakeCompany, "test123")
 }
 
-func TestTransformProduct(t *testing.T) {
-	testTransform(t, "Product", TransformProduct, "test123")
+func TestTransformFakeProduct(t *testing.T) {
+	testTransform(t, "Product", TransformFakeProduct, "test123")
 }
 
-func TestTransformProductName(t *testing.T) {
-	testTransform(t, "ProductName", TransformProductName, "test123")
+func TestTransformFakeProductName(t *testing.T) {
+	testTransform(t, "ProductName", TransformFakeProductName, "test123")
 }
 
-func TestTransformProductDescription(t *testing.T) {
-	testTransform(t, "ProductDescription", TransformProductDescription, "test123")
+func TestTransformFakeProductDescription(t *testing.T) {
+	testTransform(t, "ProductDescription", TransformFakeProductDescription, "test123")
 }
 
-func TestTransformParagraph(t *testing.T) {
-	testTransform(t, "Paragraph", TransformParagraph, "test123")
+func TestTransformFakeParagraph(t *testing.T) {
+	testTransform(t, "Paragraph", TransformFakeParagraph, "test123")
 }
 
-func TestTransformWord(t *testing.T) {
-	testTransform(t, "Word", TransformWord, "test123")
+func TestTransformFakeWord(t *testing.T) {
+	testTransform(t, "Word", TransformFakeWord, "test123")
 }
 
-func TestTransformMonth(t *testing.T) {
-	testTransform(t, "Month", TransformMonth, "test123")
+func TestTransformFakeMonth(t *testing.T) {
+	testTransform(t, "Month", TransformFakeMonth, "test123")
 }
 
-func TestTransformMonthNum(t *testing.T) {
-	testTransform(t, "MonthNum", TransformMonthNum, 1)
+func TestTransformFakeMonthNum(t *testing.T) {
+	testTransform(t, "MonthNum", TransformFakeMonthNum, 1)
 }
 
-func TestTransformWeekDay(t *testing.T) {
-	testTransform(t, "WeekDay", TransformWeekDay, "test123")
+func TestTransformFakeWeekDay(t *testing.T) {
+	testTransform(t, "WeekDay", TransformFakeWeekDay, "test123")
 }
 
-func TestTransformYear(t *testing.T) {
-	testTransform(t, "Year", TransformYear, 2024)
+func TestTransformFakeYear(t *testing.T) {
+	testTransform(t, "Year", TransformFakeYear, 2024)
 }
 
-func TestTransformCreditCardType(t *testing.T) {
-	testTransform(t, "CreditCardType", TransformCreditCardType, "test123")
+func TestTransformFakeCreditCardType(t *testing.T) {
+	testTransform(t, "CreditCardType", TransformFakeCreditCardType, "test123")
 }
 
-func TestTransformCreditCardNum(t *testing.T) {
-	testTransform(t, "CreditCardNum", TransformCreditCardNum, "test123")
+func TestTransformFakeCreditCardNum(t *testing.T) {
+	testTransform(t, "CreditCardNum", TransformFakeCreditCardNum, "test123")
 }
 
-func TestTransformCurrency(t *testing.T) {
-	testTransform(t, "Currency", TransformCurrency, "test123")
+func TestTransformFakeCurrency(t *testing.T) {
+	testTransform(t, "Currency", TransformFakeCurrency, "test123")
 }
 
 func TestTransformBool(t *testing.T) {
@@ -224,7 +224,7 @@ func TestTransformOutputFormats(t *testing.T) {
 	}{
 		{
 			name:      "Email format",
-			transform: TransformEmail,
+			transform: TransformFakeEmail,
 			input:     "test@example.com",
 			validate: func(s string) error {
 				if !strings.Contains(s, "@") {
@@ -238,7 +238,7 @@ func TestTransformOutputFormats(t *testing.T) {
 		},
 		{
 			name:      "SSN format",
-			transform: TransformSSN,
+			transform: TransformFakeSSN,
 			input:     "123-45-6789",
 			validate: func(s string) error {
 				// Check format XXX-XX-XXXX
@@ -251,7 +251,7 @@ func TestTransformOutputFormats(t *testing.T) {
 		},
 		{
 			name:      "Phone format",
-			transform: TransformPhone,
+			transform: TransformFakePhone,
 			input:     "555-123-4567",
 			validate: func(s string) error {
 				// Check various phone formats
@@ -264,7 +264,7 @@ func TestTransformOutputFormats(t *testing.T) {
 		},
 		{
 			name:      "Zip code format",
-			transform: TransformZip,
+			transform: TransformFakeZip,
 			input:     "12345",
 			validate: func(s string) error {
 				matched, _ := regexp.MatchString(`^\d{5}(-\d{4})?$`, s)
@@ -276,7 +276,7 @@ func TestTransformOutputFormats(t *testing.T) {
 		},
 		{
 			name:      "State abbreviation format",
-			transform: TransformStateAbbr,
+			transform: TransformFakeStateAbbr,
 			input:     "CA",
 			validate: func(s string) error {
 				if len(s) != 2 {
@@ -305,7 +305,7 @@ func TestTransformRanges(t *testing.T) {
 	// Test latitude range
 	t.Run("Latitude range", func(t *testing.T) {
 		for i := 0; i < 10; i++ {
-			lat := TransformLatitude(float64(i))
+			lat := TransformFakeLatitude(float64(i))
 			if lat < -90 || lat > 90 {
 				t.Errorf("Latitude out of range: %f", lat)
 			}
@@ -315,7 +315,7 @@ func TestTransformRanges(t *testing.T) {
 	// Test longitude range
 	t.Run("Longitude range", func(t *testing.T) {
 		for i := 0; i < 10; i++ {
-			lon := TransformLongitude(float64(i))
+			lon := TransformFakeLongitude(float64(i))
 			if lon < -180 || lon > 180 {
 				t.Errorf("Longitude out of range: %f", lon)
 			}
@@ -325,7 +325,7 @@ func TestTransformRanges(t *testing.T) {
 	// Test month number range
 	t.Run("Month number range", func(t *testing.T) {
 		for i := 1; i <= 12; i++ {
-			month := TransformMonthNum(i)
+			month := TransformFakeMonthNum(i)
 			if month < 1 || month > 12 {
 				t.Errorf("Month number out of range: %d", month)
 			}
@@ -337,8 +337,8 @@ func TestTransformRanges(t *testing.T) {
 func TestTransformEdgeCases(t *testing.T) {
 	t.Run("Empty string handling", func(t *testing.T) {
 		// Should handle empty strings without panicking
-		result1 := TransformEmail("")
-		result2 := TransformEmail("")
+		result1 := TransformFakeEmail("")
+		result2 := TransformFakeEmail("")
 		if result1 != result2 {
 			t.Errorf("Empty string produced non-deterministic results")
 		}
@@ -347,8 +347,8 @@ func TestTransformEdgeCases(t *testing.T) {
 	t.Run("Special characters", func(t *testing.T) {
 		inputs := []string{"O'Brien", "José", "François"}
 		for _, input := range inputs {
-			result1 := TransformName(input)
-			result2 := TransformName(input)
+			result1 := TransformFakeName(input)
+			result2 := TransformFakeName(input)
 			if result1 != result2 {
 				t.Errorf("Special character input %q produced non-deterministic results", input)
 			}
@@ -357,8 +357,8 @@ func TestTransformEdgeCases(t *testing.T) {
 
 	t.Run("Very long input", func(t *testing.T) {
 		longInput := strings.Repeat("a", 1000)
-		result1 := TransformParagraph(longInput)
-		result2 := TransformParagraph(longInput)
+		result1 := TransformFakeParagraph(longInput)
+		result2 := TransformFakeParagraph(longInput)
 		if result1 != result2 {
 			t.Errorf("Long input produced non-deterministic results")
 		}
