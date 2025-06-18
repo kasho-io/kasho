@@ -3,6 +3,7 @@ package transform
 import (
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"kasho/proto"
@@ -99,7 +100,7 @@ func TestGetFakeValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetFakeValue(config, tt.table, tt.column, tt.original)
+			got, err := GetFakeValue(config, tt.table, tt.column, tt.original, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetFakeValue() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -387,7 +388,7 @@ func TestGetFakeValueExtended(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := GetFakeValue(config, tt.table, tt.column, tt.original)
+			result, err := GetFakeValue(config, tt.table, tt.column, tt.original, nil)
 			if tt.expectError {
 				if err == nil {
 					t.Error("Expected error but got none")
@@ -666,7 +667,7 @@ func TestGetFakeValueWithRegex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetFakeValue(config, tt.table, tt.column, tt.original)
+			got, err := GetFakeValue(config, tt.table, tt.column, tt.original, nil)
 			
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetFakeValue() error = %v, wantErr %v", err, tt.wantErr)
@@ -731,6 +732,22 @@ email: FakeEmail`,
 				"email": {Type: FakeEmail},
 			},
 		},
+		{
+			name: "template format",
+			yaml: `
+name: FakeName
+email:
+  type: Template
+  template: '{{.first_name}}.{{.last_name}}@example.com'
+slug:
+  type: Template
+  template: '{{.name | lower | slugify}}'`,
+			want: TableConfig{
+				"name":  {Type: FakeName},
+				"email": {Type: Template, Template: "{{.first_name}}.{{.last_name}}@example.com"},
+				"slug":  {Type: Template, Template: "{{.name | lower | slugify}}"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -748,4 +765,460 @@ email: FakeEmail`,
 			}
 		})
 	}
+}
+
+func TestGetFakeValueWithTemplate(t *testing.T) {
+	config := &Config{
+		Version: ConfigVersionV1,
+		Tables: map[string]TableConfig{
+			"users": {
+				"email": {
+					Type:     Template,
+					Template: "{{.first_name}}.{{.last_name}}@example.com",
+				},
+				"display_name": {
+					Type:     Template,
+					Template: "{{.first_name}} {{.last_name}}",
+				},
+				"slug": {
+					Type:     Template,
+					Template: "{{.name | lower | slugify}}",
+				},
+				"username": {
+					Type:     Template,
+					Template: "{{.first_name | lower}}_{{.last_name | lower}}",
+				},
+				"initials": {
+					Type:     Template,
+					Template: "{{.first_name}}{{.last_name}}",
+				},
+				"domain": {
+					Type:     Template,
+					Template: "{{.email | after \"@\"}}",
+				},
+			},
+		},
+	}
+
+	// Create sample DMLData with row context
+	dmlData := &proto.DMLData{
+		Table:       "users",
+		ColumnNames: []string{"id", "first_name", "last_name", "name", "email"},
+		ColumnValues: []*proto.ColumnValue{
+			{Value: &proto.ColumnValue_IntValue{IntValue: 1}},
+			{Value: &proto.ColumnValue_StringValue{StringValue: "John"}},
+			{Value: &proto.ColumnValue_StringValue{StringValue: "Doe"}},
+			{Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}},
+			{Value: &proto.ColumnValue_StringValue{StringValue: "john.doe@company.com"}},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		table    string
+		column   string
+		original *proto.ColumnValue
+		want     *proto.ColumnValue
+		wantErr  bool
+	}{
+		{
+			name:   "template email with cross-column reference",
+			table:  "users",
+			column: "email",
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "old@example.com"},
+			},
+			want: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "John.Doe@example.com"},
+			},
+		},
+		{
+			name:   "template display name",
+			table:  "users",
+			column: "display_name",
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "Old Name"},
+			},
+			want: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"},
+			},
+		},
+		{
+			name:   "template with slugify helper",
+			table:  "users",
+			column: "slug",
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "old-slug"},
+			},
+			want: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "john-doe"},
+			},
+		},
+		{
+			name:   "template with lower helper",
+			table:  "users",
+			column: "username",
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "olduser"},
+			},
+			want: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "john_doe"},
+			},
+		},
+		{
+			name:   "template with simple concatenation",
+			table:  "users",
+			column: "initials",
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "XX"},
+			},
+			want: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "JohnDoe"},
+			},
+		},
+		{
+			name:   "template with after helper",
+			table:  "users",
+			column: "domain",
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "old.com"},
+			},
+			want: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "company.com"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetFakeValue(config, tt.table, tt.column, tt.original, dmlData)
+			
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetFakeValue() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			
+			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetFakeValue() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetFakeValueTemplateErrors(t *testing.T) {
+	config := &Config{
+		Version: ConfigVersionV1,
+		Tables: map[string]TableConfig{
+			"users": {
+				"email": {
+					Type:     Template,
+					Template: "{{.first_name}}.{{.last_name}}@example.com",
+				},
+				"invalid": {
+					Type:     Template,
+					Template: "{{.nonexistent | invalid_function}}",
+				},
+				"syntax_error": {
+					Type:     Template,
+					Template: "{{.name",
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		table    string
+		column   string
+		original *proto.ColumnValue
+		dmlData  *proto.DMLData
+		wantErr  bool
+	}{
+		{
+			name:   "template without DML data",
+			table:  "users",
+			column: "email",
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "test@example.com"},
+			},
+			dmlData: nil,
+			wantErr: true,
+		},
+		{
+			name:   "template with invalid syntax",
+			table:  "users",
+			column: "syntax_error",
+			original: &proto.ColumnValue{
+				Value: &proto.ColumnValue_StringValue{StringValue: "test"},
+			},
+			dmlData: &proto.DMLData{
+				Table:       "users",
+				ColumnNames: []string{"name"},
+				ColumnValues: []*proto.ColumnValue{
+					{Value: &proto.ColumnValue_StringValue{StringValue: "John"}},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := GetFakeValue(config, tt.table, tt.column, tt.original, tt.dmlData)
+			
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetFakeValue() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestTransformTemplate(t *testing.T) {
+	tests := []struct {
+		name        string
+		template    string
+		row         map[string]*proto.ColumnValue
+		want        string
+		wantErr     bool
+	}{
+		{
+			name:     "simple field access",
+			template: "{{.name}}",
+			row: map[string]*proto.ColumnValue{
+				"name": {Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}},
+			},
+			want: "John Doe",
+		},
+		{
+			name:     "multiple fields",
+			template: "{{.first_name}} {{.last_name}}",
+			row: map[string]*proto.ColumnValue{
+				"first_name": {Value: &proto.ColumnValue_StringValue{StringValue: "Jane"}},
+				"last_name":  {Value: &proto.ColumnValue_StringValue{StringValue: "Smith"}},
+			},
+			want: "Jane Smith",
+		},
+		{
+			name:     "with lower helper",
+			template: "{{.name | lower}}",
+			row: map[string]*proto.ColumnValue{
+				"name": {Value: &proto.ColumnValue_StringValue{StringValue: "JOHN DOE"}},
+			},
+			want: "john doe",
+		},
+		{
+			name:     "with upper helper",
+			template: "{{.name | upper}}",
+			row: map[string]*proto.ColumnValue{
+				"name": {Value: &proto.ColumnValue_StringValue{StringValue: "john doe"}},
+			},
+			want: "JOHN DOE",
+		},
+		{
+			name:     "with slugify helper",
+			template: "{{.title | slugify}}",
+			row: map[string]*proto.ColumnValue{
+				"title": {Value: &proto.ColumnValue_StringValue{StringValue: "Hello World! This is a Test."}},
+			},
+			want: "hello-world-this-is-a-test",
+		},
+		{
+			name:     "with before helper",
+			template: "{{.email | before \"@\"}}",
+			row: map[string]*proto.ColumnValue{
+				"email": {Value: &proto.ColumnValue_StringValue{StringValue: "user@example.com"}},
+			},
+			want: "user",
+		},
+		{
+			name:     "with after helper",
+			template: "{{.email | after \"@\"}}",
+			row: map[string]*proto.ColumnValue{
+				"email": {Value: &proto.ColumnValue_StringValue{StringValue: "user@example.com"}},
+			},
+			want: "example.com",
+		},
+		{
+			name:     "chained helpers",
+			template: "{{.name | lower | slugify}}",
+			row: map[string]*proto.ColumnValue{
+				"name": {Value: &proto.ColumnValue_StringValue{StringValue: "John Doe Jr."}},
+			},
+			want: "john-doe-jr",
+		},
+		{
+			name:     "integer field",
+			template: "User ID: {{.id}}",
+			row: map[string]*proto.ColumnValue{
+				"id": {Value: &proto.ColumnValue_IntValue{IntValue: 123}},
+			},
+			want: "User ID: 123",
+		},
+		{
+			name:     "float field",
+			template: "Score: {{.score}}",
+			row: map[string]*proto.ColumnValue{
+				"score": {Value: &proto.ColumnValue_FloatValue{FloatValue: 95.5}},
+			},
+			want: "Score: 95.5",
+		},
+		{
+			name:     "boolean field",
+			template: "Active: {{.active}}",
+			row: map[string]*proto.ColumnValue{
+				"active": {Value: &proto.ColumnValue_BoolValue{BoolValue: true}},
+			},
+			want: "Active: true",
+		},
+		{
+			name:     "timestamp field",
+			template: "Created: {{.created_at}}",
+			row: map[string]*proto.ColumnValue{
+				"created_at": {Value: &proto.ColumnValue_TimestampValue{TimestampValue: "2024-01-01T12:00:00Z"}},
+			},
+			want: "Created: 2024-01-01T12:00:00Z",
+		},
+		{
+			name:     "nil field",
+			template: "{{.description}}",
+			row: map[string]*proto.ColumnValue{
+				"description": nil,
+			},
+			want: "<no value>",
+		},
+		{
+			name:     "missing field",
+			template: "{{.missing_field}}",
+			row: map[string]*proto.ColumnValue{
+				"name": {Value: &proto.ColumnValue_StringValue{StringValue: "John"}},
+			},
+			want: "<no value>",
+		},
+		{
+			name:        "invalid template syntax",
+			template:    "{{.name",
+			row:         map[string]*proto.ColumnValue{},
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := TransformTemplate(tt.template, tt.row)
+			
+			if (err != nil) != tt.wantErr {
+				t.Errorf("TransformTemplate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			
+			if !tt.wantErr && got != tt.want {
+				t.Errorf("TransformTemplate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTransformChangeWithCrossColumnTemplates(t *testing.T) {
+	config := &Config{
+		Version: ConfigVersionV1,
+		Tables: map[string]TableConfig{
+			"public.users": {
+				"name": {Type: FakeName},
+				"email": {
+					Type:     Template,
+					Template: "{{.name | lower | slugify}}@company.com",
+				},
+				"username": {
+					Type:     Template,
+					Template: "{{.name | lower}}_user",
+				},
+			},
+		},
+	}
+
+	// Create a test change with original data
+	change := &proto.Change{
+		Lsn:  "0/123",
+		Type: "DML",
+		Data: &proto.Change_Dml{
+			Dml: &proto.DMLData{
+				Table:       "public.users",
+				ColumnNames: []string{"id", "name", "email", "username"},
+				ColumnValues: []*proto.ColumnValue{
+					{Value: &proto.ColumnValue_IntValue{IntValue: 1}},
+					{Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}},
+					{Value: &proto.ColumnValue_StringValue{StringValue: "john.doe@original.com"}},
+					{Value: &proto.ColumnValue_StringValue{StringValue: "johndoe"}},
+				},
+				Kind: "INSERT",
+			},
+		},
+	}
+
+	// Transform the change
+	result, err := TransformChange(config, change)
+	if err != nil {
+		t.Fatalf("TransformChange() error = %v", err)
+	}
+
+	// Verify the result
+	resultDML := result.GetDml()
+	if resultDML == nil {
+		t.Fatal("Expected DML data, got nil")
+	}
+
+	// Find column indices
+	nameIdx := -1
+	emailIdx := -1
+	usernameIdx := -1
+	for i, colName := range resultDML.ColumnNames {
+		switch colName {
+		case "name":
+			nameIdx = i
+		case "email":
+			emailIdx = i
+		case "username":
+			usernameIdx = i
+		}
+	}
+
+	if nameIdx == -1 || emailIdx == -1 || usernameIdx == -1 {
+		t.Fatal("Required columns not found")
+	}
+
+	// Get the transformed name (should be fake name, not original)
+	transformedName := resultDML.ColumnValues[nameIdx].GetStringValue()
+	if transformedName == "" {
+		t.Error("Expected transformed name to be non-empty")
+	}
+	if transformedName == "John Doe" {
+		t.Error("Expected name to be transformed (fake), but got original value")
+	}
+
+	// Verify email uses the TRANSFORMED name, not the original
+	transformedEmail := resultDML.ColumnValues[emailIdx].GetStringValue()
+	expectedEmailPrefix := strings.ToLower(strings.ReplaceAll(transformedName, " ", "-"))
+	expectedEmail := expectedEmailPrefix + "@company.com"
+
+	if transformedEmail != expectedEmail {
+		t.Errorf("Expected email to be based on transformed name: %s, got %s", expectedEmail, transformedEmail)
+	}
+
+	// Verify email does NOT use the original name
+	originalEmailWould := "john-doe@company.com"
+	if transformedEmail == originalEmailWould {
+		t.Error("Email appears to be based on original name instead of transformed name")
+	}
+
+	// Verify username also uses the TRANSFORMED name
+	transformedUsername := resultDML.ColumnValues[usernameIdx].GetStringValue()
+	expectedUsername := strings.ToLower(transformedName) + "_user"
+	if transformedUsername != expectedUsername {
+		t.Errorf("Expected username to be based on transformed name: %s, got %s", expectedUsername, transformedUsername)
+	}
+
+	t.Logf("Original name: %s", "John Doe")
+	t.Logf("Transformed name: %s", transformedName)
+	t.Logf("Transformed email: %s", transformedEmail)
+	t.Logf("Transformed username: %s", transformedUsername)
 }

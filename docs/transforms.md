@@ -78,6 +78,7 @@ tables:
 
 **Pattern-Based Transforms:**
 - `Regex` - Apply custom regular expression patterns and replacements
+- `Template` - Generate values using Go templates with full row context
 
 ## Regex Transform Details
 
@@ -123,6 +124,71 @@ card_number:
   replacement: 'XXXX-XXXX-XXXX-$4'
 ```
 
+## Template Transform Details
+
+The Template transform allows generating values using Go's text/template syntax with access to the full row context:
+
+```yaml
+column_name:
+  type: Template
+  template: 'template_string'
+```
+
+**Features:**
+- Access all columns in the row using `{{.column_name}}`
+- Built-in helper functions for common transformations
+- Support for conditional logic and complex business rules
+- Schema-agnostic - works with any table structure
+
+**Helper Functions:**
+- `lower` - Convert to lowercase: `{{.name | lower}}`
+- `upper` - Convert to uppercase: `{{.name | upper}}`
+- `slugify` - Create URL-friendly slugs: `{{.title | slugify}}`
+- `before` - Extract text before separator: `{{.email | before "@"}}`
+- `after` - Extract text after separator: `{{.email | after "@"}}`
+
+**Examples:**
+```yaml
+# Cross-column email generation
+email:
+  type: Template
+  template: '{{.first_name | lower}}.{{.last_name | lower}}@company.com'
+
+# Username from full name
+username:
+  type: Template
+  template: '{{.first_name | lower}}_{{.last_name | lower}}'
+
+# URL-friendly slug from title
+slug:
+  type: Template
+  template: '{{.title | lower | slugify}}'
+
+# Domain extraction
+domain:
+  type: Template
+  template: '{{.email | after "@"}}'
+
+# Templates using transformed values from other columns
+name: FakeName  # Generates fake name first
+email:
+  type: Template
+  template: '{{.name | lower | slugify}}@company.com'  # Uses fake name, not original
+
+# Conditional logic
+status_label:
+  type: Template
+  template: '{{if .active}}ACTIVE{{else}}INACTIVE{{end}}: {{.name}}'
+
+# Complex business logic
+display_name:
+  type: Template
+  template: '{{.first_name}} {{.last_name}} ({{.department | upper}})'
+```
+
+**Template Processing Order:**
+Template transforms are processed after all other transforms, allowing them to access the fake/transformed values instead of original data. This enables powerful cross-column transformations using already-processed data.
+
 ## Key Features
 
 1. **Deterministic Transformations**: The same input always produces the same output, ensuring data consistency
@@ -163,6 +229,20 @@ card_number:
 
 ## Example Configurations
 
+**Email Transform Options:**
+```yaml
+version: v1
+tables:
+  public.users:
+    # Generates random email addresses
+    email: FakeEmail
+    
+    # Template-based email using transformed values
+    work_email:
+      type: Template
+      template: '{{.first_name | lower}}.{{.last_name | lower}}@company.com'
+```
+
 **E-commerce Example:**
 ```yaml
 version: v1
@@ -184,18 +264,31 @@ tables:
     card_number: FakeCreditCardNum
 ```
 
-**Comprehensive Example with Regex:**
+**Comprehensive Example with Regex and Templates:**
 ```yaml
 version: v1
 tables:
   public.users:
     # Simple string transforms (shorthand format)
-    name: FakeName
-    email: FakeEmail
+    first_name: FakeFirstName
+    last_name: FakeLastName
     
     # Object notation (equivalent to above)
     company:
       type: FakeCompany
+    
+    # Template transforms - use fake names generated above
+    email:
+      type: Template
+      template: '{{.first_name | lower}}.{{.last_name | lower}}@company.com'
+    
+    username:
+      type: Template
+      template: '{{.first_name | lower}}_{{.last_name | lower}}'
+    
+    display_name:
+      type: Template
+      template: '{{.first_name}} {{.last_name}} ({{.company | upper}})'
     
     # Regex transforms require object notation
     phone:
@@ -212,6 +305,19 @@ tables:
       type: Regex
       pattern: '\d+\.\d+\.\d+\.\d+'
       replacement: 'XXX.XXX.XXX.XXX'
+  
+  public.posts:
+    title: FakeProductName
+    
+    # Generate URL-friendly slug from title
+    slug:
+      type: Template
+      template: '{{.title | lower | slugify}}'
+    
+    # Extract domain from author email
+    author_domain:
+      type: Template
+      template: '{{.author_email | after "@"}}'
   
   public.credit_cards:
     cardholder_name: FakeName

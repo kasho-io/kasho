@@ -2,4 +2,6 @@ version: v1
 tables:
   public.users:
     name: FakeName
-    email: FakeEmail
+    email:
+      type: Template
+      template: '{{.name | slugify}}@example.com'

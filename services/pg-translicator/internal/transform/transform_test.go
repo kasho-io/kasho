@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"kasho/proto"
 )
 
 func testTransform[T comparable](t *testing.T, name string, transform func(T) T, original T) {
@@ -81,6 +83,7 @@ func TestTransformFakeLastName(t *testing.T) {
 func TestTransformFakeEmail(t *testing.T) {
 	testTransform(t, "Email", TransformFakeEmail, "test123")
 }
+
 
 func TestTransformFakeSSN(t *testing.T) {
 	testTransform(t, "SSN", TransformFakeSSN, "test123")
@@ -363,4 +366,274 @@ func TestTransformEdgeCases(t *testing.T) {
 			t.Errorf("Long input produced non-deterministic results")
 		}
 	})
+}
+
+// TestTransformRegex tests the regex transform functionality
+func TestTransformRegex(t *testing.T) {
+	tests := []struct {
+		name        string
+		pattern     string
+		replacement string
+		input       string
+		want        string
+		wantErr     bool
+	}{
+		{
+			name:        "Phone number masking",
+			pattern:     `\d{3}-\d{3}-\d{4}`,
+			replacement: "XXX-XXX-XXXX",
+			input:       "123-456-7890",
+			want:        "XXX-XXX-XXXX",
+		},
+		{
+			name:        "Email domain replacement",
+			pattern:     `@[\w.-]+\.[\w.-]+`,
+			replacement: "@example.com",
+			input:       "user@company.org",
+			want:        "user@example.com",
+		},
+		{
+			name:        "Partial replacement with capture groups",
+			pattern:     `(\d{4})-(\d{4})-(\d{4})-(\d{4})`,
+			replacement: "XXXX-XXXX-XXXX-$4",
+			input:       "1234-5678-9012-3456",
+			want:        "XXXX-XXXX-XXXX-3456",
+		},
+		{
+			name:        "No match - return original",
+			pattern:     `\d+`,
+			replacement: "NUMBER",
+			input:       "no numbers here",
+			want:        "no numbers here",
+		},
+		{
+			name:        "Multiple matches",
+			pattern:     `\d+`,
+			replacement: "X",
+			input:       "abc123def456",
+			want:        "abcXdefX",
+		},
+		{
+			name:        "Invalid regex pattern",
+			pattern:     `[`,
+			replacement: "replacement",
+			input:       "test",
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			transformFunc := TransformRegex(tt.pattern, tt.replacement)
+			got, err := transformFunc(tt.input)
+			
+			if (err != nil) != tt.wantErr {
+				t.Errorf("TransformRegex() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			
+			if !tt.wantErr && got != tt.want {
+				t.Errorf("TransformRegex() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestTransformTemplateFunction tests the template transform functionality
+func TestTransformTemplateFunction(t *testing.T) {
+	tests := []struct {
+		name        string
+		template    string
+		row         map[string]*proto.ColumnValue
+		want        string
+		wantErr     bool
+	}{
+		{
+			name:     "Simple field access",
+			template: "{{.name}}",
+			row: map[string]*proto.ColumnValue{
+				"name": {Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}},
+			},
+			want: "John Doe",
+		},
+		{
+			name:     "Multiple fields",
+			template: "{{.first_name}} {{.last_name}}",
+			row: map[string]*proto.ColumnValue{
+				"first_name": {Value: &proto.ColumnValue_StringValue{StringValue: "Jane"}},
+				"last_name":  {Value: &proto.ColumnValue_StringValue{StringValue: "Smith"}},
+			},
+			want: "Jane Smith",
+		},
+		{
+			name:     "Cross-column email generation",
+			template: "{{.first_name | lower}}.{{.last_name | lower}}@company.com",
+			row: map[string]*proto.ColumnValue{
+				"first_name": {Value: &proto.ColumnValue_StringValue{StringValue: "John"}},
+				"last_name":  {Value: &proto.ColumnValue_StringValue{StringValue: "Doe"}},
+			},
+			want: "john.doe@company.com",
+		},
+		{
+			name:     "Helper function - lower",
+			template: "{{.name | lower}}",
+			row: map[string]*proto.ColumnValue{
+				"name": {Value: &proto.ColumnValue_StringValue{StringValue: "JOHN DOE"}},
+			},
+			want: "john doe",
+		},
+		{
+			name:     "Helper function - upper",
+			template: "{{.name | upper}}",
+			row: map[string]*proto.ColumnValue{
+				"name": {Value: &proto.ColumnValue_StringValue{StringValue: "john doe"}},
+			},
+			want: "JOHN DOE",
+		},
+		{
+			name:     "Helper function - slugify",
+			template: "{{.title | slugify}}",
+			row: map[string]*proto.ColumnValue{
+				"title": {Value: &proto.ColumnValue_StringValue{StringValue: "Hello World! This is a Test."}},
+			},
+			want: "hello-world-this-is-a-test",
+		},
+		{
+			name:     "Helper function - before",
+			template: "{{.email | before \"@\"}}",
+			row: map[string]*proto.ColumnValue{
+				"email": {Value: &proto.ColumnValue_StringValue{StringValue: "user@example.com"}},
+			},
+			want: "user",
+		},
+		{
+			name:     "Helper function - after",
+			template: "{{.email | after \"@\"}}",
+			row: map[string]*proto.ColumnValue{
+				"email": {Value: &proto.ColumnValue_StringValue{StringValue: "user@example.com"}},
+			},
+			want: "example.com",
+		},
+		{
+			name:     "Chained helpers",
+			template: "{{.name | lower | slugify}}",
+			row: map[string]*proto.ColumnValue{
+				"name": {Value: &proto.ColumnValue_StringValue{StringValue: "John Doe Jr."}},
+			},
+			want: "john-doe-jr",
+		},
+		{
+			name:     "Integer field",
+			template: "User ID: {{.id}}",
+			row: map[string]*proto.ColumnValue{
+				"id": {Value: &proto.ColumnValue_IntValue{IntValue: 123}},
+			},
+			want: "User ID: 123",
+		},
+		{
+			name:     "Float field",
+			template: "Score: {{.score}}",
+			row: map[string]*proto.ColumnValue{
+				"score": {Value: &proto.ColumnValue_FloatValue{FloatValue: 95.5}},
+			},
+			want: "Score: 95.5",
+		},
+		{
+			name:     "Boolean field",
+			template: "Active: {{.active}}",
+			row: map[string]*proto.ColumnValue{
+				"active": {Value: &proto.ColumnValue_BoolValue{BoolValue: true}},
+			},
+			want: "Active: true",
+		},
+		{
+			name:     "Timestamp field",
+			template: "Created: {{.created_at}}",
+			row: map[string]*proto.ColumnValue{
+				"created_at": {Value: &proto.ColumnValue_TimestampValue{TimestampValue: "2024-01-01T12:00:00Z"}},
+			},
+			want: "Created: 2024-01-01T12:00:00Z",
+		},
+		{
+			name:     "Complex business logic example",
+			template: "{{if .active}}ACTIVE{{else}}INACTIVE{{end}}: {{.first_name}} {{.last_name}} ({{.email | after \"@\"}})",
+			row: map[string]*proto.ColumnValue{
+				"active":     {Value: &proto.ColumnValue_BoolValue{BoolValue: true}},
+				"first_name": {Value: &proto.ColumnValue_StringValue{StringValue: "John"}},
+				"last_name":  {Value: &proto.ColumnValue_StringValue{StringValue: "Doe"}},
+				"email":      {Value: &proto.ColumnValue_StringValue{StringValue: "john@company.com"}},
+			},
+			want: "ACTIVE: John Doe (company.com)",
+		},
+		{
+			name:        "Invalid template syntax",
+			template:    "{{.name",
+			row:         map[string]*proto.ColumnValue{},
+			wantErr:     true,
+		},
+		{
+			name:     "Missing field",
+			template: "{{.missing_field}}",
+			row: map[string]*proto.ColumnValue{
+				"name": {Value: &proto.ColumnValue_StringValue{StringValue: "John"}},
+			},
+			want: "<no value>",
+		},
+		{
+			name:     "Nil field",
+			template: "{{.description}}",
+			row: map[string]*proto.ColumnValue{
+				"description": nil,
+			},
+			want: "<no value>",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := TransformTemplate(tt.template, tt.row)
+			
+			if (err != nil) != tt.wantErr {
+				t.Errorf("TransformTemplate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			
+			if !tt.wantErr && got != tt.want {
+				t.Errorf("TransformTemplate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestTransformTemplateFunctionDeterminism tests that template transforms are deterministic
+func TestTransformTemplateFunctionDeterminism(t *testing.T) {
+	template := "{{.first_name | lower}}.{{.last_name | lower}}@{{.department | slugify}}.com"
+	row := map[string]*proto.ColumnValue{
+		"first_name": {Value: &proto.ColumnValue_StringValue{StringValue: "John"}},
+		"last_name":  {Value: &proto.ColumnValue_StringValue{StringValue: "Doe"}},
+		"department": {Value: &proto.ColumnValue_StringValue{StringValue: "Engineering & Development"}},
+	}
+
+	// Run the same template multiple times and ensure results are identical
+	var results []string
+	for i := 0; i < 5; i++ {
+		result, err := TransformTemplate(template, row)
+		if err != nil {
+			t.Fatalf("TransformTemplate() error = %v", err)
+		}
+		results = append(results, result)
+	}
+
+	// All results should be identical
+	for i := 1; i < len(results); i++ {
+		if results[0] != results[i] {
+			t.Errorf("TransformTemplate() produced different results: %v vs %v", results[0], results[i])
+		}
+	}
+
+	// Verify expected result
+	expected := "john.doe@engineering-development.com"
+	if results[0] != expected {
+		t.Errorf("TransformTemplate() = %v, want %v", results[0], expected)
+	}
 }
