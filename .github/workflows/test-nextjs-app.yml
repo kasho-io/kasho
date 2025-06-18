@@ -54,7 +54,7 @@ jobs:
         working-directory: ${{ inputs.app-directory }}
 
       - name: Upload build artifacts (optional)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: success()
         with:
           name: ${{ inputs.app-name }}-build
