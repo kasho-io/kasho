@@ -27,13 +27,13 @@ Moving to a GitHub organization provides better collaboration features and profe
 - [x] Check collaborators and their permissions
 
 **Vercel Projects:**
-- [ ] List all connected Vercel projects (demo app, homepage app)
-- [ ] Note custom domains for each project
-- [ ] Document environment variables for each project
+- [x] List all connected Vercel projects (demo app, homepage app)
+- [x] Note custom domains for each project
+- [x] Document environment variables for each project
 
 **DigitalOcean:**
 - [x] Note the current `REPO_URL` being used in deployment
-- [ ] Verify SSH keys and access
+- [x] Verify SSH keys and access
 
 ## Migration Steps
 
@@ -72,9 +72,9 @@ Moving to a GitHub organization provides better collaboration features and profe
    - **Update `REPO_URL`** to point to new organization repo
 
 2. **Test Workflows:**
-   - [ ] Push a small change to trigger test workflow
-   - [ ] Verify all tests pass
-   - [ ] Check that deployment workflow can access all secrets
+   - [x] Push a small change to trigger test workflow
+   - [x] Verify all tests pass
+   - [x] Check that deployment workflow can access all secrets
 
 ### Phase 4: Update Local Development
 
@@ -98,7 +98,7 @@ Moving to a GitHub organization provides better collaboration features and profe
 2. **Update Documentation:**
    - [x] Update README.md with new repository URLs
    - [x] Update any other docs referencing old repo URL
-   - [ ] Commit and push changes
+   - [x] Commit and push changes
 
 ### Phase 5: Reconfigure Vercel
 
@@ -125,8 +125,8 @@ Moving to a GitHub organization provides better collaboration features and profe
 3. **Verify Vercel Integration:**
    - [ ] Test auto-deployment by pushing a change to apps
    - [ ] Verify custom domains still work
-   - [ ] Check environment variables are present
-   - [ ] Confirm build settings are correct
+   - [x] Check environment variables are present
+   - [x] Confirm build settings are correct
 
 ### Phase 6: Update DigitalOcean Deployment
 
