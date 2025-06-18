@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"hash/fnv"
 	"regexp"
+	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
+	"kasho/proto"
 )
 
 // ScalarValue represents any value that can be stored in a database column
@@ -260,4 +263,73 @@ func TransformRegex(pattern, replacement string) func(string) (string, error) {
 		}
 		return re.ReplaceAllString(original, replacement), nil
 	}
+}
+
+// Template function helpers
+var templateFuncMap = template.FuncMap{
+	"lower": strings.ToLower,
+	"upper": strings.ToUpper,
+	"slugify": func(s string) string {
+		// Convert to lowercase and replace non-alphanumeric with hyphens
+		s = strings.ToLower(s)
+		s = regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(s, "-")
+		return strings.Trim(s, "-")
+	},
+	"before": func(sep, s string) string {
+		if idx := strings.Index(s, sep); idx >= 0 {
+			return s[:idx]
+		}
+		return s
+	},
+	"after": func(sep, s string) string {
+		if idx := strings.Index(s, sep); idx >= 0 {
+			return s[idx+len(sep):]
+		}
+		return ""
+	},
+}
+
+// convertRowToTemplateData converts protobuf row data to a map suitable for templates
+func convertRowToTemplateData(row map[string]*proto.ColumnValue) map[string]interface{} {
+	data := make(map[string]interface{})
+	for key, value := range row {
+		if value == nil {
+			data[key] = nil
+			continue
+		}
+		
+		switch v := value.Value.(type) {
+		case *proto.ColumnValue_StringValue:
+			data[key] = v.StringValue
+		case *proto.ColumnValue_IntValue:
+			data[key] = v.IntValue
+		case *proto.ColumnValue_FloatValue:
+			data[key] = v.FloatValue
+		case *proto.ColumnValue_BoolValue:
+			data[key] = v.BoolValue
+		case *proto.ColumnValue_TimestampValue:
+			data[key] = v.TimestampValue
+		default:
+			data[key] = nil
+		}
+	}
+	return data
+}
+
+// TransformTemplate applies a Go template to generate values using full row context
+func TransformTemplate(templateStr string, row map[string]*proto.ColumnValue) (string, error) {
+	tmpl, err := template.New("transform").Funcs(templateFuncMap).Parse(templateStr)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template: %w", err)
+	}
+	
+	data := convertRowToTemplateData(row)
+	
+	var result strings.Builder
+	err = tmpl.Execute(&result, data)
+	if err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+	
+	return result.String(), nil
 }

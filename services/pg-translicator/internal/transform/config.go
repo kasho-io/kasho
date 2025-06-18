@@ -75,6 +75,9 @@ const (
 
 	// Pattern-based transforms
 	Regex TransformType = "Regex"
+
+	// Template-based transforms
+	Template TransformType = "Template"
 )
 
 var transformFunctions = map[TransformType]any{
@@ -139,6 +142,7 @@ type ColumnTransform struct {
 	Type        TransformType `yaml:"type"`
 	Pattern     string        `yaml:"pattern,omitempty"`     // For Regex transforms
 	Replacement string        `yaml:"replacement,omitempty"` // For Regex transforms
+	Template    string        `yaml:"template,omitempty"`    // For Template transforms
 }
 
 // UnmarshalYAML handles both string and object formats
@@ -215,7 +219,8 @@ func validateAndMigrateConfig(config *Config) error {
 }
 
 // GetFakeValue generates a fake value for a given table, column, and original value
-func GetFakeValue(c *Config, table string, column string, original *proto.ColumnValue) (*proto.ColumnValue, error) {
+// For template transforms, it also accepts the full DMLData to provide row context
+func GetFakeValue(c *Config, table string, column string, original *proto.ColumnValue, dmlData *proto.DMLData) (*proto.ColumnValue, error) {
 	tableConfig, exists := c.Tables[table]
 	if !exists {
 		return nil, nil // not an error, just no transform for this table
@@ -238,6 +243,27 @@ func GetFakeValue(c *Config, table string, column string, original *proto.Column
 			return &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: transformed}}, nil
 		}
 		return nil, fmt.Errorf("regex transform requires string value, got %T", original.Value)
+	}
+
+	// Handle Template transform specially
+	if colTransform.Type == Template {
+		if dmlData == nil {
+			return nil, fmt.Errorf("template transform requires DML data for row context")
+		}
+		
+		// Build row context from DMLData
+		rowContext := make(map[string]*proto.ColumnValue)
+		for i, colName := range dmlData.ColumnNames {
+			if i < len(dmlData.ColumnValues) {
+				rowContext[colName] = dmlData.ColumnValues[i]
+			}
+		}
+		
+		transformed, err := TransformTemplate(colTransform.Template, rowContext)
+		if err != nil {
+			return nil, fmt.Errorf("template transform failed: %w", err)
+		}
+		return &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: transformed}}, nil
 	}
 
 	// For other transforms, use the existing logic
@@ -313,6 +339,8 @@ func (ft TransformType) GetTransformFunction() (any, error) {
 }
 
 // TransformChange takes a Change object and returns a new Change object with transformed values
+// Uses a two-pass strategy: first processes non-Template transforms, then Template transforms
+// with access to the already-transformed row data
 func TransformChange(c *Config, change *proto.Change) (*proto.Change, error) {
 	// Create a new Change object to avoid modifying the original
 	newChange := &proto.Change{
@@ -331,9 +359,32 @@ func TransformChange(c *Config, change *proto.Change) (*proto.Change, error) {
 		}
 		copy(newDML.ColumnNames, data.Dml.ColumnNames)
 
-		// Transform column values if configured
+		// PASS 1: Transform all non-Template columns first
 		for i, col := range newDML.ColumnNames {
-			transformed, err := GetFakeValue(c, newDML.Table, col, data.Dml.ColumnValues[i])
+			// Check if this column has a transform configured
+			tableConfig, tableExists := c.Tables[newDML.Table]
+			if !tableExists {
+				// No transforms for this table, copy original value
+				newDML.ColumnValues[i] = data.Dml.ColumnValues[i]
+				continue
+			}
+			
+			colTransform, colExists := tableConfig[col]
+			if !colExists {
+				// No transform for this column, copy original value
+				newDML.ColumnValues[i] = data.Dml.ColumnValues[i]
+				continue
+			}
+			
+			// Skip Template transforms in this pass
+			if colTransform.Type == Template {
+				// For now, copy the original value (will be replaced in pass 2)
+				newDML.ColumnValues[i] = data.Dml.ColumnValues[i]
+				continue
+			}
+			
+			// Process non-Template transforms
+			transformed, err := GetFakeValue(c, newDML.Table, col, data.Dml.ColumnValues[i], data.Dml)
 			if err != nil {
 				return nil, fmt.Errorf("error transforming %s.%s: %w", newDML.Table, col, err)
 			}
@@ -342,6 +393,37 @@ func TransformChange(c *Config, change *proto.Change) (*proto.Change, error) {
 			} else {
 				// If no transformation, copy the original value
 				newDML.ColumnValues[i] = data.Dml.ColumnValues[i]
+			}
+		}
+
+		// PASS 2: Process Template transforms with access to transformed row data
+		for i, col := range newDML.ColumnNames {
+			// Check if this column has a Template transform configured
+			tableConfig, tableExists := c.Tables[newDML.Table]
+			if !tableExists {
+				continue
+			}
+			
+			colTransform, colExists := tableConfig[col]
+			if !colExists || colTransform.Type != Template {
+				continue
+			}
+			
+			// Create updated DMLData with transformed values for template context
+			updatedDMLData := &proto.DMLData{
+				Table:        newDML.Table,
+				ColumnNames:  newDML.ColumnNames,
+				ColumnValues: newDML.ColumnValues, // Use the transformed values from pass 1
+				Kind:         newDML.Kind,
+			}
+			
+			// Process Template transform with updated context
+			transformed, err := GetFakeValue(c, newDML.Table, col, data.Dml.ColumnValues[i], updatedDMLData)
+			if err != nil {
+				return nil, fmt.Errorf("error transforming template %s.%s: %w", newDML.Table, col, err)
+			}
+			if transformed != nil {
+				newDML.ColumnValues[i] = transformed
 			}
 		}
 
