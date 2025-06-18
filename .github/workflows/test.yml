@@ -5,6 +5,13 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      force_all_tests:
+        description: 'Force all tests to run regardless of changes'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -43,13 +50,13 @@ jobs:
   # Test Go services (pg-change-stream, pg-translicator)
   test-go-services:
     needs: detect-changes
-    if: needs.detect-changes.outputs.go-services == 'true'
+    if: needs.detect-changes.outputs.go-services == 'true' || github.event.inputs.force_all_tests == 'true'
     uses: ./.github/workflows/test-go-services.yml
 
   # Test demo Next.js app
   test-demo-app:
     needs: detect-changes
-    if: needs.detect-changes.outputs.demo-app == 'true'
+    if: needs.detect-changes.outputs.demo-app == 'true' || github.event.inputs.force_all_tests == 'true'
     uses: ./.github/workflows/test-nextjs-app.yml
     with:
       app-directory: apps/demo
@@ -58,7 +65,7 @@ jobs:
   # Test homepage Next.js app
   test-homepage-app:
     needs: detect-changes
-    if: needs.detect-changes.outputs.homepage-app == 'true'
+    if: needs.detect-changes.outputs.homepage-app == 'true' || github.event.inputs.force_all_tests == 'true'
     uses: ./.github/workflows/test-nextjs-app.yml
     with:
       app-directory: apps/homepage
@@ -67,7 +74,7 @@ jobs:
   # Validate protobuf definitions
   test-proto:
     needs: detect-changes
-    if: needs.detect-changes.outputs.proto == 'true'
+    if: needs.detect-changes.outputs.proto == 'true' || github.event.inputs.force_all_tests == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
