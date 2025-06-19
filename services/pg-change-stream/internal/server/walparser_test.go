@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"kasho/proto"
 	"kasho/pkg/types"
+	"kasho/proto"
 
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgproto3"
@@ -14,11 +14,11 @@ import (
 
 func TestDecodeColumnData(t *testing.T) {
 	tests := []struct {
-		name     string
-		col      *pglogrepl.TupleDataColumn
-		colType  uint32
-		want     any
-		wantErr  bool
+		name    string
+		col     *pglogrepl.TupleDataColumn
+		colType uint32
+		want    any
+		wantErr bool
 	}{
 		{
 			name:    "nil column",
@@ -304,16 +304,16 @@ func TestParseWALData_Insert(t *testing.T) {
 	// Since we can't easily mock ParseV2, let's test the logic after parsing
 	// by creating a test that focuses on the message handling part
 	changes := make([]types.Change, 0)
-	
+
 	// Simulate what happens after ParseV2
 	rel := relationMap[insertMsg.RelationID]
 	if rel == nil {
 		t.Fatal("Relation not found in map")
 	}
 	dml := types.DMLData{
-		Table:        "public.users",
-		Kind:         "insert",
-		ColumnNames:  []string{"id", "name", "email"},
+		Table:       "public.users",
+		Kind:        "insert",
+		ColumnNames: []string{"id", "name", "email"},
 		ColumnValues: []types.ColumnValueWrapper{
 			{ColumnValue: &proto.ColumnValue{Value: &proto.ColumnValue_IntValue{IntValue: 1}}},
 			{ColumnValue: &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: "John Doe"}}},
@@ -373,7 +373,7 @@ func TestParseWALData_DDL(t *testing.T) {
 	// Test DDL insert handling
 	changes := make([]types.Change, 0)
 	lsn := pglogrepl.LSN(200)
-	
+
 	ddl := types.DDLData{
 		ID:       1,
 		Time:     time.Date(2024, 3, 20, 15, 0, 0, 0, time.UTC),
@@ -405,7 +405,7 @@ func TestParseWALData_DDL(t *testing.T) {
 func TestParseMessage_NonCopyData(t *testing.T) {
 	// Test with a non-CopyData message (should return nil)
 	msg := &pgproto3.ReadyForQuery{}
-	
+
 	changes, lsn, err := ParseMessage(msg)
 	if err != nil {
 		t.Errorf("ParseMessage() error = %v, want nil", err)
@@ -420,15 +420,12 @@ func TestParseMessage_NonCopyData(t *testing.T) {
 
 func TestParseMessage_NonXLogData(t *testing.T) {
 	// Test with CopyData but not XLog data
-	copyData := &pgproto3.CopyData{
-		Data: []byte{0x77}, // Wrong byte ID (not XLogDataByteID which is 'w' = 0x77)
-	}
-	
-	changes, lsn, err := ParseMessage(copyData)
 	// The actual XLogDataByteID is 'w' which is 0x77, so let's use a different byte
-	copyData.Data = []byte{0x78} // Use 'x' instead of 'w'
-	
-	changes, lsn, err = ParseMessage(copyData)
+	copyData := &pgproto3.CopyData{
+		Data: []byte{0x78}, // Use 'x' instead of 'w'
+	}
+
+	changes, lsn, err := ParseMessage(copyData)
 	if err != nil {
 		t.Errorf("ParseMessage() error = %v, want nil", err)
 	}
@@ -445,7 +442,7 @@ func TestParseMessage_InvalidXLogData(t *testing.T) {
 	copyData := &pgproto3.CopyData{
 		Data: []byte{pglogrepl.XLogDataByteID, 0x01, 0x02}, // Too short to be valid XLogData
 	}
-	
+
 	changes, lsn, err := ParseMessage(copyData)
 	if err == nil {
 		t.Errorf("ParseMessage() error = nil, want error for invalid XLog data")
@@ -467,7 +464,7 @@ func TestParseWALData_RelationMessage(t *testing.T) {
 	// Test data that simulates a relation message
 	// We can't easily create actual WAL data for testing, so we'll test the logic
 	// by directly adding to relationMap and verifying behavior
-	
+
 	// Simulate adding a relation (this would normally happen via ParseV2)
 	relationMap[100] = &pglogrepl.RelationMessageV2{
 		RelationMessage: pglogrepl.RelationMessage{
@@ -506,7 +503,7 @@ func TestParseWALData_UnknownRelation(t *testing.T) {
 	// Test would fail with unknown relation, but we can't easily create
 	// the raw WAL data. The logic in ParseWALData checks for unknown relations
 	// and returns an error, which is covered by testing the error path.
-	
+
 	// Verify relationMap is empty
 	if len(relationMap) != 0 {
 		t.Errorf("Expected empty relationMap, got %d entries", len(relationMap))
@@ -517,14 +514,14 @@ func TestParseWALData_BeginAndCommitMessages(t *testing.T) {
 	// Begin and Commit messages don't produce changes
 	// We can verify the logic by ensuring no changes are created
 	// when processing these message types.
-	
+
 	// This is already covered by the existing logic in ParseWALData
 	// where Begin and Commit cases don't append to changes slice
-	
+
 	// The actual testing would require creating WAL data for Begin/Commit
 	// which is complex, but the logic is straightforward - no changes created
 	changes := make([]types.Change, 0)
-	
+
 	// Simulate what happens with Begin/Commit - no changes added
 	if len(changes) != 0 {
 		t.Errorf("Expected no changes for Begin/Commit messages, got %d", len(changes))
@@ -548,11 +545,11 @@ func TestParseWALData_UpdateMessage(t *testing.T) {
 
 	// Since we can't easily create UpdateMessageV2 with WAL data,
 	// we'll test the logic by creating the expected data structure
-	
+
 	// Simulate an update operation result
 	changes := make([]types.Change, 0)
 	lsn := pglogrepl.LSN(300)
-	
+
 	dml := types.DMLData{
 		Table:       "public.users",
 		Kind:        "update",
@@ -619,7 +616,7 @@ func TestParseWALData_DeleteMessage(t *testing.T) {
 	// Simulate a delete operation result
 	changes := make([]types.Change, 0)
 	lsn := pglogrepl.LSN(400)
-	
+
 	dml := types.DMLData{
 		Table:        "public.users",
 		Kind:         "delete",
@@ -686,7 +683,7 @@ func TestParseWALData_DDLInsert_MissingFields(t *testing.T) {
 	// Simulate DDL insert with partial data
 	changes := make([]types.Change, 0)
 	lsn := pglogrepl.LSN(500)
-	
+
 	ddl := types.DDLData{
 		ID:  1,
 		DDL: "CREATE TABLE partial_test (id INT)",
