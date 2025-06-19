@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"kasho/proto"
 	"kasho/pkg/types"
+	"kasho/proto"
 
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgproto3"
@@ -249,6 +249,11 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]types.Change, error) {
 		}
 
 		// Store old values for comparison
+		// NOTE: What OldTuple contains depends on the table's REPLICA IDENTITY setting:
+		// - DEFAULT: Only primary key columns
+		// - FULL: All columns with their old values
+		// - NOTHING: Empty (no old values)
+		// - USING INDEX: Only columns in the specified index
 		oldValues := make(map[string]any)
 		if v.OldTuple != nil && len(v.OldTuple.Columns) > 0 {
 			for i, col := range rel.Columns {
@@ -265,9 +270,15 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]types.Change, error) {
 			}
 		}
 
-		// Process NewTuple to:
-		// 1. Add primary keys to OldKeys
-		// 2. Add changed columns to ColumnNames/ColumnValues
+		// Process NewTuple which ALWAYS contains ALL columns regardless of REPLICA IDENTITY
+		//
+		// This code compares values from NewTuple against oldValues to determine what to include.
+		// With REPLICA IDENTITY DEFAULT, oldValues only contains primary key columns.
+		// As a result:
+		// - Primary key columns: Added to OldKeys, only included in output if changed
+		// - Non-PK columns: Not found in oldValues, so all are included in output
+		//
+		// This will cause UPDATE statements to include all columns even when only some were changed.
 		for i, col := range rel.Columns {
 			if i < len(v.NewTuple.Columns) {
 				colData := v.NewTuple.Columns[i]
@@ -288,13 +299,14 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]types.Change, error) {
 				// Check if the value has changed
 				oldValue, exists := oldValues[col.Name]
 				if !exists {
-					// Only treat as new column if OldTuple is nil (new column added) and this isn't a primary key
+					// Column not in oldValues - with REPLICA IDENTITY DEFAULT, this includes
+					// all non-PK columns, so they all get added to the output
 					if v.OldTuple == nil && col.Flags != 1 {
 						dml.ColumnNames = append(dml.ColumnNames, col.Name)
 						dml.ColumnValues = append(dml.ColumnValues, toColumnValue(newValue))
 					}
 				} else if oldValue != newValue {
-					// Value has changed
+					// Value has actually changed
 					dml.ColumnNames = append(dml.ColumnNames, col.Name)
 					dml.ColumnValues = append(dml.ColumnValues, toColumnValue(newValue))
 				}
