@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"hash/fnv"
 	"regexp"
@@ -10,6 +11,10 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
+	"golang.org/x/crypto/argon2"
+	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/pbkdf2"
+	"golang.org/x/crypto/scrypt"
 	"kasho/proto"
 )
 
@@ -332,4 +337,109 @@ func TransformTemplate(templateStr string, row map[string]*proto.ColumnValue) (s
 	}
 	
 	return result.String(), nil
+}
+
+// Password transform helper functions
+
+// generateDeterministicSalt creates a deterministic salt based on the original value
+func generateDeterministicSalt(original string, length int) []byte {
+	h := sha256.New()
+	h.Write([]byte(original))
+	fullHash := h.Sum(nil)
+	
+	// If we need more bytes than SHA256 provides, cycle through the hash
+	salt := make([]byte, length)
+	for i := 0; i < length; i++ {
+		salt[i] = fullHash[i%len(fullHash)]
+	}
+	return salt
+}
+
+// processPasswordCleartext handles template processing for cleartext field
+func processPasswordCleartext(cleartext string, row map[string]*proto.ColumnValue) (string, error) {
+	// If it contains template syntax, process it
+	if strings.Contains(cleartext, "{{") {
+		return TransformTemplate(cleartext, row)
+	}
+	// Otherwise return as-is
+	return cleartext, nil
+}
+
+// TransformPasswordBcrypt applies bcrypt hashing to the cleartext
+func TransformPasswordBcrypt(cleartext string, useSalt bool, cost int, original string) (string, error) {
+	// Generate a deterministic "salt" by seeding the random generator
+	// bcrypt generates its own salt internally, but we can make it deterministic
+	// by using a consistent seed based on the original value
+	if useSalt {
+		seed(original) // This affects gofakeit's random generator
+	}
+	
+	// bcrypt has a maximum password length of 72 bytes
+	if len(cleartext) > 72 {
+		cleartext = cleartext[:72]
+	}
+	
+	// Generate hash
+	hash, err := bcrypt.GenerateFromPassword([]byte(cleartext), cost)
+	if err != nil {
+		return "", fmt.Errorf("bcrypt hash failed: %w", err)
+	}
+	
+	return string(hash), nil
+}
+
+// TransformPasswordScrypt applies scrypt hashing to the cleartext
+func TransformPasswordScrypt(cleartext string, useSalt bool, n, r, p int, original string) (string, error) {
+	var salt []byte
+	if useSalt {
+		salt = generateDeterministicSalt(original, 16) // 16 bytes salt
+	} else {
+		salt = make([]byte, 16) // Empty salt
+	}
+	
+	// Generate hash
+	hash, err := scrypt.Key([]byte(cleartext), salt, n, r, p, 32) // 32 bytes output
+	if err != nil {
+		return "", fmt.Errorf("scrypt hash failed: %w", err)
+	}
+	
+	// Format: salt$hash (both hex encoded)
+	return fmt.Sprintf("%x$%x", salt, hash), nil
+}
+
+// TransformPasswordPBKDF2 applies PBKDF2 hashing to the cleartext
+func TransformPasswordPBKDF2(cleartext string, useSalt bool, iterations int, hashFunc string, original string) (string, error) {
+	var salt []byte
+	if useSalt {
+		salt = generateDeterministicSalt(original, 16) // 16 bytes salt
+	} else {
+		salt = make([]byte, 16) // Empty salt
+	}
+	
+	// Only SHA256 supported for now (can extend later)
+	if hashFunc != "SHA256" && hashFunc != "" {
+		return "", fmt.Errorf("unsupported hash function: %s (only SHA256 supported)", hashFunc)
+	}
+	
+	// Generate hash
+	hash := pbkdf2.Key([]byte(cleartext), salt, iterations, 32, sha256.New)
+	
+	// Format: salt$hash (both hex encoded)
+	return fmt.Sprintf("%x$%x", salt, hash), nil
+}
+
+// TransformPasswordArgon2id applies Argon2id hashing to the cleartext
+func TransformPasswordArgon2id(cleartext string, useSalt bool, time, memory uint32, threads uint8, original string) (string, error) {
+	var salt []byte
+	if useSalt {
+		salt = generateDeterministicSalt(original, 16) // 16 bytes salt
+	} else {
+		salt = make([]byte, 16) // Empty salt
+	}
+	
+	// Generate hash
+	hash := argon2.IDKey([]byte(cleartext), salt, time, memory, threads, 32) // 32 bytes output
+	
+	// Format: salt$hash (both hex encoded)
+	return fmt.Sprintf("%x$%x", salt, hash), nil
 }

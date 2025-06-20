@@ -611,14 +611,18 @@ func TestGetFakeValueWithRegex(t *testing.T) {
 		Tables: map[string]TableConfig{
 			"users": {
 				"phone": {
-					Type:        Regex,
-					Pattern:     `\d{3}-\d{3}-\d{4}`,
-					Replacement: "XXX-XXX-XXXX",
+					Type: Regex,
+					Config: map[string]any{
+						"pattern":     `\d{3}-\d{3}-\d{4}`,
+						"replacement": "XXX-XXX-XXXX",
+					},
 				},
 				"ssn": {
-					Type:        Regex,
-					Pattern:     `(\d{3})-(\d{2})-(\d{4})`,
-					Replacement: "XXX-XX-$3",
+					Type: Regex,
+					Config: map[string]any{
+						"pattern":     `(\d{3})-(\d{2})-(\d{4})`,
+						"replacement": "XXX-XX-$3",
+					},
 				},
 			},
 		},
@@ -714,7 +718,7 @@ phone:
 			want: TableConfig{
 				"name":  {Type: FakeName},
 				"email": {Type: FakeEmail},
-				"phone": {Type: Regex, Pattern: `\d{3}-\d{3}-\d{4}`, Replacement: "XXX-XXX-XXXX"},
+				"phone": {Type: Regex, Config: map[string]any{"pattern": `\d{3}-\d{3}-\d{4}`, "replacement": "XXX-XXX-XXXX"}},
 			},
 		},
 		{
@@ -728,7 +732,7 @@ phone:
 email: FakeEmail`,
 			want: TableConfig{
 				"name":  {Type: FakeName},
-				"phone": {Type: Regex, Pattern: `\d+`, Replacement: "XXX"},
+				"phone": {Type: Regex, Config: map[string]any{"pattern": `\d+`, "replacement": "XXX"}},
 				"email": {Type: FakeEmail},
 			},
 		},
@@ -744,8 +748,8 @@ slug:
   template: '{{.name | lower | slugify}}'`,
 			want: TableConfig{
 				"name":  {Type: FakeName},
-				"email": {Type: Template, Template: "{{.first_name}}.{{.last_name}}@example.com"},
-				"slug":  {Type: Template, Template: "{{.name | lower | slugify}}"},
+				"email": {Type: Template, Config: map[string]any{"template": "{{.first_name}}.{{.last_name}}@example.com"}},
+				"slug":  {Type: Template, Config: map[string]any{"template": "{{.name | lower | slugify}}"}},
 			},
 		},
 	}
@@ -773,28 +777,28 @@ func TestGetFakeValueWithTemplate(t *testing.T) {
 		Tables: map[string]TableConfig{
 			"users": {
 				"email": {
-					Type:     Template,
-					Template: "{{.first_name}}.{{.last_name}}@example.com",
+					Type:   Template,
+					Config: map[string]any{"template": "{{.first_name}}.{{.last_name}}@example.com"},
 				},
 				"display_name": {
-					Type:     Template,
-					Template: "{{.first_name}} {{.last_name}}",
+					Type:   Template,
+					Config: map[string]any{"template": "{{.first_name}} {{.last_name}}"},
 				},
 				"slug": {
-					Type:     Template,
-					Template: "{{.name | lower | slugify}}",
+					Type:   Template,
+					Config: map[string]any{"template": "{{.name | lower | slugify}}"},
 				},
 				"username": {
-					Type:     Template,
-					Template: "{{.first_name | lower}}_{{.last_name | lower}}",
+					Type:   Template,
+					Config: map[string]any{"template": "{{.first_name | lower}}_{{.last_name | lower}}"},
 				},
 				"initials": {
-					Type:     Template,
-					Template: "{{.first_name}}{{.last_name}}",
+					Type:   Template,
+					Config: map[string]any{"template": "{{.first_name}}{{.last_name}}"},
 				},
 				"domain": {
-					Type:     Template,
-					Template: "{{.email | after \"@\"}}",
+					Type:   Template,
+					Config: map[string]any{"template": "{{.email | after \"@\"}}"},
 				},
 			},
 		},
@@ -911,16 +915,16 @@ func TestGetFakeValueTemplateErrors(t *testing.T) {
 		Tables: map[string]TableConfig{
 			"users": {
 				"email": {
-					Type:     Template,
-					Template: "{{.first_name}}.{{.last_name}}@example.com",
+					Type:   Template,
+					Config: map[string]any{"template": "{{.first_name}}.{{.last_name}}@example.com"},
 				},
 				"invalid": {
-					Type:     Template,
-					Template: "{{.nonexistent | invalid_function}}",
+					Type:   Template,
+					Config: map[string]any{"template": "{{.nonexistent | invalid_function}}"},
 				},
 				"syntax_error": {
-					Type:     Template,
-					Template: "{{.name",
+					Type:   Template,
+					Config: map[string]any{"template": "{{.name"},
 				},
 			},
 		},
@@ -1125,12 +1129,12 @@ func TestTransformChangeWithCrossColumnTemplates(t *testing.T) {
 			"public.users": {
 				"name": {Type: FakeName},
 				"email": {
-					Type:     Template,
-					Template: "{{.name | lower | slugify}}@company.com",
+					Type:   Template,
+					Config: map[string]any{"template": "{{.name | lower | slugify}}@company.com"},
 				},
 				"username": {
-					Type:     Template,
-					Template: "{{.name | lower}}_user",
+					Type:   Template,
+					Config: map[string]any{"template": "{{.name | lower}}_user"},
 				},
 			},
 		},

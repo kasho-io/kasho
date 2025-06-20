@@ -3,6 +3,7 @@ package transform
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"kasho/proto"
@@ -78,6 +79,12 @@ const (
 
 	// Template-based transforms
 	Template TransformType = "Template"
+
+	// Password transforms with different algorithms
+	PasswordBcrypt   TransformType = "PasswordBcrypt"
+	PasswordScrypt   TransformType = "PasswordScrypt"
+	PasswordPBKDF2   TransformType = "PasswordPBKDF2"
+	PasswordArgon2id TransformType = "PasswordArgon2id"
 )
 
 var transformFunctions = map[TransformType]any{
@@ -139,10 +146,8 @@ func init() {
 // ColumnTransform represents a transform configuration for a column
 // It can be either a simple string (transform type) or a complex object
 type ColumnTransform struct {
-	Type        TransformType `yaml:"type"`
-	Pattern     string        `yaml:"pattern,omitempty"`     // For Regex transforms
-	Replacement string        `yaml:"replacement,omitempty"` // For Regex transforms
-	Template    string        `yaml:"template,omitempty"`    // For Template transforms
+	Type   TransformType  `yaml:"type"`
+	Config map[string]any `yaml:",inline"`
 }
 
 // UnmarshalYAML handles both string and object formats
@@ -151,17 +156,30 @@ func (ct *ColumnTransform) UnmarshalYAML(unmarshal func(interface{}) error) erro
 	var transformType string
 	if err := unmarshal(&transformType); err == nil {
 		ct.Type = TransformType(transformType)
+		ct.Config = make(map[string]any)
 		return nil
 	}
 
-	// If that fails, try as a struct (object format)
-	type rawColumnTransform ColumnTransform
-	var raw rawColumnTransform
+	// If that fails, try as a map (object format)
+	var raw map[string]any
 	if err := unmarshal(&raw); err != nil {
 		return err
 	}
 
-	*ct = ColumnTransform(raw)
+	// Extract type field
+	if typeVal, ok := raw["type"]; ok {
+		if typeStr, ok := typeVal.(string); ok {
+			ct.Type = TransformType(typeStr)
+			delete(raw, "type") // Remove type from config
+		} else {
+			return fmt.Errorf("type field must be a string")
+		}
+	} else {
+		return fmt.Errorf("type field is required")
+	}
+
+	// The rest is config
+	ct.Config = raw
 	return nil
 }
 
@@ -233,9 +251,19 @@ func GetFakeValue(c *Config, table string, column string, original *proto.Column
 
 	// Handle Regex transform specially
 	if colTransform.Type == Regex {
+		// Extract pattern and replacement from config
+		pattern, ok := colTransform.Config["pattern"].(string)
+		if !ok {
+			return nil, fmt.Errorf("regex transform requires 'pattern' field")
+		}
+		replacement, ok := colTransform.Config["replacement"].(string)
+		if !ok {
+			return nil, fmt.Errorf("regex transform requires 'replacement' field")
+		}
+		
 		// Regex only works on string values
 		if v, ok := original.Value.(*proto.ColumnValue_StringValue); ok {
-			transformFunc := TransformRegex(colTransform.Pattern, colTransform.Replacement)
+			transformFunc := TransformRegex(pattern, replacement)
 			transformed, err := transformFunc(v.StringValue)
 			if err != nil {
 				return nil, fmt.Errorf("regex transform failed: %w", err)
@@ -247,6 +275,12 @@ func GetFakeValue(c *Config, table string, column string, original *proto.Column
 
 	// Handle Template transform specially
 	if colTransform.Type == Template {
+		// Extract template from config
+		templateStr, ok := colTransform.Config["template"].(string)
+		if !ok {
+			return nil, fmt.Errorf("template transform requires 'template' field")
+		}
+		
 		if dmlData == nil {
 			return nil, fmt.Errorf("template transform requires DML data for row context")
 		}
@@ -259,11 +293,133 @@ func GetFakeValue(c *Config, table string, column string, original *proto.Column
 			}
 		}
 		
-		transformed, err := TransformTemplate(colTransform.Template, rowContext)
+		transformed, err := TransformTemplate(templateStr, rowContext)
 		if err != nil {
 			return nil, fmt.Errorf("template transform failed: %w", err)
 		}
 		return &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: transformed}}, nil
+	}
+
+	// Handle Password transforms specially
+	isPasswordTransform := colTransform.Type == PasswordBcrypt || 
+		colTransform.Type == PasswordScrypt || 
+		colTransform.Type == PasswordPBKDF2 || 
+		colTransform.Type == PasswordArgon2id
+	
+	if isPasswordTransform {
+		// Extract cleartext from config
+		cleartext, ok := colTransform.Config["cleartext"].(string)
+		if !ok {
+			return nil, fmt.Errorf("password transform requires 'cleartext' field")
+		}
+		
+		// Extract use_salt with default true
+		useSalt := true
+		if useSaltVal, ok := colTransform.Config["use_salt"]; ok {
+			if b, ok := useSaltVal.(bool); ok {
+				useSalt = b
+			}
+		}
+		
+		// Get original value as string for seeding
+		originalStr := ""
+		if v, ok := original.Value.(*proto.ColumnValue_StringValue); ok {
+			originalStr = v.StringValue
+		}
+		
+		// Process cleartext as template if needed
+		if dmlData != nil && strings.Contains(cleartext, "{{") {
+			// Build row context from DMLData
+			rowContext := make(map[string]*proto.ColumnValue)
+			for i, colName := range dmlData.ColumnNames {
+				if i < len(dmlData.ColumnValues) {
+					rowContext[colName] = dmlData.ColumnValues[i]
+				}
+			}
+			
+			processedCleartext, err := processPasswordCleartext(cleartext, rowContext)
+			if err != nil {
+				return nil, fmt.Errorf("failed to process cleartext template: %w", err)
+			}
+			cleartext = processedCleartext
+		}
+		
+		var hashedPassword string
+		var err error
+		
+		switch colTransform.Type {
+		case PasswordBcrypt:
+			cost := 10 // default
+			if costVal, ok := colTransform.Config["cost"]; ok {
+				if c, ok := costVal.(float64); ok { // YAML numbers come as float64
+					cost = int(c)
+				}
+			}
+			hashedPassword, err = TransformPasswordBcrypt(cleartext, useSalt, cost, originalStr)
+			
+		case PasswordScrypt:
+			n := 131072 // default 2^17
+			r := 8
+			p := 1
+			if nVal, ok := colTransform.Config["n"]; ok {
+				if val, ok := nVal.(float64); ok {
+					n = int(val)
+				}
+			}
+			if rVal, ok := colTransform.Config["r"]; ok {
+				if val, ok := rVal.(float64); ok {
+					r = int(val)
+				}
+			}
+			if pVal, ok := colTransform.Config["p"]; ok {
+				if val, ok := pVal.(float64); ok {
+					p = int(val)
+				}
+			}
+			hashedPassword, err = TransformPasswordScrypt(cleartext, useSalt, n, r, p, originalStr)
+			
+		case PasswordPBKDF2:
+			iterations := 600000 // default
+			hashFunc := "SHA256"
+			if iterVal, ok := colTransform.Config["iterations"]; ok {
+				if i, ok := iterVal.(float64); ok {
+					iterations = int(i)
+				}
+			}
+			if hashVal, ok := colTransform.Config["hash"]; ok {
+				if h, ok := hashVal.(string); ok {
+					hashFunc = h
+				}
+			}
+			hashedPassword, err = TransformPasswordPBKDF2(cleartext, useSalt, iterations, hashFunc, originalStr)
+			
+		case PasswordArgon2id:
+			time := uint32(3) // default
+			memory := uint32(65536) // 64MB default
+			threads := uint8(4) // default
+			if timeVal, ok := colTransform.Config["time"]; ok {
+				if t, ok := timeVal.(float64); ok {
+					time = uint32(t)
+				}
+			}
+			if memVal, ok := colTransform.Config["memory"]; ok {
+				if m, ok := memVal.(float64); ok {
+					memory = uint32(m)
+				}
+			}
+			if threadVal, ok := colTransform.Config["threads"]; ok {
+				if t, ok := threadVal.(float64); ok {
+					threads = uint8(t)
+				}
+			}
+			hashedPassword, err = TransformPasswordArgon2id(cleartext, useSalt, time, memory, threads, originalStr)
+		}
+		
+		if err != nil {
+			return nil, fmt.Errorf("password transform failed: %w", err)
+		}
+		
+		return &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: hashedPassword}}, nil
 	}
 
 	// For other transforms, use the existing logic
@@ -376,8 +532,12 @@ func TransformChange(c *Config, change *proto.Change) (*proto.Change, error) {
 				continue
 			}
 			
-			// Skip Template transforms in this pass
-			if colTransform.Type == Template {
+			// Skip Template and Password transforms in this pass
+			if colTransform.Type == Template || 
+				colTransform.Type == PasswordBcrypt ||
+				colTransform.Type == PasswordScrypt ||
+				colTransform.Type == PasswordPBKDF2 ||
+				colTransform.Type == PasswordArgon2id {
 				// For now, copy the original value (will be replaced in pass 2)
 				newDML.ColumnValues[i] = data.Dml.ColumnValues[i]
 				continue
@@ -396,16 +556,27 @@ func TransformChange(c *Config, change *proto.Change) (*proto.Change, error) {
 			}
 		}
 
-		// PASS 2: Process Template transforms with access to transformed row data
+		// PASS 2: Process Template and Password transforms with access to transformed row data
 		for i, col := range newDML.ColumnNames {
-			// Check if this column has a Template transform configured
+			// Check if this column has a Template or Password transform configured
 			tableConfig, tableExists := c.Tables[newDML.Table]
 			if !tableExists {
 				continue
 			}
 			
 			colTransform, colExists := tableConfig[col]
-			if !colExists || colTransform.Type != Template {
+			if !colExists {
+				continue
+			}
+			
+			// Check if it's a Template or Password transform
+			isPass2Transform := colTransform.Type == Template ||
+				colTransform.Type == PasswordBcrypt ||
+				colTransform.Type == PasswordScrypt ||
+				colTransform.Type == PasswordPBKDF2 ||
+				colTransform.Type == PasswordArgon2id
+			
+			if !isPass2Transform {
 				continue
 			}
 			
