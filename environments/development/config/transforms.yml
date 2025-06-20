@@ -5,3 +5,6 @@ tables:
     email:
       type: Template
       template: '{{.name | slugify}}@example.com'
+    password:
+      type: PasswordArgon2id
+      cleartext: 'staging'  # same password for all users
