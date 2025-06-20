@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestGetFakeValue(t *testing.T) {
+func TestGetTransformedValue(t *testing.T) {
 	config := &Config{
 		Version: ConfigVersionV1,
 		Tables: map[string]TableConfig{
@@ -100,16 +100,16 @@ func TestGetFakeValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetFakeValue(config, tt.table, tt.column, tt.original, nil)
+			got, err := GetTransformedValue(config, tt.table, tt.column, tt.original, nil)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetFakeValue() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetTransformedValue() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if err != nil {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetFakeValue() = %v, want %v", got, tt.want)
+				t.Errorf("GetTransformedValue() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -388,7 +388,7 @@ func TestGetFakeValueExtended(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := GetFakeValue(config, tt.table, tt.column, tt.original, nil)
+			result, err := GetTransformedValue(config, tt.table, tt.column, tt.original, nil)
 			if tt.expectError {
 				if err == nil {
 					t.Error("Expected error but got none")
@@ -605,7 +605,7 @@ func TestRegexTransform(t *testing.T) {
 	}
 }
 
-func TestGetFakeValueWithRegex(t *testing.T) {
+func TestGetTransformedValueWithRegex(t *testing.T) {
 	config := &Config{
 		Version: ConfigVersionV1,
 		Tables: map[string]TableConfig{
@@ -671,15 +671,15 @@ func TestGetFakeValueWithRegex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetFakeValue(config, tt.table, tt.column, tt.original, nil)
+			got, err := GetTransformedValue(config, tt.table, tt.column, tt.original, nil)
 			
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetFakeValue() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetTransformedValue() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			
 			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetFakeValue() = %v, want %v", got, tt.want)
+				t.Errorf("GetTransformedValue() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -771,7 +771,7 @@ slug:
 	}
 }
 
-func TestGetFakeValueWithTemplate(t *testing.T) {
+func TestGetTransformedValueWithTemplate(t *testing.T) {
 	config := &Config{
 		Version: ConfigVersionV1,
 		Tables: map[string]TableConfig{
@@ -895,21 +895,21 @@ func TestGetFakeValueWithTemplate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetFakeValue(config, tt.table, tt.column, tt.original, dmlData)
+			got, err := GetTransformedValue(config, tt.table, tt.column, tt.original, dmlData)
 			
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetFakeValue() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetTransformedValue() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			
 			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetFakeValue() = %v, want %v", got, tt.want)
+				t.Errorf("GetTransformedValue() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestGetFakeValueTemplateErrors(t *testing.T) {
+func TestGetTransformedValueTemplateErrors(t *testing.T) {
 	config := &Config{
 		Version: ConfigVersionV1,
 		Tables: map[string]TableConfig{
@@ -968,10 +968,10 @@ func TestGetFakeValueTemplateErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetFakeValue(config, tt.table, tt.column, tt.original, tt.dmlData)
+			_, err := GetTransformedValue(config, tt.table, tt.column, tt.original, tt.dmlData)
 			
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetFakeValue() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetTransformedValue() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
