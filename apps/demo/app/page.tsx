@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import DataTable from "@/components/DataTable";
+import ConfigViewer from "@/components/ConfigViewer";
 import Image from "next/image";
 
 interface Row {
@@ -104,6 +105,19 @@ export default function Home() {
           height={32} 
         />
       </div>
+      
+      {/* Header Section */}
+      <div className="bg-base-100 border-b border-base-300 p-4">
+        <div className="max-w-6xl mx-auto space-y-4">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Kasho Live Demo</h1>
+            <p className="text-sm opacity-70 mb-3">
+              Real-time database replication with data transformation. Watch changes propagate from primary to replica with live transforms.
+            </p>
+          </div>
+          <ConfigViewer />
+        </div>
+      </div>
       <div className="flex-1 border-b border-base-300 bg-base-200">
         <div
           className="max-w-6xl mx-auto w-full flex items-center gap-2"
@@ -114,7 +128,12 @@ export default function Home() {
             }
           }}
         >
-          <span className="text-xl font-bold mb-2 text-primary">Primary</span>
+          <span className="text-xl font-bold mb-2 text-primary">
+            Primary{" "}
+            <span className="text-sm font-normal opacity-70 font-mono">
+              (primary_db@postgres-primary:5432)
+            </span>
+          </span>
           {primaryEdits.length > 0 && (
             <button
               className="btn btn-xs btn-success"
@@ -135,7 +154,12 @@ export default function Home() {
       </div>
       <div className="flex-1 bg-base-300">
         <div className="max-w-6xl mx-auto w-full">
-          <span className="text-xl font-bold mb-2 text-accent">Replica</span>
+          <span className="text-xl font-bold mb-2 text-accent">
+            Replica{" "}
+            <span className="text-sm font-normal opacity-70 font-mono">
+              (replica_db@postgres-replica:5432)
+            </span>
+          </span>
         </div>
         <DataTable rows={replicaRows} loading={loading} />
       </div>
