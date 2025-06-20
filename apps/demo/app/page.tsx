@@ -171,7 +171,7 @@ export default function Home() {
                   <span className="font-semibold text-info">email:</span> Edits will be ignored during transformation - email will be generated based on the transformed name using template: <code className="font-mono bg-black/10 px-1 rounded">{'{{.name | slugify}}@example.com'}</code>
                 </div>
                 <div>
-                  <span className="font-semibold text-info">password:</span> Edits will be ignored during transformation - password will be encrypted 'staging' with Argon2id + salt for all users in replica
+                  <span className="font-semibold text-info">password:</span> Edits will be ignored during transformation - password will be encrypted &apos;staging&apos; with Argon2id + salt for all users in replica
                 </div>
               </div>
             )}

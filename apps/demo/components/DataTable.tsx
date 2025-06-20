@@ -156,7 +156,7 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
                       className="input input-xs input-bordered font-mono w-64"
                       value={editRows[row.id]?.password ?? row.password}
                       onChange={(e) => handleChange(row.id, 'password', e.target.value)}
-                      onFocus={(e) => {
+                      onFocus={() => {
                         // Clear the field when user starts editing to replace the hash
                         if (editRows[row.id]?.password === undefined) {
                           handleChange(row.id, 'password', '');
