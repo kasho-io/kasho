@@ -6,7 +6,6 @@ interface Row {
   name: string;
   email: string;
   password: string;
-  created_at: string;
   updated_at: string;
 }
 
@@ -39,10 +38,36 @@ function formatDate(dateStr: string) {
   });
 }
 
+function formatUpdatedAt(dateStr: string) {
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+  
+  // If within the past 24 hours, show relative time
+  if (diffHours < 24) {
+    if (diffMs < 60000) { // Less than 1 minute
+      return 'just now';
+    } else if (diffMs < 3600000) { // Less than 1 hour
+      const minutes = Math.floor(diffMs / 60000);
+      return `${minutes}m ago`;
+    } else { // Less than 24 hours
+      const hours = Math.floor(diffHours);
+      return `${hours}h ago`;
+    }
+  }
+  
+  // Otherwise, show formatted date
+  return formatDate(dateStr);
+}
+
 function isRowChanged(original: Row, edited: Partial<Row>) {
   return (
     (edited.name !== undefined && edited.name !== original.name) ||
-    (edited.email !== undefined && edited.email !== original.email)
+    (edited.email !== undefined && edited.email !== original.email) ||
+    (edited.password !== undefined && edited.password !== original.password)
   );
 }
 
@@ -53,7 +78,10 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
     if (onEdit && rows) {
       const edited = rows
         .filter((row) => editRows[row.id] && isRowChanged(row, editRows[row.id]))
-        .map((row) => ({ ...row, ...(editRows[row.id] || {}) }));
+        .map((row) => ({ 
+          id: row.id, 
+          ...(editRows[row.id] || {}) 
+        }));
       onEdit(edited as Row[]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,14 +111,13 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
               <th className="p-2 whitespace-nowrap">Name</th>
               <th className="p-2 whitespace-nowrap">Email</th>
               <th className="p-2 whitespace-nowrap">Password</th>
-              <th className="p-2 whitespace-nowrap">Created At</th>
               <th className="p-2 whitespace-nowrap">Updated At</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={7} className="text-center p-2 whitespace-nowrap">Loading...</td>
+                <td colSpan={6} className="text-center p-2 whitespace-nowrap">Loading...</td>
               </tr>
             )}
             {!loading && Array.isArray(rows) && rows.map((row) => (
@@ -121,9 +148,29 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
                     row.email
                   )}
                 </td>
-                <td className="p-2 whitespace-nowrap" title={row.password}>{'…' + last8(row.password)}</td>
-                <td className="p-2 whitespace-nowrap" title={row.created_at}>{formatDate(row.created_at)}</td>
-                <td className="p-2 whitespace-nowrap" title={row.updated_at}>{formatDate(row.updated_at)}</td>
+                <td className="p-2 whitespace-nowrap">
+                  {editable ? (
+                    <input
+                      type="text"
+                      placeholder="Enter cleartext password"
+                      className="input input-xs input-bordered font-mono w-64"
+                      value={editRows[row.id]?.password ?? row.password}
+                      onChange={(e) => handleChange(row.id, 'password', e.target.value)}
+                      onFocus={(e) => {
+                        // Clear the field when user starts editing to replace the hash
+                        if (editRows[row.id]?.password === undefined) {
+                          handleChange(row.id, 'password', '');
+                        }
+                      }}
+                      onKeyDown={handleInputKeyDown}
+                    />
+                  ) : (
+                    <span className="font-mono text-xs" title={row.password}>
+                      {'…' + last8(row.password)}
+                    </span>
+                  )}
+                </td>
+                <td className="p-2 whitespace-nowrap" title={row.updated_at}>{formatUpdatedAt(row.updated_at)}</td>
               </tr>
             ))}
           </tbody>
