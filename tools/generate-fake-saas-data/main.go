@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"math/rand"
 	"os"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/argon2"
 )
 
 const (
@@ -224,9 +224,17 @@ func generateUsers(orgs []Organization, r *rand.Rand) []User {
 				CreatedAt:      createdAt,
 				UpdatedAt:      randomTimeAfter(createdAt, r),
 			}
-			// Generate password hash using user ID as salt
-			hash := sha256.Sum256([]byte(user.ID + "password"))
-			user.Password = hex.EncodeToString(hash[:])
+			// Generate password hash using Argon2id with same parameters as pg-translicator
+			// Use a deterministic cleartext based on user info for consistent demo data
+			cleartext := "password123" // Simple cleartext for demo
+			user.Password = generatePasswordArgon2id(
+				cleartext,  // cleartext password
+				true,       // useSalt
+				3,          // time (default from pg-translicator)
+				65536,      // memory (default: 64MB in KiB)
+				4,          // threads (default)
+				user.ID,    // original (for deterministic salt)
+			)
 			users = append(users, user)
 
 			// Set the first user of each organization as its owner
@@ -496,6 +504,38 @@ func generateValidCardNumber(r *rand.Rand) string {
 		result.WriteString(fmt.Sprintf("%d", d))
 	}
 	return result.String()
+}
+
+// generateDeterministicSalt creates a deterministic salt based on the original value
+// This matches the implementation in pg-translicator
+func generateDeterministicSalt(original string, length int) []byte {
+	h := sha256.New()
+	h.Write([]byte(original))
+	fullHash := h.Sum(nil)
+	
+	// If we need more bytes than SHA256 provides, cycle through the hash
+	salt := make([]byte, length)
+	for i := 0; i < length; i++ {
+		salt[i] = fullHash[i%len(fullHash)]
+	}
+	return salt
+}
+
+// generatePasswordArgon2id applies Argon2id hashing to the cleartext
+// This matches the implementation in pg-translicator exactly
+func generatePasswordArgon2id(cleartext string, useSalt bool, time, memory uint32, threads uint8, original string) string {
+	var salt []byte
+	if useSalt {
+		salt = generateDeterministicSalt(original, 16) // 16 bytes salt
+	} else {
+		salt = make([]byte, 16) // Empty salt
+	}
+	
+	// Generate hash
+	hash := argon2.IDKey([]byte(cleartext), salt, time, memory, threads, 32) // 32 bytes output
+	
+	// Format: salt$hash (both hex encoded)
+	return fmt.Sprintf("%x$%x", salt, hash)
 }
 
 func escapeString(s string) string {
