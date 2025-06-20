@@ -236,9 +236,9 @@ func validateAndMigrateConfig(config *Config) error {
 	}
 }
 
-// GetFakeValue generates a fake value for a given table, column, and original value
-// For template transforms, it also accepts the full DMLData to provide row context
-func GetFakeValue(c *Config, table string, column string, original *proto.ColumnValue, dmlData *proto.DMLData) (*proto.ColumnValue, error) {
+// GetTransformedValue generates a transformed value for a given table, column, and original value
+// For template and password transforms, it also accepts the full DMLData to provide row context
+func GetTransformedValue(c *Config, table string, column string, original *proto.ColumnValue, dmlData *proto.DMLData) (*proto.ColumnValue, error) {
 	tableConfig, exists := c.Tables[table]
 	if !exists {
 		return nil, nil // not an error, just no transform for this table
@@ -544,7 +544,7 @@ func TransformChange(c *Config, change *proto.Change) (*proto.Change, error) {
 			}
 			
 			// Process non-Template transforms
-			transformed, err := GetFakeValue(c, newDML.Table, col, data.Dml.ColumnValues[i], data.Dml)
+			transformed, err := GetTransformedValue(c, newDML.Table, col, data.Dml.ColumnValues[i], data.Dml)
 			if err != nil {
 				return nil, fmt.Errorf("error transforming %s.%s: %w", newDML.Table, col, err)
 			}
@@ -589,7 +589,7 @@ func TransformChange(c *Config, change *proto.Change) (*proto.Change, error) {
 			}
 			
 			// Process Template transform with updated context
-			transformed, err := GetFakeValue(c, newDML.Table, col, data.Dml.ColumnValues[i], updatedDMLData)
+			transformed, err := GetTransformedValue(c, newDML.Table, col, data.Dml.ColumnValues[i], updatedDMLData)
 			if err != nil {
 				return nil, fmt.Errorf("error transforming template %s.%s: %w", newDML.Table, col, err)
 			}
