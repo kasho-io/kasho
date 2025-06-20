@@ -80,6 +80,12 @@ tables:
 - `Regex` - Apply custom regular expression patterns and replacements
 - `Template` - Generate values using Go templates with full row context
 
+**Password Transforms:**
+- `PasswordBcrypt` - Bcrypt password hashing with configurable cost
+- `PasswordScrypt` - Scrypt password hashing with configurable parameters
+- `PasswordPBKDF2` - PBKDF2 password hashing with configurable iterations
+- `PasswordArgon2id` - Argon2id password hashing with configurable parameters
+
 ## Regex Transform Details
 
 The Regex transform allows custom pattern-based data transformation:
@@ -188,6 +194,156 @@ display_name:
 
 **Template Processing Order:**
 Template transforms are processed after all other transforms, allowing them to access the fake/transformed values instead of original data. This enables powerful cross-column transformations using already-processed data.
+
+## Password Transform Details
+
+Password transforms generate cryptographically secure password hashes using industry-standard algorithms. All password transforms support:
+
+- **Template Processing**: The `cleartext` field supports Go template syntax with full row context
+- **Deterministic Hashing**: Same input produces same hash for referential integrity
+- **Configurable Parameters**: Algorithm-specific settings with secure defaults
+- **Salt Control**: Optional `use_salt` parameter (defaults to true)
+
+**Common Configuration:**
+```yaml
+column_name:
+  type: PasswordAlgorithm
+  cleartext: 'template_or_hardcoded_value'
+  use_salt: true  # optional, defaults to true
+  # algorithm-specific parameters...
+```
+
+### PasswordBcrypt
+
+Uses bcrypt with configurable work factor. Recommended for most applications.
+
+```yaml
+password:
+  type: PasswordBcrypt
+  cleartext: '{{.username}}-changeme'
+  cost: 12  # optional, default: 10
+```
+
+**Parameters:**
+- `cost`: Work factor (4-31), higher = more secure but slower. Default: 10
+- `cleartext`: Template or hardcoded password value
+- `use_salt`: Enable deterministic salting (default: true)
+
+**Features:**
+- Built-in salt generation
+- 72-byte password limit (longer passwords truncated)
+- Industry standard, widely supported
+- Good balance of security and performance
+
+### PasswordScrypt
+
+Uses scrypt with configurable memory and CPU costs. Good for high-security applications.
+
+```yaml
+password:
+  type: PasswordScrypt
+  cleartext: 'secure-{{.id}}'
+  n: 262144     # optional, default: 131072 (2^17)
+  r: 8          # optional, default: 8
+  p: 1          # optional, default: 1
+```
+
+**Parameters:**
+- `n`: CPU/memory cost (power of 2), higher = more secure. Default: 131072
+- `r`: Block size. Default: 8
+- `p`: Parallelization. Default: 1
+- `cleartext`: Template or hardcoded password value
+- `use_salt`: Enable deterministic salting (default: true)
+
+**Features:**
+- Memory-hard algorithm
+- Resistant to GPU/ASIC attacks
+- Configurable memory usage
+- Salt$hash hex format output
+
+### PasswordPBKDF2
+
+Uses PBKDF2-HMAC-SHA256. Required for FIPS-140 compliance.
+
+```yaml
+password:
+  type: PasswordPBKDF2
+  cleartext: 'legacy-password'
+  iterations: 1000000  # optional, default: 600000
+  hash: 'SHA256'       # optional, default: 'SHA256'
+```
+
+**Parameters:**
+- `iterations`: Number of iterations, higher = more secure. Default: 600000
+- `hash`: Hash function, currently only "SHA256" supported. Default: "SHA256"
+- `cleartext`: Template or hardcoded password value
+- `use_salt`: Enable deterministic salting (default: true)
+
+**Features:**
+- FIPS-140 compliant
+- Widely supported standard
+- Configurable iteration count
+- Salt$hash hex format output
+
+### PasswordArgon2id
+
+Uses Argon2id (recommended). Winner of Password Hashing Competition.
+
+```yaml
+password:
+  type: PasswordArgon2id
+  cleartext: '{{.email | before "@"}}-2024'
+  time: 3       # optional, default: 3
+  memory: 65536 # optional, default: 65536 (64MB)
+  threads: 4    # optional, default: 4
+```
+
+**Parameters:**
+- `time`: Time cost (iterations). Default: 3
+- `memory`: Memory cost in KB. Default: 65536 (64MB)
+- `threads`: Parallelism degree. Default: 4
+- `cleartext`: Template or hardcoded password value
+- `use_salt`: Enable deterministic salting (default: true)
+
+**Features:**
+- Most secure algorithm available
+- Resistant to all known attacks
+- Configurable memory/time/parallelism
+- Recommended for new systems
+- Salt$hash hex format output
+
+**Password Transform Examples:**
+```yaml
+# Basic hardcoded password
+user_password:
+  type: PasswordBcrypt
+  cleartext: 'changeme123'
+
+# Template-based password using other fields
+admin_password:
+  type: PasswordArgon2id
+  cleartext: '{{.username | lower}}-admin-{{.id}}'
+  memory: 131072  # 128MB for higher security
+
+# Legacy system compatibility
+old_password:
+  type: PasswordPBKDF2
+  cleartext: 'legacy-{{.account_id}}'
+  iterations: 1000000
+
+# High-security password
+secure_password:
+  type: PasswordScrypt
+  cleartext: '{{.email | before "@"}}-{{.created_date | year}}'
+  n: 1048576  # Higher memory cost
+
+# Testing/development (no salt for consistency)
+test_password:
+  type: PasswordBcrypt
+  cleartext: 'test123'
+  use_salt: false
+  cost: 4  # Lower cost for faster testing
+```
 
 ## Key Features
 
@@ -332,6 +488,27 @@ tables:
       type: Regex
       pattern: '\d+'
       replacement: 'XXX'
+  
+  public.user_accounts:
+    username: FakeUsername
+    
+    # Password with template using fake username
+    password:
+      type: PasswordArgon2id
+      cleartext: '{{.username}}-secure-2024'
+      memory: 131072  # 128MB for high security
+    
+    # Admin accounts get special passwords
+    admin_password:
+      type: PasswordBcrypt
+      cleartext: 'admin-{{.id}}-changeme'
+      cost: 12
+    
+    # Legacy system compatibility
+    legacy_hash:
+      type: PasswordPBKDF2
+      cleartext: 'legacy-{{.account_number}}'
+      iterations: 1000000
 ```
 
 ## Validation

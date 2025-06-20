@@ -84,6 +84,145 @@ func TestTransformFakeEmail(t *testing.T) {
 	testTransform(t, "Email", TransformFakeEmail, "test123")
 }
 
+func TestTransformPasswordBcrypt(t *testing.T) {
+	tests := []struct {
+		name      string
+		cleartext string
+		useSalt   bool
+		cost      int
+		original  string
+		wantErr   bool
+	}{
+		{
+			name:      "basic bcrypt with salt",
+			cleartext: "password123",
+			useSalt:   true,
+			cost:      4, // lower cost for faster testing
+			original:  "testuser",
+			wantErr:   false,
+		},
+		{
+			name:      "bcrypt without salt",
+			cleartext: "password123",
+			useSalt:   false,
+			cost:      4,
+			original:  "testuser",
+			wantErr:   false,
+		},
+		{
+			name:      "long password truncation",
+			cleartext: strings.Repeat("a", 100), // > 72 chars
+			useSalt:   true,
+			cost:      4,
+			original:  "testuser",
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hash1, err := TransformPasswordBcrypt(tt.cleartext, tt.useSalt, tt.cost, tt.original)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("TransformPasswordBcrypt() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			
+			if !tt.wantErr {
+				// Test deterministic behavior
+				hash2, err := TransformPasswordBcrypt(tt.cleartext, tt.useSalt, tt.cost, tt.original)
+				if err != nil {
+					t.Errorf("TransformPasswordBcrypt() second call error = %v", err)
+					return
+				}
+				
+				if tt.useSalt {
+					// With salt, should be deterministic (same input -> same output)
+					if hash1 != hash2 {
+						t.Errorf("TransformPasswordBcrypt() with salt should be deterministic, got %v != %v", hash1, hash2)
+					}
+				}
+				
+				// Verify it looks like a bcrypt hash
+				if !strings.HasPrefix(hash1, "$2") {
+					t.Errorf("TransformPasswordBcrypt() result should start with $2, got %v", hash1)
+				}
+			}
+		})
+	}
+}
+
+func TestTransformPasswordScrypt(t *testing.T) {
+	hash1, err := TransformPasswordScrypt("password123", true, 16384, 8, 1, "testuser")
+	if err != nil {
+		t.Errorf("TransformPasswordScrypt() error = %v", err)
+		return
+	}
+	
+	// Test deterministic behavior
+	hash2, err := TransformPasswordScrypt("password123", true, 16384, 8, 1, "testuser")
+	if err != nil {
+		t.Errorf("TransformPasswordScrypt() second call error = %v", err)
+		return
+	}
+	
+	if hash1 != hash2 {
+		t.Errorf("TransformPasswordScrypt() should be deterministic, got %v != %v", hash1, hash2)
+	}
+	
+	// Should contain salt$hash format
+	if !strings.Contains(hash1, "$") {
+		t.Errorf("TransformPasswordScrypt() should contain $ separator, got %v", hash1)
+	}
+}
+
+func TestTransformPasswordPBKDF2(t *testing.T) {
+	hash1, err := TransformPasswordPBKDF2("password123", true, 10000, "SHA256", "testuser")
+	if err != nil {
+		t.Errorf("TransformPasswordPBKDF2() error = %v", err)
+		return
+	}
+	
+	// Test deterministic behavior
+	hash2, err := TransformPasswordPBKDF2("password123", true, 10000, "SHA256", "testuser")
+	if err != nil {
+		t.Errorf("TransformPasswordPBKDF2() second call error = %v", err)
+		return
+	}
+	
+	if hash1 != hash2 {
+		t.Errorf("TransformPasswordPBKDF2() should be deterministic, got %v != %v", hash1, hash2)
+	}
+	
+	// Should contain salt$hash format
+	if !strings.Contains(hash1, "$") {
+		t.Errorf("TransformPasswordPBKDF2() should contain $ separator, got %v", hash1)
+	}
+}
+
+func TestTransformPasswordArgon2id(t *testing.T) {
+	hash1, err := TransformPasswordArgon2id("password123", true, 3, 1024, 4, "testuser")
+	if err != nil {
+		t.Errorf("TransformPasswordArgon2id() error = %v", err)
+		return
+	}
+	
+	// Test deterministic behavior
+	hash2, err := TransformPasswordArgon2id("password123", true, 3, 1024, 4, "testuser")
+	if err != nil {
+		t.Errorf("TransformPasswordArgon2id() second call error = %v", err)
+		return
+	}
+	
+	if hash1 != hash2 {
+		t.Errorf("TransformPasswordArgon2id() should be deterministic, got %v != %v", hash1, hash2)
+	}
+	
+	// Should contain salt$hash format
+	if !strings.Contains(hash1, "$") {
+		t.Errorf("TransformPasswordArgon2id() should contain $ separator, got %v", hash1)
+	}
+}
+
 
 func TestTransformFakeSSN(t *testing.T) {
 	testTransform(t, "SSN", TransformFakeSSN, "test123")
