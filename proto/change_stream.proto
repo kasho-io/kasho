@@ -7,6 +7,11 @@ option go_package = "kasho/proto;proto";
 service ChangeStream {
   // Stream returns a stream of changes after the given LSN
   rpc Stream(StreamRequest) returns (stream Change) {}
+  
+  // Bootstrap coordination methods
+  rpc StartBootstrap(StartBootstrapRequest) returns (BootstrapResponse) {}
+  rpc CompleteBootstrap(CompleteBootstrapRequest) returns (BootstrapResponse) {}
+  rpc GetStatus(GetStatusRequest) returns (StatusResponse) {}
 }
 
 message StreamRequest {
@@ -51,4 +56,31 @@ message DDLData {
   string username = 3;
   string database = 4;
   string ddl = 5;
+}
+
+// Bootstrap coordination messages
+message StartBootstrapRequest {
+  string start_lsn = 1;
+  string snapshot_name = 2;
+}
+
+message CompleteBootstrapRequest {}
+
+message GetStatusRequest {}
+
+message BootstrapResponse {
+  string status = 1;
+  string previous_state = 2;
+  string current_state = 3;
+  int64 accumulated_changes = 4;
+  bool ready_to_stream = 5;
+}
+
+message StatusResponse {
+  string state = 1;
+  string start_lsn = 2;
+  string current_lsn = 3;
+  int64 accumulated_changes = 4;
+  int32 connected_clients = 5;
+  int64 uptime_seconds = 6;
 } 

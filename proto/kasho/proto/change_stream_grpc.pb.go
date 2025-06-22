@@ -19,7 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ChangeStream_Stream_FullMethodName = "/change_stream.ChangeStream/Stream"
+	ChangeStream_Stream_FullMethodName            = "/change_stream.ChangeStream/Stream"
+	ChangeStream_StartBootstrap_FullMethodName    = "/change_stream.ChangeStream/StartBootstrap"
+	ChangeStream_CompleteBootstrap_FullMethodName = "/change_stream.ChangeStream/CompleteBootstrap"
+	ChangeStream_GetStatus_FullMethodName         = "/change_stream.ChangeStream/GetStatus"
 )
 
 // ChangeStreamClient is the client API for ChangeStream service.
@@ -28,6 +31,10 @@ const (
 type ChangeStreamClient interface {
 	// Stream returns a stream of changes after the given LSN
 	Stream(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Change], error)
+	// Bootstrap coordination methods
+	StartBootstrap(ctx context.Context, in *StartBootstrapRequest, opts ...grpc.CallOption) (*BootstrapResponse, error)
+	CompleteBootstrap(ctx context.Context, in *CompleteBootstrapRequest, opts ...grpc.CallOption) (*BootstrapResponse, error)
+	GetStatus(ctx context.Context, in *GetStatusRequest, opts ...grpc.CallOption) (*StatusResponse, error)
 }
 
 type changeStreamClient struct {
@@ -57,12 +64,46 @@ func (c *changeStreamClient) Stream(ctx context.Context, in *StreamRequest, opts
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ChangeStream_StreamClient = grpc.ServerStreamingClient[Change]
 
+func (c *changeStreamClient) StartBootstrap(ctx context.Context, in *StartBootstrapRequest, opts ...grpc.CallOption) (*BootstrapResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BootstrapResponse)
+	err := c.cc.Invoke(ctx, ChangeStream_StartBootstrap_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *changeStreamClient) CompleteBootstrap(ctx context.Context, in *CompleteBootstrapRequest, opts ...grpc.CallOption) (*BootstrapResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BootstrapResponse)
+	err := c.cc.Invoke(ctx, ChangeStream_CompleteBootstrap_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *changeStreamClient) GetStatus(ctx context.Context, in *GetStatusRequest, opts ...grpc.CallOption) (*StatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StatusResponse)
+	err := c.cc.Invoke(ctx, ChangeStream_GetStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ChangeStreamServer is the server API for ChangeStream service.
 // All implementations must embed UnimplementedChangeStreamServer
 // for forward compatibility.
 type ChangeStreamServer interface {
 	// Stream returns a stream of changes after the given LSN
 	Stream(*StreamRequest, grpc.ServerStreamingServer[Change]) error
+	// Bootstrap coordination methods
+	StartBootstrap(context.Context, *StartBootstrapRequest) (*BootstrapResponse, error)
+	CompleteBootstrap(context.Context, *CompleteBootstrapRequest) (*BootstrapResponse, error)
+	GetStatus(context.Context, *GetStatusRequest) (*StatusResponse, error)
 	mustEmbedUnimplementedChangeStreamServer()
 }
 
@@ -75,6 +116,15 @@ type UnimplementedChangeStreamServer struct{}
 
 func (UnimplementedChangeStreamServer) Stream(*StreamRequest, grpc.ServerStreamingServer[Change]) error {
 	return status.Errorf(codes.Unimplemented, "method Stream not implemented")
+}
+func (UnimplementedChangeStreamServer) StartBootstrap(context.Context, *StartBootstrapRequest) (*BootstrapResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartBootstrap not implemented")
+}
+func (UnimplementedChangeStreamServer) CompleteBootstrap(context.Context, *CompleteBootstrapRequest) (*BootstrapResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CompleteBootstrap not implemented")
+}
+func (UnimplementedChangeStreamServer) GetStatus(context.Context, *GetStatusRequest) (*StatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetStatus not implemented")
 }
 func (UnimplementedChangeStreamServer) mustEmbedUnimplementedChangeStreamServer() {}
 func (UnimplementedChangeStreamServer) testEmbeddedByValue()                      {}
@@ -108,13 +158,80 @@ func _ChangeStream_Stream_Handler(srv interface{}, stream grpc.ServerStream) err
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ChangeStream_StreamServer = grpc.ServerStreamingServer[Change]
 
+func _ChangeStream_StartBootstrap_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartBootstrapRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChangeStreamServer).StartBootstrap(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChangeStream_StartBootstrap_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChangeStreamServer).StartBootstrap(ctx, req.(*StartBootstrapRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChangeStream_CompleteBootstrap_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompleteBootstrapRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChangeStreamServer).CompleteBootstrap(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChangeStream_CompleteBootstrap_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChangeStreamServer).CompleteBootstrap(ctx, req.(*CompleteBootstrapRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChangeStream_GetStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChangeStreamServer).GetStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChangeStream_GetStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChangeStreamServer).GetStatus(ctx, req.(*GetStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ChangeStream_ServiceDesc is the grpc.ServiceDesc for ChangeStream service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ChangeStream_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "change_stream.ChangeStream",
 	HandlerType: (*ChangeStreamServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "StartBootstrap",
+			Handler:    _ChangeStream_StartBootstrap_Handler,
+		},
+		{
+			MethodName: "CompleteBootstrap",
+			Handler:    _ChangeStream_CompleteBootstrap_Handler,
+		},
+		{
+			MethodName: "GetStatus",
+			Handler:    _ChangeStream_GetStatus_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Stream",
