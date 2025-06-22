@@ -136,6 +136,27 @@ func (b *KVBuffer) GetClient() *redis.Client {
 	return b.client
 }
 
+// Get retrieves a value from Redis by key
+func (b *KVBuffer) Get(ctx context.Context, key string) (string, error) {
+	val, err := b.client.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+	return val, nil
+}
+
+// Set stores a value in Redis with the given key
+func (b *KVBuffer) Set(ctx context.Context, key, value string) error {
+	err := b.client.Set(ctx, key, value, 0).Err()
+	if err != nil {
+		return fmt.Errorf("failed to set key %s: %w", key, err)
+	}
+	return nil
+}
+
 // Close closes the KV connection
 func (b *KVBuffer) Close() error {
 	return b.client.Close()

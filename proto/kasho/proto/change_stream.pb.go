@@ -497,6 +497,291 @@ func (x *DDLData) GetDdl() string {
 	return ""
 }
 
+// Bootstrap coordination messages
+type StartBootstrapRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StartLsn      string                 `protobuf:"bytes,1,opt,name=start_lsn,json=startLsn,proto3" json:"start_lsn,omitempty"`
+	SnapshotName  string                 `protobuf:"bytes,2,opt,name=snapshot_name,json=snapshotName,proto3" json:"snapshot_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartBootstrapRequest) Reset() {
+	*x = StartBootstrapRequest{}
+	mi := &file_proto_change_stream_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartBootstrapRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartBootstrapRequest) ProtoMessage() {}
+
+func (x *StartBootstrapRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_change_stream_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartBootstrapRequest.ProtoReflect.Descriptor instead.
+func (*StartBootstrapRequest) Descriptor() ([]byte, []int) {
+	return file_proto_change_stream_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *StartBootstrapRequest) GetStartLsn() string {
+	if x != nil {
+		return x.StartLsn
+	}
+	return ""
+}
+
+func (x *StartBootstrapRequest) GetSnapshotName() string {
+	if x != nil {
+		return x.SnapshotName
+	}
+	return ""
+}
+
+type CompleteBootstrapRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompleteBootstrapRequest) Reset() {
+	*x = CompleteBootstrapRequest{}
+	mi := &file_proto_change_stream_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteBootstrapRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteBootstrapRequest) ProtoMessage() {}
+
+func (x *CompleteBootstrapRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_change_stream_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteBootstrapRequest.ProtoReflect.Descriptor instead.
+func (*CompleteBootstrapRequest) Descriptor() ([]byte, []int) {
+	return file_proto_change_stream_proto_rawDescGZIP(), []int{7}
+}
+
+type GetStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetStatusRequest) Reset() {
+	*x = GetStatusRequest{}
+	mi := &file_proto_change_stream_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetStatusRequest) ProtoMessage() {}
+
+func (x *GetStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_change_stream_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetStatusRequest) Descriptor() ([]byte, []int) {
+	return file_proto_change_stream_proto_rawDescGZIP(), []int{8}
+}
+
+type BootstrapResponse struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Status             string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	PreviousState      string                 `protobuf:"bytes,2,opt,name=previous_state,json=previousState,proto3" json:"previous_state,omitempty"`
+	CurrentState       string                 `protobuf:"bytes,3,opt,name=current_state,json=currentState,proto3" json:"current_state,omitempty"`
+	AccumulatedChanges int64                  `protobuf:"varint,4,opt,name=accumulated_changes,json=accumulatedChanges,proto3" json:"accumulated_changes,omitempty"`
+	ReadyToStream      bool                   `protobuf:"varint,5,opt,name=ready_to_stream,json=readyToStream,proto3" json:"ready_to_stream,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *BootstrapResponse) Reset() {
+	*x = BootstrapResponse{}
+	mi := &file_proto_change_stream_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BootstrapResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BootstrapResponse) ProtoMessage() {}
+
+func (x *BootstrapResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_change_stream_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BootstrapResponse.ProtoReflect.Descriptor instead.
+func (*BootstrapResponse) Descriptor() ([]byte, []int) {
+	return file_proto_change_stream_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *BootstrapResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *BootstrapResponse) GetPreviousState() string {
+	if x != nil {
+		return x.PreviousState
+	}
+	return ""
+}
+
+func (x *BootstrapResponse) GetCurrentState() string {
+	if x != nil {
+		return x.CurrentState
+	}
+	return ""
+}
+
+func (x *BootstrapResponse) GetAccumulatedChanges() int64 {
+	if x != nil {
+		return x.AccumulatedChanges
+	}
+	return 0
+}
+
+func (x *BootstrapResponse) GetReadyToStream() bool {
+	if x != nil {
+		return x.ReadyToStream
+	}
+	return false
+}
+
+type StatusResponse struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	State              string                 `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
+	StartLsn           string                 `protobuf:"bytes,2,opt,name=start_lsn,json=startLsn,proto3" json:"start_lsn,omitempty"`
+	CurrentLsn         string                 `protobuf:"bytes,3,opt,name=current_lsn,json=currentLsn,proto3" json:"current_lsn,omitempty"`
+	AccumulatedChanges int64                  `protobuf:"varint,4,opt,name=accumulated_changes,json=accumulatedChanges,proto3" json:"accumulated_changes,omitempty"`
+	ConnectedClients   int32                  `protobuf:"varint,5,opt,name=connected_clients,json=connectedClients,proto3" json:"connected_clients,omitempty"`
+	UptimeSeconds      int64                  `protobuf:"varint,6,opt,name=uptime_seconds,json=uptimeSeconds,proto3" json:"uptime_seconds,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *StatusResponse) Reset() {
+	*x = StatusResponse{}
+	mi := &file_proto_change_stream_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StatusResponse) ProtoMessage() {}
+
+func (x *StatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_change_stream_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StatusResponse.ProtoReflect.Descriptor instead.
+func (*StatusResponse) Descriptor() ([]byte, []int) {
+	return file_proto_change_stream_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *StatusResponse) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *StatusResponse) GetStartLsn() string {
+	if x != nil {
+		return x.StartLsn
+	}
+	return ""
+}
+
+func (x *StatusResponse) GetCurrentLsn() string {
+	if x != nil {
+		return x.CurrentLsn
+	}
+	return ""
+}
+
+func (x *StatusResponse) GetAccumulatedChanges() int64 {
+	if x != nil {
+		return x.AccumulatedChanges
+	}
+	return 0
+}
+
+func (x *StatusResponse) GetConnectedClients() int32 {
+	if x != nil {
+		return x.ConnectedClients
+	}
+	return 0
+}
+
+func (x *StatusResponse) GetUptimeSeconds() int64 {
+	if x != nil {
+		return x.UptimeSeconds
+	}
+	return 0
+}
+
 var File_proto_change_stream_proto protoreflect.FileDescriptor
 
 const file_proto_change_stream_proto_rawDesc = "" +
@@ -534,9 +819,31 @@ const file_proto_change_stream_proto_rawDesc = "" +
 	"\x04time\x18\x02 \x01(\tR\x04time\x12\x1a\n" +
 	"\busername\x18\x03 \x01(\tR\busername\x12\x1a\n" +
 	"\bdatabase\x18\x04 \x01(\tR\bdatabase\x12\x10\n" +
-	"\x03ddl\x18\x05 \x01(\tR\x03ddl2Q\n" +
+	"\x03ddl\x18\x05 \x01(\tR\x03ddl\"Y\n" +
+	"\x15StartBootstrapRequest\x12\x1b\n" +
+	"\tstart_lsn\x18\x01 \x01(\tR\bstartLsn\x12#\n" +
+	"\rsnapshot_name\x18\x02 \x01(\tR\fsnapshotName\"\x1a\n" +
+	"\x18CompleteBootstrapRequest\"\x12\n" +
+	"\x10GetStatusRequest\"\xd0\x01\n" +
+	"\x11BootstrapResponse\x12\x16\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\x12%\n" +
+	"\x0eprevious_state\x18\x02 \x01(\tR\rpreviousState\x12#\n" +
+	"\rcurrent_state\x18\x03 \x01(\tR\fcurrentState\x12/\n" +
+	"\x13accumulated_changes\x18\x04 \x01(\x03R\x12accumulatedChanges\x12&\n" +
+	"\x0fready_to_stream\x18\x05 \x01(\bR\rreadyToStream\"\xe9\x01\n" +
+	"\x0eStatusResponse\x12\x14\n" +
+	"\x05state\x18\x01 \x01(\tR\x05state\x12\x1b\n" +
+	"\tstart_lsn\x18\x02 \x01(\tR\bstartLsn\x12\x1f\n" +
+	"\vcurrent_lsn\x18\x03 \x01(\tR\n" +
+	"currentLsn\x12/\n" +
+	"\x13accumulated_changes\x18\x04 \x01(\x03R\x12accumulatedChanges\x12+\n" +
+	"\x11connected_clients\x18\x05 \x01(\x05R\x10connectedClients\x12%\n" +
+	"\x0euptime_seconds\x18\x06 \x01(\x03R\ruptimeSeconds2\xde\x02\n" +
 	"\fChangeStream\x12A\n" +
-	"\x06Stream\x12\x1c.change_stream.StreamRequest\x1a\x15.change_stream.Change\"\x000\x01B\x13Z\x11kasho/proto;protob\x06proto3"
+	"\x06Stream\x12\x1c.change_stream.StreamRequest\x1a\x15.change_stream.Change\"\x000\x01\x12Z\n" +
+	"\x0eStartBootstrap\x12$.change_stream.StartBootstrapRequest\x1a .change_stream.BootstrapResponse\"\x00\x12`\n" +
+	"\x11CompleteBootstrap\x12'.change_stream.CompleteBootstrapRequest\x1a .change_stream.BootstrapResponse\"\x00\x12M\n" +
+	"\tGetStatus\x12\x1f.change_stream.GetStatusRequest\x1a\x1d.change_stream.StatusResponse\"\x00B\x13Z\x11kasho/proto;protob\x06proto3"
 
 var (
 	file_proto_change_stream_proto_rawDescOnce sync.Once
@@ -550,28 +857,39 @@ func file_proto_change_stream_proto_rawDescGZIP() []byte {
 	return file_proto_change_stream_proto_rawDescData
 }
 
-var file_proto_change_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_proto_change_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_proto_change_stream_proto_goTypes = []any{
-	(*StreamRequest)(nil), // 0: change_stream.StreamRequest
-	(*Change)(nil),        // 1: change_stream.Change
-	(*ColumnValue)(nil),   // 2: change_stream.ColumnValue
-	(*DMLData)(nil),       // 3: change_stream.DMLData
-	(*OldKeys)(nil),       // 4: change_stream.OldKeys
-	(*DDLData)(nil),       // 5: change_stream.DDLData
+	(*StreamRequest)(nil),            // 0: change_stream.StreamRequest
+	(*Change)(nil),                   // 1: change_stream.Change
+	(*ColumnValue)(nil),              // 2: change_stream.ColumnValue
+	(*DMLData)(nil),                  // 3: change_stream.DMLData
+	(*OldKeys)(nil),                  // 4: change_stream.OldKeys
+	(*DDLData)(nil),                  // 5: change_stream.DDLData
+	(*StartBootstrapRequest)(nil),    // 6: change_stream.StartBootstrapRequest
+	(*CompleteBootstrapRequest)(nil), // 7: change_stream.CompleteBootstrapRequest
+	(*GetStatusRequest)(nil),         // 8: change_stream.GetStatusRequest
+	(*BootstrapResponse)(nil),        // 9: change_stream.BootstrapResponse
+	(*StatusResponse)(nil),           // 10: change_stream.StatusResponse
 }
 var file_proto_change_stream_proto_depIdxs = []int32{
-	3, // 0: change_stream.Change.dml:type_name -> change_stream.DMLData
-	5, // 1: change_stream.Change.ddl:type_name -> change_stream.DDLData
-	2, // 2: change_stream.DMLData.column_values:type_name -> change_stream.ColumnValue
-	4, // 3: change_stream.DMLData.old_keys:type_name -> change_stream.OldKeys
-	2, // 4: change_stream.OldKeys.key_values:type_name -> change_stream.ColumnValue
-	0, // 5: change_stream.ChangeStream.Stream:input_type -> change_stream.StreamRequest
-	1, // 6: change_stream.ChangeStream.Stream:output_type -> change_stream.Change
-	6, // [6:7] is the sub-list for method output_type
-	5, // [5:6] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	3,  // 0: change_stream.Change.dml:type_name -> change_stream.DMLData
+	5,  // 1: change_stream.Change.ddl:type_name -> change_stream.DDLData
+	2,  // 2: change_stream.DMLData.column_values:type_name -> change_stream.ColumnValue
+	4,  // 3: change_stream.DMLData.old_keys:type_name -> change_stream.OldKeys
+	2,  // 4: change_stream.OldKeys.key_values:type_name -> change_stream.ColumnValue
+	0,  // 5: change_stream.ChangeStream.Stream:input_type -> change_stream.StreamRequest
+	6,  // 6: change_stream.ChangeStream.StartBootstrap:input_type -> change_stream.StartBootstrapRequest
+	7,  // 7: change_stream.ChangeStream.CompleteBootstrap:input_type -> change_stream.CompleteBootstrapRequest
+	8,  // 8: change_stream.ChangeStream.GetStatus:input_type -> change_stream.GetStatusRequest
+	1,  // 9: change_stream.ChangeStream.Stream:output_type -> change_stream.Change
+	9,  // 10: change_stream.ChangeStream.StartBootstrap:output_type -> change_stream.BootstrapResponse
+	9,  // 11: change_stream.ChangeStream.CompleteBootstrap:output_type -> change_stream.BootstrapResponse
+	10, // 12: change_stream.ChangeStream.GetStatus:output_type -> change_stream.StatusResponse
+	9,  // [9:13] is the sub-list for method output_type
+	5,  // [5:9] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_proto_change_stream_proto_init() }
@@ -596,7 +914,7 @@ func file_proto_change_stream_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_change_stream_proto_rawDesc), len(file_proto_change_stream_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
