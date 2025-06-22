@@ -10,7 +10,7 @@ services:
       - .env
     environment:
       - ENV=development
-    command: ["./env-template-wrapper.sh", "--dirs", "/app/primary-init.d,/app/replica-init.d"]
+    command: ["sh", "-c", "eval $(/app/scripts/parse-db-url.sh) && /app/bin/env-template --dirs /app/primary-init.d,/app/replica-init.d"]
 
   redis:
     image: redis:7-alpine

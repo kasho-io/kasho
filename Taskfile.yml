@@ -121,15 +121,10 @@ tasks:
     desc: Reset and restart development environment (removes volumes)
     deps: [dev:stop, dev:start]
 
-  dev:setup-replication:
-    desc: Setup replication for the development environment
+  dev:bootstrap:
+    desc: Bootstrap from a pg_dump, then start streaming changes
     cmds:
-      - ./scripts/setup-replication.sh
-
-  dev:setup-data:
-    desc: Setup fake SaaS data for the development environment
-    cmds:
-      - ./scripts/demo-fake-projmgmt-saas.sh
+      - cd environments/development && docker-compose exec -e WAIT_FOR_BOOTSTRAP=true pg-change-stream /app/scripts/bootstrap-kasho.sh
 
   dev:app:*:
     desc: Start a specific app in development mode
