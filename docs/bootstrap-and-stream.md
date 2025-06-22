@@ -199,36 +199,50 @@ set -euo pipefail
 PRIMARY_DATABASE_URL="${PRIMARY_DATABASE_URL:-postgresql://kasho:kasho@postgres-primary:5432/primary_db?sslmode=disable}"
 KV_URL="${KV_URL:-redis://redis:6379}"
 CHANGE_STREAM_SERVICE="${CHANGE_STREAM_SERVICE:-pg-change-stream:8080}"
+REPLICATION_SLOT_NAME="${REPLICATION_SLOT_NAME:-kasho_slot}"
 
 echo "Starting Kasho bootstrap process..."
 
-# Step 1: Create temporary slot with snapshot
-echo "Creating snapshot..."
-SNAPSHOT_INFO=$(psql "$PRIMARY_DATABASE_URL" -t -A -c "
-  SELECT slot_name || '|' || lsn || '|' || snapshot_name 
-  FROM pg_create_logical_replication_slot('kasho_temp_slot', 'pgoutput', true);
+# Step 1: Create or verify the permanent replication slot
+echo "Setting up replication slot..."
+
+# Check if the slot already exists
+EXISTING_SLOT=$(psql "$PRIMARY_DATABASE_URL" -t -A -c "
+  SELECT slot_name || '|' || confirmed_flush_lsn 
+  FROM pg_replication_slots 
+  WHERE slot_name = '$REPLICATION_SLOT_NAME';
 ")
 
-IFS='|' read -r SLOT_NAME START_LSN SNAPSHOT_NAME <<< "$SNAPSHOT_INFO"
-echo "Created snapshot at LSN: $START_LSN"
+if [[ -n "$EXISTING_SLOT" ]]; then
+    echo "Replication slot '$REPLICATION_SLOT_NAME' already exists"
+    IFS='|' read -r SLOT_NAME START_LSN <<< "$EXISTING_SLOT"
+    echo "Using existing slot with LSN: $START_LSN"
+else
+    echo "Creating new replication slot '$REPLICATION_SLOT_NAME'..."
+    SLOT_INFO=$(psql "$PRIMARY_DATABASE_URL" -t -A -c "
+      SELECT slot_name || '|' || lsn FROM pg_create_logical_replication_slot('$REPLICATION_SLOT_NAME', 'pgoutput');
+    ")
+    
+    IFS='|' read -r SLOT_NAME START_LSN <<< "$SLOT_INFO"
+    echo "Created permanent slot: $SLOT_NAME"
+    echo "Starting LSN: $START_LSN"
+fi
 
 # Step 2: Signal pg-change-stream to start accumulating
 echo "Starting change accumulation..."
 grpcurl -plaintext \
-  -d "{\"start_lsn\": \"$START_LSN\", \"snapshot_name\": \"$SNAPSHOT_NAME\"}" \
-  "$CHANGE_STREAM_SERVICE" kasho.ChangeStreamService/StartBootstrap
+  -d "{\"start_lsn\": \"$START_LSN\"}" \
+  "$CHANGE_STREAM_SERVICE" change_stream.ChangeStream/StartBootstrap
 
 # Step 3: Take database dump
 echo "Dumping database (this may take a while)..."
+# Note: pg_dump creates its own consistent snapshot internally
 pg_dump "$PRIMARY_DATABASE_URL" \
-  --snapshot="$SNAPSHOT_NAME" \
   --no-owner \
   --no-privileges \
   -f /tmp/bootstrap_dump.sql
 
-# Step 4: Clean up temporary slot
-echo "Cleaning up temporary slot..."
-psql "$PRIMARY_DATABASE_URL" -c "SELECT pg_drop_replication_slot('kasho_temp_slot');"
+# Step 4: No cleanup needed - we're using the permanent slot
 
 # Step 5: Start pg-bootstrap-sync
 echo "Processing dump into change events..."
@@ -248,7 +262,7 @@ if [[ "${WAIT_FOR_COMPLETION:-false}" == "true" ]]; then
   echo "Bootstrap complete!"
   
   # Optional: Signal streaming mode
-  # grpcurl -plaintext "$CHANGE_STREAM_HOST" kasho.ChangeStreamService/CompleteBootstrap
+  # grpcurl -plaintext "$CHANGE_STREAM_HOST" change_stream.ChangeStream/CompleteBootstrap
 fi
 ```
 
@@ -342,49 +356,51 @@ docker exec -it kasho ./scripts/setup-kasho-db.sh
    - Order: verify-prerequisites → create-kasho-user → setup-ddl-logging → setup-replication
 2. **Ensure pg-change-stream is running** (will be in WAITING mode if no replication slot exists)
 
-### Phase 2: Snapshot Creation
+### Phase 2: Replication Slot Creation
 
-The bootstrap coordinator (can be a human following instructions or a script):
+The bootstrap coordinator creates or verifies the permanent replication slot:
 
-1. **Create temporary slot with exported snapshot**:
+1. **Create permanent replication slot**:
    ```sql
-   SELECT slot_name, lsn, snapshot_name 
-   FROM pg_create_logical_replication_slot('kasho_temp_slot', 'pgoutput', true);
+   SELECT slot_name, lsn
+   FROM pg_create_logical_replication_slot('kasho_slot', 'pgoutput');
    ```
    
-   **Why use a replication slot with exported snapshot?**
+   **Why create the slot during bootstrap instead of setup?**
    
-   This approach solves the critical coordination problem:
-   - **Non-blocking**: The database remains fully operational during dump (no locks)
-   - **Consistent snapshot**: Captures exact database state at a specific LSN
-   - **No data loss**: We know exactly where to start replication (the LSN)
-   - **Atomic operation**: Get both snapshot and LSN in one command
+   - **Avoid WAL accumulation**: If created during setup but services aren't running, WAL files accumulate indefinitely
+   - **Flexibility**: Allows custom slot names and multiple Kasho instances
+   - **User permissions**: The kasho user can create slots (requires REPLICATION role), avoiding superuser requirement
+   - **Clean recovery**: Easy to drop and recreate if needed
    
-   Without this, we'd have to either lock the database (blocking all writes) or risk missing changes between dump and replication start.
+   **Why do we need a replication slot at all?**
+   
+   The replication slot serves as a **WAL retention guarantee**:
+   - **Without a slot**: PostgreSQL might remove WAL files before pg-change-stream reads them
+   - **With a slot**: PostgreSQL guarantees to keep all WAL from the slot's LSN forward
+   - **During bootstrap**: Ensures no changes are lost while pg_dump runs (which can take hours)
+   - **After bootstrap**: Prevents data loss if pg-change-stream is temporarily down
+   
+   The slot provides the critical coordination point - we know exactly which LSN to start from, and PostgreSQL guarantees all changes from that point are available.
 
 2. **Signal pg-change-stream to start accumulating**:
    ```bash
-   grpcurl -plaintext -d '{"start_lsn": "<lsn-from-step-1>", "snapshot_name": "<snapshot-from-step-1>"}' \
-     localhost:50051 kasho.ChangeStreamService/StartBootstrap
+   grpcurl -plaintext -d '{"start_lsn": "<lsn-from-step-1>"}' \
+     localhost:50051 change_stream.ChangeStream/StartBootstrap
    ```
    
    Note: Ensure grpcurl is included in Docker images for bootstrap coordination.
 
-   Note: The permanent `kasho_slot` was already created during the initial SQL setup phase.
-
 ### Phase 3: Data Transfer
 
-1. **Take database dump** using the snapshot:
+1. **Take database dump**:
    ```bash
-   pg_dump --snapshot=<snapshot-name> --no-owner --no-privileges source_db > dump.sql
+   pg_dump --no-owner --no-privileges source_db > dump.sql
    ```
+   
+   Note: pg_dump creates its own consistent snapshot internally. The replication slot ensures we don't lose any changes that occur during the dump.
 
-2. **Clean up temporary slot**:
-   ```sql
-   SELECT pg_drop_replication_slot('kasho_temp_slot');
-   ```
-
-3. **Start pg-bootstrap-sync** to process the dump:
+2. **Start pg-bootstrap-sync** to process the dump:
    ```bash
    pg-bootstrap-sync --dump-file=dump.sql --redis-url=redis://localhost:6379 &
    ```

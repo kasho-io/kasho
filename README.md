@@ -136,17 +136,12 @@ cd environments/demo && docker-compose up
 task dev:reset
 ```
 
-2. Setup replication. In a separate terminal, run:
+2. Bootstrap the replica database from the primary. This will create a consistent snapshot and start streaming changes:
 ```bash
-task dev:setup-replication
+task dev:bootstrap
 ```
 
-3. Wait for the `pg-change-stream` service to connect to the primary by watching the output from the first terminal, then set up some test data. Run:
-```bash
-task dev:setup-data
-```
-
-4. Run the demo. In a separate terminal, run:
+3. Run the demo app to visualize the replication. In a separate terminal, run:
 ```bash
 task dev:app:demo
 ```

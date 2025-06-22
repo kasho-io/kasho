@@ -106,14 +106,236 @@ docker-compose up -d
 
 ## Database Requirements
 
-**Source PostgreSQL:**
+### Source PostgreSQL
 - Version 10+
 - Logical replication enabled (`wal_level = logical`)
-- User with REPLICATION permission
+- Sufficient replication slots (`max_replication_slots` ≥ 2)
+- User with REPLICATION permission and SELECT on all tables
 
-**Target Database:**
+### Target Database
 - PostgreSQL 10+
-- User with table creation and write permissions
+- User with CREATE permission and full access to tables
+
+### Initial Setup
+
+Before deploying Kasho, the database must be configured:
+
+1. **Configure PostgreSQL** (requires restart):
+   ```ini
+   # postgresql.conf
+   wal_level = logical
+   max_replication_slots = 10
+   max_wal_senders = 10
+   ```
+
+2. **Run database setup** (requires superuser):
+   ```bash
+   # Set environment variables
+   export PRIMARY_DATABASE_URL="postgresql://kasho:pass@primary:5432/db"
+   export REPLICA_DATABASE_URL="postgresql://kasho:pass@replica:5432/db"
+   export PRIMARY_DATABASE_SU_USER="postgres"
+   export PRIMARY_DATABASE_SU_PASSWORD="postgres"
+   export REPLICA_DATABASE_SU_USER="postgres"
+   export REPLICA_DATABASE_SU_PASSWORD="postgres"
+   
+   # Run setup script
+   ./scripts/prepare-primary-db.sh
+   ```
+
+   This script will:
+   - Verify prerequisites (wal_level, etc.)
+   - Create the kasho user with appropriate permissions
+   - Set up DDL logging (if using DDL replication)
+   - Create the publication (but NOT the replication slot - that's handled during bootstrap)
+
+### Manual Database Setup Steps
+
+If you prefer to set up the database manually instead of using the script:
+
+1. **Verify WAL level** (as superuser on primary):
+   ```sql
+   -- Check current setting
+   SHOW wal_level;
+   
+   -- If not 'logical', update postgresql.conf:
+   -- wal_level = logical
+   -- Then restart PostgreSQL
+   ```
+
+2. **Create Kasho user on primary** (as superuser):
+   ```sql
+   -- Create role with replication and login privileges
+   CREATE ROLE kasho WITH REPLICATION LOGIN PASSWORD 'your-secure-password';
+   
+   -- Grant read permissions
+   GRANT USAGE ON SCHEMA public TO kasho;
+   GRANT CREATE ON SCHEMA public TO kasho;
+   GRANT SELECT ON ALL TABLES IN SCHEMA public TO kasho;
+   GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO kasho;
+   
+   -- Grant future table permissions
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public 
+   GRANT SELECT ON TABLES TO kasho;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public 
+   GRANT SELECT ON SEQUENCES TO kasho;
+   ```
+
+3. **Create Kasho user on replica** (as superuser):
+   ```sql
+   -- Create role with same privileges
+   CREATE ROLE kasho WITH REPLICATION LOGIN PASSWORD 'your-secure-password';
+   
+   -- Grant full permissions (needs to apply changes)
+   GRANT USAGE ON SCHEMA public TO kasho;
+   GRANT CREATE ON SCHEMA public TO kasho;
+   GRANT ALL ON ALL TABLES IN SCHEMA public TO kasho;
+   GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO kasho;
+   
+   -- Grant future table permissions
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public 
+   GRANT ALL ON TABLES TO kasho;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public 
+   GRANT ALL ON SEQUENCES TO kasho;
+   ```
+
+4. **Set up DDL logging** (as superuser on primary):
+   ```sql
+   -- Create DDL log table
+   CREATE TABLE IF NOT EXISTS kasho_ddl_log (
+       id BIGSERIAL PRIMARY KEY,
+       lsn pg_lsn NOT NULL,
+       timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+       username TEXT NOT NULL,
+       database TEXT NOT NULL,
+       ddl TEXT NOT NULL
+   );
+   
+   -- Create cleanup function
+   CREATE OR REPLACE FUNCTION kasho_cleanup_ddl_log() RETURNS void AS $$
+   BEGIN
+       DELETE FROM kasho_ddl_log WHERE timestamp < NOW() - INTERVAL '7 days';
+   END;
+   $$ LANGUAGE plpgsql;
+   
+   -- Create DDL capture function
+   CREATE OR REPLACE FUNCTION kasho_log_ddl() RETURNS event_trigger AS $$
+   DECLARE
+       current_lsn pg_lsn;
+       ddl_text TEXT;
+   BEGIN
+       SELECT pg_current_wal_lsn() INTO current_lsn;
+       SELECT current_query() INTO ddl_text;
+       
+       INSERT INTO kasho_ddl_log (lsn, username, database, ddl)
+       VALUES (current_lsn, current_user, current_database(), ddl_text);
+       
+       PERFORM kasho_cleanup_ddl_log();
+   END;
+   $$ LANGUAGE plpgsql;
+   
+   -- Create event triggers
+   CREATE EVENT TRIGGER kasho_log_ddl_start 
+   ON ddl_command_start
+   EXECUTE FUNCTION kasho_log_ddl();
+   
+   CREATE EVENT TRIGGER kasho_log_ddl_end 
+   ON ddl_command_end
+   EXECUTE FUNCTION kasho_log_ddl();
+   ```
+
+5. **Create publication** (as superuser on primary):
+   ```sql
+   -- Create publication for all tables
+   CREATE PUBLICATION kasho_pub FOR ALL TABLES;
+   ```
+
+**Important:** Do NOT create the replication slot manually. It will be created automatically during the bootstrap process to ensure proper coordination between snapshot creation and change accumulation.
+
+## Bootstrap Process
+
+If you have existing data in your source database, you need to bootstrap it into Kasho:
+
+### Understanding Bootstrap States
+
+pg-change-stream operates in three states:
+- **WAITING**: No replication slot exists, waiting for bootstrap to begin
+- **ACCUMULATING**: Replication slot created, capturing changes during initial data load
+- **STREAMING**: Normal operation, streaming all changes (both accumulated and new) to clients
+
+The bootstrap process ensures no data loss by:
+1. Creating a consistent snapshot of the source database
+2. Starting change accumulation from that exact point
+3. Loading the snapshot data
+4. Transitioning to streaming mode with all accumulated changes
+
+### Running Bootstrap
+
+1. **Ensure pg-change-stream is running and in WAITING state**:
+   ```bash
+   grpcurl -plaintext pg-change-stream:8080 kasho.ChangeStreamService/GetStatus
+   ```
+
+2. **Run the bootstrap script**:
+   ```bash
+   # Basic usage - will prompt for confirmation before transitioning to streaming
+   ./scripts/bootstrap-kasho.sh
+   
+   # Automatic mode - transitions to streaming without prompting
+   WAIT_FOR_BOOTSTRAP=true ./scripts/bootstrap-kasho.sh
+   ```
+
+   This script will:
+   - Create a temporary replication slot to get a consistent snapshot
+   - Signal pg-change-stream to create its permanent slot and start accumulating changes
+   - Take a database dump using the snapshot
+   - Run pg-bootstrap-sync to convert the dump to change events
+   - Clean up the temporary slot
+   - Optionally transition to streaming mode (automatic with WAIT_FOR_BOOTSTRAP=true)
+
+3. **Monitor progress**:
+   ```bash
+   # Check status during bootstrap
+   grpcurl -plaintext pg-change-stream:8080 kasho.ChangeStreamService/GetStatus
+   
+   # If not using automatic mode, manually transition to streaming when ready
+   grpcurl -plaintext pg-change-stream:8080 kasho.ChangeStreamService/CompleteBootstrap
+   ```
+
+### Manual Bootstrap Steps
+
+If you prefer to run the bootstrap process manually:
+
+1. **Create temporary snapshot and get LSN**:
+   ```sql
+   -- Create a temporary slot to get a consistent snapshot
+   SELECT slot_name, lsn, snapshot_name 
+   FROM pg_create_logical_replication_slot('kasho_temp_slot', 'pgoutput', true);
+   ```
+
+2. **Start accumulation** (this creates the permanent replication slot):
+   ```bash
+   grpcurl -plaintext -d '{"start_lsn": "<lsn>", "snapshot_name": "<snapshot>"}' \
+     pg-change-stream:8080 kasho.ChangeStreamService/StartBootstrap
+   ```
+
+3. **Take dump and process**:
+   ```bash
+   # Use the snapshot from step 1 for consistency
+   pg_dump --snapshot=<snapshot> --no-owner --no-privileges source_db > dump.sql
+   
+   # Convert dump to change events
+   pg-bootstrap-sync --dump-file=dump.sql --redis-url=redis://redis:6379
+   ```
+
+4. **Clean up temporary slot and transition to streaming**:
+   ```sql
+   -- Drop the temporary slot (permanent slot remains)
+   SELECT pg_drop_replication_slot('kasho_temp_slot');
+   ```
+   ```bash
+   # Transition from ACCUMULATING to STREAMING state
+   grpcurl -plaintext pg-change-stream:8080 kasho.ChangeStreamService/CompleteBootstrap
+   ```
 
 ## Troubleshooting
 
@@ -140,5 +362,7 @@ Check that services can reach each other:
 - Mount the config directory with transforms.yml to /app/config
 
 **"replication slot already exists"**
-- Only one pg-change-stream instance can use a replication slot
-- Drop the existing slot or use a different slot name
+- This usually means a previous bootstrap wasn't cleaned up properly
+- Check if pg-change-stream is in STREAMING state (bootstrap already complete)
+- If stuck, manually drop the slot: `SELECT pg_drop_replication_slot('kasho_slot');`
+- Then restart pg-change-stream to return to WAITING state
