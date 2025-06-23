@@ -90,24 +90,37 @@ func (s *ChangeStreamServer) Stream(req *proto.StreamRequest, stream proto.Chang
 		s.clientsMu.Unlock()
 	}()
 	
-	// Send buffered changes first
+	// Send buffered changes first in batches
 	if req.LastLsn != "" {
-		rawChanges, err := s.buffer.GetChangesAfter(stream.Context(), req.LastLsn)
-		if err != nil {
-			return fmt.Errorf("failed to get buffered changes: %w", err)
-		}
+		const batchSize = 1000
+		offset := int64(0)
+		
+		for {
+			rawChanges, err := s.buffer.GetChangesAfterBatch(stream.Context(), req.LastLsn, offset, batchSize)
+			if err != nil {
+				return fmt.Errorf("failed to get buffered changes: %w", err)
+			}
 
-		for _, rawChange := range rawChanges {
-			var change types.Change
-			if err := json.Unmarshal(rawChange, &change); err != nil {
-				log.Printf("Error unmarshaling buffered change: %v", err)
-				continue
+			// Send this batch
+			for _, rawChange := range rawChanges {
+				var change types.Change
+				if err := json.Unmarshal(rawChange, &change); err != nil {
+					log.Printf("Error unmarshaling buffered change: %v", err)
+					continue
+				}
+				
+				protoChange := convertToProtoChange(change)
+				if err := stream.Send(protoChange); err != nil {
+					return err
+				}
 			}
 			
-			protoChange := convertToProtoChange(change)
-			if err := stream.Send(protoChange); err != nil {
-				return err
+			// If we got fewer than batchSize results, we're done
+			if len(rawChanges) < batchSize {
+				break
 			}
+			
+			offset += batchSize
 		}
 	}
 
