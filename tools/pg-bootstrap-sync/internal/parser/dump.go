@@ -207,27 +207,49 @@ type copyInfo struct {
 
 // parseCopyStatement parses a COPY statement and extracts table and column information
 func (p *DumpParser) parseCopyStatement(line string) *copyInfo {
-	// Match: COPY [schema.]table_name (col1, col2, ...) FROM stdin;
-	re := regexp.MustCompile(`COPY\s+([\w.]+)\s*\(([^)]+)\)\s+FROM\s+stdin;`)
-	matches := re.FindStringSubmatch(line)
-	
-	if len(matches) != 3 {
-		return nil
+	// Use pg_query_go for robust parsing
+	sqlParser := NewSQLParser()
+	parsed, err := sqlParser.ParseSQL(line)
+	if err != nil || len(parsed.Statements) == 0 {
+		// Fall back to regex for simple cases if pg_query fails
+		re := regexp.MustCompile(`COPY\s+([\w.]+)\s*\(([^)]+)\)\s+FROM\s+stdin;`)
+		matches := re.FindStringSubmatch(line)
+		if len(matches) != 3 {
+			return nil
+		}
+		
+		table := matches[1]
+		columnsStr := matches[2]
+		
+		// Parse column names
+		columns := make([]string, 0)
+		for _, col := range strings.Split(columnsStr, ",") {
+			columns = append(columns, strings.TrimSpace(col))
+		}
+		
+		return &copyInfo{
+			table:   table,
+			columns: columns,
+		}
 	}
 
-	table := matches[1]
-	columnsStr := matches[2]
+	// Look for COPY statement in parsed results
+	for _, stmt := range parsed.Statements {
+		// Check if metadata indicates this is a COPY statement
+		if stmt.Type == "COPY" || stmt.Type == "UNKNOWN" {
+			// Extract table and columns from the parsed statement
+			// For COPY statements, the table name should be in stmt.TableName
+			if stmt.TableName != "" {
+				// Build column list from stmt.Columns
+				return &copyInfo{
+					table:   stmt.TableName,
+					columns: stmt.Columns,
+				}
+			}
+		}
+	}
 	
-	// Parse column names
-	columns := make([]string, 0)
-	for _, col := range strings.Split(columnsStr, ",") {
-		columns = append(columns, strings.TrimSpace(col))
-	}
-
-	return &copyInfo{
-		table:   table,
-		columns: columns,
-	}
+	return nil
 }
 
 // unescapeCopyValue unescapes PostgreSQL COPY format values
@@ -299,16 +321,6 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 				continue
 			}
 			
-			// Special handling for DROP statements - check if it's a publication/subscription
-			if stmt.Type == "DROP" {
-				upperSQL := strings.ToUpper(sql)
-				if strings.Contains(upperSQL, "DROP PUBLICATION") ||
-				   strings.Contains(upperSQL, "DROP SUBSCRIPTION") {
-					// Skip DROP PUBLICATION/SUBSCRIPTION statements
-					continue
-				}
-			}
-			
 			// Handle DDL statements
 			ddlStmt := DDLStatement{
 				SQL:      sql,
@@ -355,19 +367,14 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 			// These are session control statements, skip them
 			continue
 			
+		// Publication/Subscription statements - skip these as they're for replication setup only
+		case "CREATE_PUBLICATION", "ALTER_PUBLICATION", "DROP_PUBLICATION",
+		     "CREATE_SUBSCRIPTION", "ALTER_SUBSCRIPTION", "DROP_SUBSCRIPTION":
+			// Skip publication/subscription statements
+			continue
+			
 		// Unknown statement type
 		case "UNKNOWN":
-			// Check if this is a publication/subscription statement that should be skipped
-			upperSQL := strings.ToUpper(sql)
-			if strings.HasPrefix(upperSQL, "CREATE PUBLICATION") ||
-			   strings.HasPrefix(upperSQL, "ALTER PUBLICATION") ||
-			   strings.HasPrefix(upperSQL, "DROP PUBLICATION") ||
-			   strings.HasPrefix(upperSQL, "CREATE SUBSCRIPTION") ||
-			   strings.HasPrefix(upperSQL, "ALTER SUBSCRIPTION") ||
-			   strings.HasPrefix(upperSQL, "DROP SUBSCRIPTION") {
-				// Skip publication/subscription statements - they're for replication setup only
-				continue
-			}
 			
 			// Get the actual node type from metadata for better error message
 			nodeType := "unknown"
