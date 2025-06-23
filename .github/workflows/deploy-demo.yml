@@ -54,7 +54,7 @@ jobs:
             git reset --hard origin/main
             git pull -f
             
-            # Build the kasho image for production
+            # Build the kasho image for production (includes pg-bootstrap-sync)
             docker build -t kasho --target production .
             
             cd environments/demo
@@ -140,10 +140,42 @@ jobs:
             
             echo "🎉 All services are running successfully"
             
-            # Run setup scripts
+            # Wait for pg-change-stream to be ready
+            echo "⏳ Waiting for pg-change-stream to be ready..."
+            for i in {1..30}; do
+              if docker exec demo-pg-change-stream-1 nc -z localhost 8080 2>/dev/null; then
+                echo "✅ pg-change-stream is ready"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "❌ pg-change-stream failed to become ready"
+                exit 1
+              fi
+              sleep 2
+            done
+            
+            # Run bootstrap process
+            echo "🚀 Starting Kasho bootstrap process..."
             cd ../..
-            ./scripts/setup-replication.sh demo
-            ./scripts/demo-fake-projmgmt-saas.sh demo
+            
+            # Check if bootstrap script exists
+            if [ ! -f "./scripts/bootstrap-kasho.sh" ]; then
+              echo "❌ bootstrap-kasho.sh not found"
+              exit 1
+            fi
+            
+            # Run bootstrap process in a dedicated container
+            docker run --rm \
+              --network demo_default \
+              -e PRIMARY_DATABASE_URL="${{ secrets.PRIMARY_DATABASE_URL }}" \
+              -e KV_URL="${{ secrets.KV_URL }}" \
+              -e CHANGE_STREAM_SERVICE="pg-change-stream:8080" \
+              -e REPLICATION_SLOT_NAME="kasho_slot" \
+              -e WAIT_FOR_BOOTSTRAP="true" \
+              kasho \
+              /app/scripts/bootstrap-kasho.sh
+            
+            echo "✅ Bootstrap process completed successfully"
 
   deployment-status:
     runs-on: ubuntu-latest
