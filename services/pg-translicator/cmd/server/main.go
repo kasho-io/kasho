@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	dbsql "database/sql"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -131,7 +132,11 @@ func main() {
 	streamClient := proto.NewChangeStreamClient(client)
 
 	for {
-		stream, err := streamClient.Stream(ctx, &proto.StreamRequest{LastLsn: ""})
+		// Check if replica database has any user tables to determine starting LSN
+		lastLsn := determineStartingLSN(db)
+		log.Printf("Starting stream from LSN: %s", lastLsn)
+		
+		stream, err := streamClient.Stream(ctx, &proto.StreamRequest{LastLsn: lastLsn})
 		if err != nil {
 			log.Printf("Failed to start stream: %v", err)
 			time.Sleep(time.Second)
@@ -149,6 +154,28 @@ func main() {
 			if err != nil {
 				log.Printf("Error transforming change: %v", err)
 				continue
+			}
+			
+			// Debug: Check if transform was applied
+			if dml := change.GetDml(); dml != nil && dml.Table == "users" {
+				transformedDml := transformedChange.GetDml()
+				if transformedDml != nil && len(transformedDml.ColumnNames) > 0 {
+					// Find password column index
+					for i, col := range transformedDml.ColumnNames {
+						if col == "password" && i < len(dml.ColumnValues) && i < len(transformedDml.ColumnValues) {
+							origPwd := "nil"
+							transPwd := "nil"
+							if dml.ColumnValues[i] != nil {
+								origPwd = fmt.Sprintf("%v", dml.ColumnValues[i].GetStringValue())[:20] + "..."
+							}
+							if transformedDml.ColumnValues[i] != nil {
+								transPwd = fmt.Sprintf("%v", transformedDml.ColumnValues[i].GetStringValue())[:20] + "..."
+							}
+							log.Printf("Transform debug - users table password: original=%s, transformed=%s", origPwd, transPwd)
+							break
+						}
+					}
+				}
 			}
 
 			stmt, err := sql.ToSQL(transformedChange)
@@ -169,4 +196,30 @@ func main() {
 			log.Printf("%s (%s): %s", change.Lsn, change.Type, stmt)
 		}
 	}
+}
+
+// determineStartingLSN checks if the replica has any user tables
+// Returns "0/0" if empty (needs bootstrap), or "" if tables exist
+func determineStartingLSN(db *dbsql.DB) string {
+	// Check for user tables (excluding system schemas)
+	var tableCount int
+	err := db.QueryRow(`
+		SELECT COUNT(*) 
+		FROM information_schema.tables 
+		WHERE table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+		AND table_type = 'BASE TABLE'
+	`).Scan(&tableCount)
+	
+	if err != nil {
+		log.Printf("Error checking replica tables: %v, assuming empty", err)
+		return "0/0"
+	}
+	
+	if tableCount == 0 {
+		log.Printf("Replica database is empty, will request all changes from beginning")
+		return "0/0"
+	}
+	
+	log.Printf("Replica database has %d tables, will only request new changes", tableCount)
+	return ""
 }
