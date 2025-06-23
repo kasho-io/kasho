@@ -312,7 +312,7 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 -- DDL: CREATE FUNCTION
-CREATE FUNCTION public.kasho_capture_ddl_command() RETURNS event_trigger
+CREATE FUNCTION public.test_capture_ddl_command() RETURNS event_trigger
     LANGUAGE plpgsql
     AS $$
   BEGIN
@@ -321,7 +321,7 @@ CREATE FUNCTION public.kasho_capture_ddl_command() RETURNS event_trigger
   $$;
 
 -- DDL: CREATE TABLE
-CREATE TABLE public.kasho_ddl_log (
+CREATE TABLE public.test_ddl_log (
     id integer NOT NULL,
     lsn pg_lsn,
     ts timestamp with time zone DEFAULT now(),
@@ -331,24 +331,24 @@ CREATE TABLE public.kasho_ddl_log (
 );
 
 -- DDL: CREATE SEQUENCE
-CREATE SEQUENCE public.kasho_ddl_log_id_seq
+CREATE SEQUENCE public.test_ddl_log_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1;
 
 -- DDL: ALTER SEQUENCE
-ALTER SEQUENCE public.kasho_ddl_log_id_seq OWNED BY public.kasho_ddl_log.id;
+ALTER SEQUENCE public.test_ddl_log_id_seq OWNED BY public.test_ddl_log.id;
 
 -- DDL: ALTER TABLE
-ALTER TABLE ONLY public.kasho_ddl_log ALTER COLUMN id SET DEFAULT nextval('public.kasho_ddl_log_id_seq'::regclass);
+ALTER TABLE ONLY public.test_ddl_log ALTER COLUMN id SET DEFAULT nextval('public.test_ddl_log_id_seq'::regclass);
 
 -- DDL: CREATE EVENT TRIGGER
-CREATE EVENT TRIGGER kasho_capture_ddl ON ddl_command_start
-   EXECUTE FUNCTION public.kasho_capture_ddl_command();
+CREATE EVENT TRIGGER test_capture_ddl ON ddl_command_start
+   EXECUTE FUNCTION public.test_capture_ddl_command();
 
 -- DDL: CREATE TRIGGER
-CREATE TRIGGER kasho_cleanup_ddl_logs_trigger AFTER INSERT ON public.kasho_ddl_log 
-   FOR EACH ROW EXECUTE FUNCTION public.kasho_trigger_cleanup_ddl_logs();
+CREATE TRIGGER test_cleanup_ddl_logs_trigger AFTER INSERT ON public.test_ddl_log 
+   FOR EACH ROW EXECUTE FUNCTION public.test_trigger_cleanup_ddl_logs();
 
 -- DDL: COMMENT
 COMMENT ON SCHEMA public IS 'standard public schema';
@@ -358,10 +358,10 @@ CREATE PUBLICATION kasho_pub FOR ALL TABLES;
 DROP PUBLICATION IF EXISTS old_pub;
 
 -- DML: INSERT
-INSERT INTO public.kasho_ddl_log (id, lsn) VALUES (1, '0/1A34588');
+INSERT INTO public.test_ddl_log (id, lsn) VALUES (1, '0/1A34588');
 
 -- DDL: SELECT setval
-SELECT pg_catalog.setval('public.kasho_ddl_log_id_seq', 1, true);`
+SELECT pg_catalog.setval('public.test_ddl_log_id_seq', 1, true);`
 	
 	reader := strings.NewReader(dumpData)
 	result, err := parser.ParseStream(reader)
@@ -807,7 +807,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Event trigger
-CREATE EVENT TRIGGER kasho_capture_ddl ON ddl_command_start
+CREATE EVENT TRIGGER my_capture_ddl ON ddl_command_start
    EXECUTE FUNCTION capture_ddl();
 
 -- Regular trigger for comparison

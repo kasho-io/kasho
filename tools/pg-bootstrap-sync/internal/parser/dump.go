@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -59,6 +60,7 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 
 	var currentStatement strings.Builder
 	var inCopyData bool
+	var skipCopyData bool // Flag to skip COPY data for kasho_* tables
 	var copyTable string
 	var copyColumns []string
 	var copyRows [][]string
@@ -79,6 +81,15 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 			// Parse COPY statement: COPY table (col1, col2, ...) FROM stdin;
 			copyInfo := p.parseCopyStatement(line)
 			if copyInfo != nil {
+				// Check if this is a kasho_* table
+				tableParts := strings.Split(copyInfo.table, ".")
+				tableName := tableParts[len(tableParts)-1]
+				if strings.HasPrefix(tableName, "kasho_") {
+					log.Printf("Skipping COPY data for Kasho internal table: %s", copyInfo.table)
+					skipCopyData = true
+					continue
+				}
+				
 				inCopyData = true
 				copyTable = copyInfo.table
 				copyColumns = copyInfo.columns
@@ -94,6 +105,11 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 
 		// Handle end of COPY data
 		if line == "\\." {
+			if skipCopyData {
+				// We were skipping kasho_* table data
+				skipCopyData = false
+				continue
+			}
 			if inCopyData && len(copyRows) > 0 {
 				// Create DML statement for the collected COPY data
 				stmt := DMLStatement{
@@ -112,7 +128,11 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 		}
 
 		// Handle COPY data rows
-		if inCopyData {
+		if inCopyData || skipCopyData {
+			if skipCopyData {
+				// Skip lines until we see \.
+				continue
+			}
 			// Check row limit per table
 			if p.MaxRowsPerTable > 0 {
 				tableRowCounts[copyTable]++
@@ -239,6 +259,16 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 		// DML statements
 		case "INSERT", "UPDATE", "DELETE":
 			if stmt.Type == "INSERT" {
+				// Skip INSERTs into kasho_* tables
+				if stmt.TableName != "" {
+					tableParts := strings.Split(stmt.TableName, ".")
+					tableName := tableParts[len(tableParts)-1]
+					if strings.HasPrefix(tableName, "kasho_") {
+						log.Printf("Skipping INSERT into Kasho internal table: %s", stmt.TableName)
+						continue
+					}
+				}
+				
 				// Handle INSERT statements - extract values
 				insertInfo := p.parseInsertValues(sql)
 				if insertInfo != nil {
@@ -263,6 +293,12 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 		// DDL statements - all valid DDL that can appear in pg_dump
 		case "CREATE_TABLE", "CREATE_INDEX", "ALTER_TABLE", "CREATE_SEQUENCE", "ALTER_SEQUENCE",
 		     "CREATE_FUNCTION", "CREATE_TRIGGER", "CREATE_EVENT_TRIGGER", "DROP", "TRUNCATE", "COMMENT", "GRANT":
+			// Check if this is a kasho_* internal object that should be skipped
+			if p.isKashoInternalObject(stmt, sql) {
+				log.Printf("Skipping Kasho internal object: %s", p.getObjectDescription(stmt, sql))
+				continue
+			}
+			
 			// Special handling for DROP statements - check if it's a publication/subscription
 			if stmt.Type == "DROP" {
 				upperSQL := strings.ToUpper(sql)
@@ -292,6 +328,11 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 		case "SELECT":
 			// Check if this is a setval() call for sequences
 			if strings.Contains(strings.ToUpper(sql), "PG_CATALOG.SETVAL") {
+				// Check if this is for a kasho_* sequence
+				if strings.Contains(sql, "kasho_") {
+					log.Printf("Skipping setval for Kasho internal sequence")
+					continue
+				}
 				// This is a sequence value setting - treat as DDL
 				ddlStmt := DDLStatement{
 					SQL:      sql,
@@ -510,4 +551,78 @@ func (p *DumpParser) findDollarQuoteStart(line string) (string, int) {
 func (p *DumpParser) findDollarQuoteEnd(line, tag string) int {
 	// Look for the closing tag
 	return strings.Index(line, tag)
+}
+
+// isKashoInternalObject checks if a statement creates/modifies a kasho_* internal object
+func (p *DumpParser) isKashoInternalObject(stmt ParsedStatement, sql string) bool {
+	// Check table name for kasho_ prefix (handle schema.table format)
+	if stmt.TableName != "" {
+		// Extract table name without schema
+		tableParts := strings.Split(stmt.TableName, ".")
+		tableName := tableParts[len(tableParts)-1]
+		if strings.HasPrefix(tableName, "kasho_") {
+			return true
+		}
+	}
+	
+	// For functions, triggers, and event triggers, we need to check the SQL
+	upperSQL := strings.ToUpper(sql)
+	
+	switch stmt.Type {
+	case "CREATE_FUNCTION":
+		// Check for kasho_* function names
+		if strings.Contains(upperSQL, "FUNCTION KASHO_") ||
+		   strings.Contains(upperSQL, "FUNCTION PUBLIC.KASHO_") {
+			return true
+		}
+	case "CREATE_TRIGGER":
+		// Check for kasho_* trigger names
+		if strings.Contains(upperSQL, "TRIGGER KASHO_") {
+			return true
+		}
+	case "CREATE_EVENT_TRIGGER":
+		// Check for kasho_* event trigger names
+		if strings.Contains(upperSQL, "EVENT TRIGGER KASHO_") {
+			return true
+		}
+	case "ALTER_TABLE", "DROP", "COMMENT", "GRANT":
+		// Check if operating on kasho_* objects
+		if strings.Contains(upperSQL, " KASHO_") ||
+		   strings.Contains(upperSQL, ".KASHO_") {
+			return true
+		}
+	}
+	
+	return false
+}
+
+// getObjectDescription returns a human-readable description of the object being skipped
+func (p *DumpParser) getObjectDescription(stmt ParsedStatement, sql string) string {
+	switch stmt.Type {
+	case "CREATE_TABLE":
+		return fmt.Sprintf("table %s", stmt.TableName)
+	case "CREATE_FUNCTION":
+		// Extract function name from SQL
+		re := regexp.MustCompile(`(?i)CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:[\w.]+\.)?(kasho_\w+)`)
+		if matches := re.FindStringSubmatch(sql); len(matches) > 1 {
+			return fmt.Sprintf("function %s", matches[1])
+		}
+		return "kasho_* function"
+	case "CREATE_TRIGGER":
+		// Extract trigger name from SQL
+		re := regexp.MustCompile(`(?i)CREATE\s+TRIGGER\s+(kasho_\w+)`)
+		if matches := re.FindStringSubmatch(sql); len(matches) > 1 {
+			return fmt.Sprintf("trigger %s", matches[1])
+		}
+		return "kasho_* trigger"
+	case "CREATE_EVENT_TRIGGER":
+		// Extract event trigger name from SQL
+		re := regexp.MustCompile(`(?i)CREATE\s+EVENT\s+TRIGGER\s+(kasho_\w+)`)
+		if matches := re.FindStringSubmatch(sql); len(matches) > 1 {
+			return fmt.Sprintf("event trigger %s", matches[1])
+		}
+		return "kasho_* event trigger"
+	default:
+		return fmt.Sprintf("%s on kasho_* object", strings.ToLower(stmt.Type))
+	}
 }
