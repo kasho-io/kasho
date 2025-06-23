@@ -62,6 +62,8 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 	var copyTable string
 	var copyColumns []string
 	var copyRows [][]string
+	var inDollarQuote bool
+	var dollarQuoteTag string
 	tableRowCounts := make(map[string]int)
 
 	for scanner.Scan() {
@@ -133,15 +135,36 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 		currentStatement.WriteString(line)
 		currentStatement.WriteString("\n")
 
-		// Check if statement is complete (ends with semicolon)
-		if strings.HasSuffix(strings.TrimSpace(line), ";") {
+		// Check for dollar-quoted strings
+		if !inDollarQuote {
+			// Look for start of dollar quote
+			if tag, startIdx := p.findDollarQuoteStart(line); tag != "" {
+				// Check if the quote ends on the same line
+				if endIdx := p.findDollarQuoteEnd(line[startIdx+len(tag):], tag); endIdx >= 0 {
+					// Quote starts and ends on the same line, we're not inside a quote
+					// Continue checking the rest of the line for more quotes
+				} else {
+					// Quote starts but doesn't end on this line
+					inDollarQuote = true
+					dollarQuoteTag = tag
+				}
+			}
+		} else {
+			// We're inside a dollar quote, look for the end
+			if idx := p.findDollarQuoteEnd(line, dollarQuoteTag); idx >= 0 {
+				inDollarQuote = false
+				dollarQuoteTag = ""
+			}
+		}
+
+		// Check if statement is complete (ends with semicolon and not inside dollar quote)
+		if !inDollarQuote && strings.HasSuffix(strings.TrimSpace(line), ";") {
 			sql := strings.TrimSpace(currentStatement.String())
 			
 			// Use proper SQL parser for all statements
 			if err := p.parseWithSQLParser(sql, result); err != nil {
-				// If SQL parser fails, log and skip the statement
-				// This allows us to handle unsupported statement types gracefully
-				continue
+				// Fatal error for unsupported statements as requested
+				return nil, fmt.Errorf("failed to parse statement: %w", err)
 			}
 
 			currentStatement.Reset()
@@ -164,8 +187,8 @@ type copyInfo struct {
 
 // parseCopyStatement parses a COPY statement and extracts table and column information
 func (p *DumpParser) parseCopyStatement(line string) *copyInfo {
-	// Match: COPY table_name (col1, col2, ...) FROM stdin;
-	re := regexp.MustCompile(`COPY\s+(\w+)\s*\(([^)]+)\)\s+FROM\s+stdin;`)
+	// Match: COPY [schema.]table_name (col1, col2, ...) FROM stdin;
+	re := regexp.MustCompile(`COPY\s+([\w.]+)\s*\(([^)]+)\)\s+FROM\s+stdin;`)
 	matches := re.FindStringSubmatch(line)
 	
 	if len(matches) != 3 {
@@ -213,7 +236,43 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 	
 	for _, stmt := range parsed.Statements {
 		switch stmt.Type {
-		case "CREATE_TABLE", "CREATE_INDEX", "ALTER_TABLE":
+		// DML statements
+		case "INSERT", "UPDATE", "DELETE":
+			if stmt.Type == "INSERT" {
+				// Handle INSERT statements - extract values
+				insertInfo := p.parseInsertValues(sql)
+				if insertInfo != nil {
+					dmlStmt := DMLStatement{
+						Table:        stmt.TableName,
+						ColumnNames:  stmt.Columns, // Use columns from SQL parser
+						ColumnValues: [][]string{insertInfo.values},
+					}
+					result.Statements = append(result.Statements, dmlStmt)
+					result.Metadata.DMLCount++
+					
+					// Add table to found tables if not already present
+					if !contains(result.Metadata.TablesFound, stmt.TableName) {
+						result.Metadata.TablesFound = append(result.Metadata.TablesFound, stmt.TableName)
+					}
+				}
+			} else {
+				// UPDATE and DELETE are not expected in pg_dump but handle them as DML
+				return fmt.Errorf("unexpected DML statement type %s in pg_dump", stmt.Type)
+			}
+			
+		// DDL statements - all valid DDL that can appear in pg_dump
+		case "CREATE_TABLE", "CREATE_INDEX", "ALTER_TABLE", "CREATE_SEQUENCE", "ALTER_SEQUENCE",
+		     "CREATE_FUNCTION", "CREATE_TRIGGER", "CREATE_EVENT_TRIGGER", "DROP", "TRUNCATE", "COMMENT", "GRANT":
+			// Special handling for DROP statements - check if it's a publication/subscription
+			if stmt.Type == "DROP" {
+				upperSQL := strings.ToUpper(sql)
+				if strings.Contains(upperSQL, "DROP PUBLICATION") ||
+				   strings.Contains(upperSQL, "DROP SUBSCRIPTION") {
+					// Skip DROP PUBLICATION/SUBSCRIPTION statements
+					continue
+				}
+			}
+			
 			// Handle DDL statements
 			ddlStmt := DDLStatement{
 				SQL:      sql,
@@ -229,29 +288,58 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 				result.Metadata.TablesFound = append(result.Metadata.TablesFound, stmt.TableName)
 			}
 			
-		case "INSERT":
-			// Handle INSERT statements - but we need to extract values
-			// For now, fall back to manual parsing for INSERT values since
-			// pg_query_go doesn't easily extract the actual data values
-			insertInfo := p.parseInsertValues(sql)
-			if insertInfo != nil {
-				dmlStmt := DMLStatement{
-					Table:        stmt.TableName,
-					ColumnNames:  stmt.Columns, // Use columns from SQL parser
-					ColumnValues: [][]string{insertInfo.values},
+		// Special handling for SELECT statements
+		case "SELECT":
+			// Check if this is a setval() call for sequences
+			if strings.Contains(strings.ToUpper(sql), "PG_CATALOG.SETVAL") {
+				// This is a sequence value setting - treat as DDL
+				ddlStmt := DDLStatement{
+					SQL:      sql,
+					Table:    "", // No specific table for setval
+					Database: "unknown",
+					Time:     time.Now(),
 				}
-				result.Statements = append(result.Statements, dmlStmt)
-				result.Metadata.DMLCount++
-				
-				// Add table to found tables if not already present
-				if !contains(result.Metadata.TablesFound, stmt.TableName) {
-					result.Metadata.TablesFound = append(result.Metadata.TablesFound, stmt.TableName)
-				}
+				result.Statements = append(result.Statements, ddlStmt)
+				result.Metadata.DDLCount++
+			} else if strings.Contains(strings.ToUpper(sql), "PG_CATALOG.SET_CONFIG") {
+				// This is a session configuration setting - skip it like SET statements
+				continue
+			} else {
+				// Other SELECT statements should not appear in pg_dump
+				return fmt.Errorf("unexpected SELECT statement in pg_dump (not a setval): %s", sql)
 			}
 			
-		default:
-			// Skip unknown statement types
+		// SET and TRANSACTION statements - skip these as they're session control
+		case "SET", "TRANSACTION":
+			// These are session control statements, skip them
 			continue
+			
+		// Unknown statement type
+		case "UNKNOWN":
+			// Check if this is a publication/subscription statement that should be skipped
+			upperSQL := strings.ToUpper(sql)
+			if strings.HasPrefix(upperSQL, "CREATE PUBLICATION") ||
+			   strings.HasPrefix(upperSQL, "ALTER PUBLICATION") ||
+			   strings.HasPrefix(upperSQL, "DROP PUBLICATION") ||
+			   strings.HasPrefix(upperSQL, "CREATE SUBSCRIPTION") ||
+			   strings.HasPrefix(upperSQL, "ALTER SUBSCRIPTION") ||
+			   strings.HasPrefix(upperSQL, "DROP SUBSCRIPTION") {
+				// Skip publication/subscription statements - they're for replication setup only
+				continue
+			}
+			
+			// Get the actual node type from metadata for better error message
+			nodeType := "unknown"
+			if stmt.Metadata != nil {
+				if nt, ok := stmt.Metadata["node_type"].(string); ok {
+					nodeType = nt
+				}
+			}
+			return fmt.Errorf("unsupported statement type in pg_dump: %s (node type: %s), SQL: %s", stmt.Type, nodeType, sql)
+			
+		default:
+			// Any other statement type is an error
+			return fmt.Errorf("unsupported statement type in pg_dump: %s, SQL: %s", stmt.Type, sql)
 		}
 	}
 	
@@ -401,4 +489,25 @@ func contains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+// findDollarQuoteStart finds the start of a dollar-quoted string in a line
+// Returns the tag (e.g., "$$" or "$func$") and its starting index if found
+func (p *DumpParser) findDollarQuoteStart(line string) (string, int) {
+	// Regular expression to match dollar quote tags: $[tag]$
+	// Tag can be empty ($$) or contain alphanumeric/underscore ($tag$)
+	re := regexp.MustCompile(`\$([A-Za-z_]\w*)?\$`)
+	loc := re.FindStringIndex(line)
+	if loc != nil {
+		tag := line[loc[0]:loc[1]]
+		return tag, loc[0]
+	}
+	return "", -1
+}
+
+// findDollarQuoteEnd finds the end of a specific dollar-quoted string in a line
+// Returns the index of the closing tag if found, -1 otherwise
+func (p *DumpParser) findDollarQuoteEnd(line, tag string) int {
+	// Look for the closing tag
+	return strings.Index(line, tag)
 }
