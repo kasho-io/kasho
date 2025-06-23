@@ -108,10 +108,10 @@ func (p *SQLParser) parseStatement(stmt *pg_query.Node) (*ParsedStatement, error
 		return &ParsedStatement{
 			Type: "CREATE_EVENT_TRIGGER",
 		}, nil
+	case *pg_query.Node_CopyStmt:
+		return p.parseCopy(node.CopyStmt)
 	case *pg_query.Node_DropStmt:
-		return &ParsedStatement{
-			Type: "DROP",
-		}, nil
+		return p.parseDrop(node.DropStmt)
 	case *pg_query.Node_TruncateStmt:
 		return &ParsedStatement{
 			Type: "TRUNCATE",
@@ -131,6 +131,26 @@ func (p *SQLParser) parseStatement(stmt *pg_query.Node) (*ParsedStatement, error
 	case *pg_query.Node_TransactionStmt:
 		return &ParsedStatement{
 			Type: "TRANSACTION",
+		}, nil
+	case *pg_query.Node_CreatePublicationStmt:
+		return &ParsedStatement{
+			Type: "CREATE_PUBLICATION",
+		}, nil
+	case *pg_query.Node_AlterPublicationStmt:
+		return &ParsedStatement{
+			Type: "ALTER_PUBLICATION",
+		}, nil
+	case *pg_query.Node_CreateSubscriptionStmt:
+		return &ParsedStatement{
+			Type: "CREATE_SUBSCRIPTION",
+		}, nil
+	case *pg_query.Node_AlterSubscriptionStmt:
+		return &ParsedStatement{
+			Type: "ALTER_SUBSCRIPTION",
+		}, nil
+	case *pg_query.Node_DropSubscriptionStmt:
+		return &ParsedStatement{
+			Type: "DROP_SUBSCRIPTION",
 		}, nil
 	default:
 		// For unsupported statement types, return basic info
@@ -294,6 +314,63 @@ func (p *SQLParser) NormalizeSQL(sql string) string {
 	}
 
 	return normalized
+}
+
+// parseDrop parses a DROP statement
+func (p *SQLParser) parseDrop(stmt *pg_query.DropStmt) (*ParsedStatement, error) {
+	// Determine what type of object is being dropped
+	objectType := "UNKNOWN"
+	switch stmt.RemoveType {
+	case pg_query.ObjectType_OBJECT_PUBLICATION:
+		return &ParsedStatement{
+			Type: "DROP_PUBLICATION",
+		}, nil
+	case pg_query.ObjectType_OBJECT_SUBSCRIPTION:
+		return &ParsedStatement{
+			Type: "DROP_SUBSCRIPTION",
+		}, nil
+	}
+	
+	return &ParsedStatement{
+		Type: "DROP",
+		Metadata: map[string]interface{}{
+			"object_type": objectType,
+		},
+	}, nil
+}
+
+// parseCopy parses a COPY statement
+func (p *SQLParser) parseCopy(stmt *pg_query.CopyStmt) (*ParsedStatement, error) {
+	if stmt.Relation == nil {
+		return nil, fmt.Errorf("COPY statement missing relation")
+	}
+
+	// Build qualified table name with schema if present
+	tableName := stmt.Relation.Relname
+	if stmt.Relation.Schemaname != "" {
+		tableName = stmt.Relation.Schemaname + "." + tableName
+	}
+	
+	// Extract column names from attlist
+	columns := make([]string, 0)
+	for _, item := range stmt.Attlist {
+		// In COPY statements, column names are stored as String nodes
+		if str := item.GetString_(); str != nil && str.Sval != "" {
+			columns = append(columns, str.Sval)
+		} else if resTarget := item.GetResTarget(); resTarget != nil && resTarget.Name != "" {
+			// Fallback to ResTarget (though COPY typically uses String nodes)
+			columns = append(columns, resTarget.Name)
+		}
+	}
+
+	return &ParsedStatement{
+		Type:      "COPY",
+		TableName: tableName,
+		Columns:   columns,
+		Metadata: map[string]interface{}{
+			"is_from": stmt.IsFrom,
+		},
+	}, nil
 }
 
 // ValidateSQL checks if a SQL statement is valid
