@@ -103,6 +103,7 @@ COPY environments/development/config /app/config/development/
 COPY README.md /app/
 COPY docs/ /app/docs/
 COPY sql/ /app/sql/
+COPY proto/ /app/proto/
 
 # Set ownership
 RUN chown -R kasho:kasho /app
