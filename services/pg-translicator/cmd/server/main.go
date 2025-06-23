@@ -93,6 +93,13 @@ func main() {
 	defer db.Close()
 	log.Printf("Successfully connected to replica database")
 
+	// Set session replication role to 'replica' to prevent triggers from firing
+	// This mimics physical replication behavior where triggers exist but don't execute
+	if _, err := db.Exec("SET session_replication_role = 'replica'"); err != nil {
+		log.Fatalf("Failed to set session_replication_role: %v", err)
+	}
+	log.Printf("Set session_replication_role to 'replica' - triggers will not fire during replication")
+
 	// Start periodic sequence sync
 	syncTicker := time.NewTicker(15 * time.Second)
 	defer syncTicker.Stop()
