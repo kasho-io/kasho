@@ -80,18 +80,30 @@ func (b *KVBuffer) AddChange(ctx context.Context, change Change) error {
 }
 
 // GetChangesAfter returns all changes after the given LSN
+// NOTE: This method is limited to 1000 changes for backward compatibility.
+// Use GetChangesAfterBatch for paginated access to larger result sets.
 func (b *KVBuffer) GetChangesAfter(ctx context.Context, lsn string) ([]json.RawMessage, error) {
+	return b.GetChangesAfterBatch(ctx, lsn, 0, 1000)
+}
+
+// GetChangesAfterBatch returns a batch of changes after the given LSN with offset and limit
+func (b *KVBuffer) GetChangesAfterBatch(ctx context.Context, lsn string, offset int64, limit int64) ([]json.RawMessage, error) {
 	score, err := b.parseLSNToScore(lsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse LSN: %w", err)
 	}
 
+	// Special case: LSN "0/0" means get all changes including bootstrap
+	minScore := fmt.Sprintf("(%g", score)
+	if lsn == "0/0" {
+		minScore = "-inf"
+	}
+
 	results, err := b.client.ZRangeByScore(ctx, changesKey, &redis.ZRangeBy{
-		// (%d --> exclude the score itself, > and not >=
-		Min:    fmt.Sprintf("(%g", score),
+		Min:    minScore,
 		Max:    "+inf",
-		Offset: 0,
-		Count:  1000,
+		Offset: offset,
+		Count:  limit,
 	}).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get changes from KV: %w", err)
