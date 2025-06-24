@@ -8,23 +8,38 @@ cat << 'EOF'
 ╚═══════════════════════════════════════════════════════════════════╝
 
 SERVICES:
-  ./pg-change-stream     - Start change stream service
-  ./pg-translicator      - Start translicator service
+  /app/bin/pg-change-stream     - Start change stream service
+  /app/bin/pg-translicator      - Start translicator service
 
-TOOLS:
-  ./pg-bootstrap-sync    - Bootstrap replica databases from pg_dump
-  ./env-template         - Process environment variable templates
+SCRIPTS:
+  /app/scripts/prepare-primary-db.sh - Setup primary database for Kasho replication
+  /app/scripts/bootstrap-kasho.sh    - Bootstrap Kasho replication from existing data
 
 EXAMPLES:
   # Start change stream service
-  docker run --rm kasho ./pg-change-stream
+  docker run --rm kasho /app/bin/pg-change-stream
 
   # Start translicator service  
-  docker run --rm kasho ./pg-translicator
+  docker run --rm kasho /app/bin/pg-translicator
 
-  # Bootstrap a database
-  docker run --rm -v ./dump.sql:/dump.sql kasho \
-    ./pg-bootstrap-sync --source /dump.sql --kv-url redis://host:6379
+  # Bootstrap Kasho replication (from inside running container)
+  docker exec -it <container-name> /app/scripts/bootstrap-kasho.sh
+
+  # Bootstrap using dedicated container
+  docker run --rm --network <network-name> \
+    -e PRIMARY_DATABASE_URL="postgresql://..." \
+    -e KV_URL="redis://..." \
+    -e CHANGE_STREAM_SERVICE="pg-change-stream:8080" \
+    kasho /app/scripts/bootstrap-kasho.sh
+
+BOOTSTRAP WORKFLOW:
+  1. Prepare primary database (run as DBA with superuser credentials):
+     docker exec -it <container> /app/scripts/prepare-primary-db.sh
+  
+  2. Start services (pg-change-stream will be in WAITING state).
+  
+  3. Bootstrap replication:
+     docker exec -it <container> /app/scripts/bootstrap-kasho.sh
 
 ENVIRONMENT VARIABLES:
 

@@ -55,24 +55,6 @@ services:
       postgres-replica:
         condition: service_started
 
-  # Bootstrap sync tool (run manually with: docker-compose run --rm pg-bootstrap-sync)
-  pg-bootstrap-sync:
-    image: kasho
-    command: [
-      "./pg-bootstrap-sync",
-      "--help"
-    ]
-    env_file:
-      - .env
-    volumes:
-      - ../../sql/demo:/dumps:ro
-      - ./config:/app/config:ro
-      - ../../tools/pg-bootstrap-sync:/app/tools/pg-bootstrap-sync
-    depends_on:
-      pg-change-stream:
-        condition: service_healthy
-    profiles: ["bootstrap"]
-
   postgres-primary:
     image: postgres:17
     environment:
