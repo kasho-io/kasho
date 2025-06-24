@@ -46,16 +46,28 @@ jobs:
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
             cd ~
-            if [ ! -d "kasho" ]; then
-              git clone ${{ secrets.REPO_URL }} kasho
-            fi
-            cd kasho
-            git fetch --all
-            git reset --hard origin/main
-            git pull -f
             
-            # Build the kasho image for production (includes pg-bootstrap-sync)
-            docker build -t kasho --target production .
+            # Remove existing repository to ensure clean state
+            if [ -d "kasho" ]; then
+              echo "Removing existing kasho directory..."
+              rm -rf kasho
+            fi
+            
+            # Clone fresh copy of the repository
+            echo "Cloning fresh repository..."
+            git clone ${{ secrets.REPO_URL }} kasho
+            cd kasho
+            
+            # Install Task if not present
+            if ! command -v task &> /dev/null; then
+              echo "Installing Task..."
+              curl -sL https://taskfile.dev/install.sh | sh
+              sudo mv ./bin/task /usr/local/bin/task
+            fi
+            
+            # Build the kasho base image and production image using Task
+            task build:base
+            task build:prod
             
             cd environments/demo
             
@@ -176,7 +188,7 @@ jobs:
               -e CHANGE_STREAM_SERVICE="pg-change-stream:8080" \
               -e REPLICATION_SLOT_NAME="kasho_slot" \
               -e WAIT_FOR_BOOTSTRAP="true" \
-              kasho \
+              kasho:prod \
               /app/scripts/bootstrap-kasho.sh
             
             echo "✅ Bootstrap process completed successfully"

@@ -1,0 +1,80 @@
+# Kasho Base Image - Pre-built dependencies for faster builds
+# This image contains all Go dependencies and system packages pre-installed
+
+FROM golang:1.24-alpine AS base-deps
+
+# Install ALL build and runtime dependencies from both dev and prod stages
+RUN apk add --no-cache \
+    git \
+    ca-certificates \
+    tzdata \
+    gcc \
+    musl-dev \
+    redis \
+    curl \
+    bash \
+    postgresql-client
+
+# Add trurl from edge/community repository
+RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community trurl
+
+# Install Go tools
+RUN go install github.com/air-verse/air@latest && \
+    go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
+
+# Set working directory
+WORKDIR /app
+
+# Create a temporary go.mod that includes all dependencies
+RUN go mod init kasho-deps
+
+# Add all the direct dependencies found across all modules
+# Including pg_query_go which was in the analysis
+RUN go get github.com/jackc/pglogrepl@v0.0.0-20250509230407-a9884f6bd75a && \
+    go get github.com/jackc/pgx/v5@v5.5.4 && \
+    go get github.com/lib/pq@v1.10.9 && \
+    go get github.com/pganalyze/pg_query_go/v6@v6.1.0 && \
+    go get github.com/redis/go-redis/v9@v9.8.0 && \
+    go get github.com/go-redis/redismock/v9@v9.2.0 && \
+    go get google.golang.org/grpc@v1.72.1 && \
+    go get google.golang.org/protobuf@v1.36.6 && \
+    go get github.com/spf13/cobra@v1.8.1 && \
+    go get github.com/brianvoe/gofakeit/v7@v7.0.2 && \
+    go get gopkg.in/yaml.v3@v3.0.1 && \
+    go get golang.org/x/crypto@v0.35.0
+
+# Download all dependencies to populate the module cache
+RUN go mod download
+
+# Clean up the temporary module
+RUN rm go.mod go.sum
+
+# The base image with pre-cached dependencies
+FROM golang:1.24-alpine AS kasho-base
+
+# Install ALL build and runtime dependencies
+RUN apk add --no-cache \
+    git \
+    ca-certificates \
+    tzdata \
+    gcc \
+    musl-dev \
+    redis \
+    curl \
+    bash \
+    postgresql-client
+
+# Add trurl from edge/community repository
+RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community trurl
+
+# Copy Go tools from deps stage
+COPY --from=base-deps /go/bin/air /go/bin/air
+COPY --from=base-deps /go/bin/grpcurl /go/bin/grpcurl
+
+# Copy the Go module cache from the deps stage
+COPY --from=base-deps /go/pkg /go/pkg
+
+# Set working directory
+WORKDIR /app
+
+# This base image can now be used in the main Dockerfile for both dev and prod stages

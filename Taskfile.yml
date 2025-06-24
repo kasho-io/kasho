@@ -18,8 +18,24 @@ tasks:
 
   build:
     desc: Build the kasho Docker image for development
+    deps: [build:base]
     cmds:
       - docker build -t kasho --target development .
+
+  build:base:
+    desc: Build the base image with cached dependencies
+    cmds:
+      - docker build -f Dockerfile.base -t kasho-base .
+    sources:
+      - Dockerfile.base
+      - go.work
+      - "**/go.mod"
+
+  build:prod:
+    desc: Build the kasho Docker image for production
+    deps: [build:base]
+    cmds:
+      - docker build -t kasho:prod --target production .
 
   proto:
     desc: Generate Go code from protobuf definitions

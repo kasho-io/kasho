@@ -1,10 +1,8 @@
 # Kasho Consolidated Container
 # Includes all services and tools in a single image for simplified deployment
 
-FROM golang:1.24-alpine AS builder
-
-# Install build dependencies including C compiler for CGO
-RUN apk add --no-cache git ca-certificates tzdata gcc musl-dev
+# Build the base image first (or use pre-built from registry)
+FROM kasho-base AS builder
 
 # Set working directory
 WORKDIR /app
@@ -22,15 +20,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build -o /bin/pg-bootstrap-sync ./tools/pg-boots
 RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/env-template ./tools/env-template
 
 # Development stage with hot reload
-FROM golang:1.24-alpine AS development
-
-# Install development dependencies including C compiler for CGO and trurl for URL parsing
-RUN apk add --no-cache git ca-certificates tzdata redis gcc musl-dev curl bash postgresql-client
-# Add trurl from edge/community repository
-RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community trurl
-RUN go install github.com/air-verse/air@latest
-# Install grpcurl for bootstrap coordination
-RUN go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
+FROM kasho-base AS development
 
 WORKDIR /app
 
