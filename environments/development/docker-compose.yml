@@ -1,16 +1,15 @@
 services:
-  init-templates:
+  prepare-postgres-init-d:
     image: kasho
     volumes:
       - ./primary-init.d:/app/primary-init.d
       - ./replica-init.d:/app/replica-init.d
-      - ../../sql/setup/create-kasho-user-primary.sql.template:/app/primary-init.d/20-create-kasho-user.sql.template:ro
-      - ../../sql/setup/create-kasho-user-replica.sql.template:/app/replica-init.d/10-create-kasho-user.sql.template:ro
+      - ../../sql:/app/sql:ro
     env_file:
       - .env
     environment:
       - ENV=development
-    command: ["sh", "-c", "eval $(/app/scripts/parse-db-url.sh) && /app/bin/env-template --dirs /app/primary-init.d,/app/replica-init.d"]
+    command: ["/app/scripts/populate-postgres-init.sh"]
 
   redis:
     image: redis:7-alpine
@@ -67,14 +66,10 @@ services:
       - "5432:${PRIMARY_DATABASE_PORT:-5432}"
     volumes:
       - postgres-primary-data:/var/lib/postgresql/data
-      - ../../sql/reset/reset-schema.sql:/docker-entrypoint-initdb.d/00-reset-schema.sql:ro
-      - ../../sql/demo/fake_projmgmt_saas.sql:/docker-entrypoint-initdb.d/10-demo-data.sql:ro
-      - ./primary-init.d/20-create-kasho-user.sql:/docker-entrypoint-initdb.d/20-create-kasho-user.sql:ro
-      - ../../sql/setup/setup-ddl-logging.sql:/docker-entrypoint-initdb.d/30-setup-ddl-logging.sql:ro
-      - ../../sql/setup/setup-replication.sql:/docker-entrypoint-initdb.d/40-setup-replication.sql:ro
+      - ./primary-init.d:/docker-entrypoint-initdb.d:ro
     command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 -c listen_addresses='*'
     depends_on:
-      init-templates:
+      prepare-postgres-init-d:
         condition: service_completed_successfully
 
   postgres-replica:
@@ -89,11 +84,10 @@ services:
       - "5433:${REPLICA_DATABASE_PORT:-5432}"
     volumes:
       - postgres-replica-data:/var/lib/postgresql/data
-      - ../../sql/reset/reset-schema.sql:/docker-entrypoint-initdb.d/00-reset-schema.sql:ro
-      - ./replica-init.d/10-create-kasho-user.sql:/docker-entrypoint-initdb.d/10-create-kasho-user.sql:ro
+      - ./replica-init.d:/docker-entrypoint-initdb.d:ro
     command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 -c listen_addresses='*'
     depends_on:
-      init-templates:
+      prepare-postgres-init-d:
         condition: service_completed_successfully
 
 volumes:

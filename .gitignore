@@ -30,10 +30,6 @@ combined-coverage.out
 # Project specific
 **/tmp/
 
-environments/**/primary-init.d/20-create-kasho-user.sql
-environments/**/replica-init.d/10-create-kasho-user.sql
-environments/**/primary-init.d/20-create-kasho-user.sql.template
-environments/**/replica-init.d/10-create-kasho-user.sql.template
 services/*/server
 tools/env-template/env-template
 tools/pg-bootstrap-sync/pg-bootstrap-sync
