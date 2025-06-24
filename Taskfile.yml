@@ -145,7 +145,15 @@ tasks:
   dev:app:*:
     desc: Start a specific app in development mode
     cmds:
-      - cd apps/{{index .MATCH 0}} && npm run dev
+      - |
+        app="{{index .MATCH 0}}"
+        case "$app" in
+          homepage) port=3000 ;;
+          demo) port=3001 ;;
+          docs) port=3002 ;;
+          *) port=3000 ;;
+        esac
+        cd apps/$app && npm run dev -- --port $port
 
   # Lint tasks
   lint:
