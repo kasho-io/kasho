@@ -47,6 +47,10 @@ jobs:
           script: |
             cd ~
             
+            # Debug: Check SSH setup
+            echo "Debug: Checking SSH configuration..."
+            ssh -T git@github.com || true
+            
             # Remove existing repository to ensure clean state
             if [ -d "kasho" ]; then
               echo "Removing existing kasho directory..."
@@ -55,7 +59,11 @@ jobs:
             
             # Clone fresh copy of the repository
             echo "Cloning fresh repository..."
-            git clone ${{ secrets.REPO_URL }} kasho
+            echo "Debug: Repository URL format check (first 15 chars): ${REPO_URL:0:15}..."
+            git clone ${{ secrets.REPO_URL }} kasho || {
+              echo "Clone failed. Trying with explicit SSH format..."
+              git clone git@github.com:${{ github.repository }}.git kasho
+            }
             cd kasho
             
             # Install Task if not present
