@@ -59,7 +59,6 @@ jobs:
             
             # Clone fresh copy of the repository
             echo "Cloning fresh repository..."
-            echo "Debug: Repository URL format check (first 15 chars): ${REPO_URL:0:15}..."
             git clone ${{ secrets.REPO_URL }} kasho || {
               echo "Clone failed. Trying with explicit SSH format..."
               git clone git@github.com:${{ github.repository }}.git kasho
