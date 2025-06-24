@@ -3,8 +3,8 @@ services:
     image: kasho
     volumes:
       - ../../sql:/app/sql:ro
-      - postgres-init-primary:/app/primary-init.d
-      - postgres-init-replica:/app/replica-init.d
+      - ./primary-init.d:/app/primary-init.d
+      - ./replica-init.d:/app/replica-init.d
     env_file:
       - .env
     environment:
@@ -66,7 +66,7 @@ services:
       - "5432:${PRIMARY_DATABASE_PORT:-5432}"
     volumes:
       - postgres-primary-data:/var/lib/postgresql/data
-      - postgres-init-primary:/docker-entrypoint-initdb.d:ro
+      - ./primary-init.d:/docker-entrypoint-initdb.d:ro
     command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 -c listen_addresses='*'
     depends_on:
       prepare-postgres-init-d:
@@ -84,7 +84,7 @@ services:
       - "5433:${REPLICA_DATABASE_PORT:-5432}"
     volumes:
       - postgres-replica-data:/var/lib/postgresql/data
-      - postgres-init-replica:/docker-entrypoint-initdb.d:ro
+      - ./replica-init.d:/docker-entrypoint-initdb.d:ro
     command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 -c listen_addresses='*'
     depends_on:
       prepare-postgres-init-d:
@@ -94,10 +94,6 @@ volumes:
   postgres-primary-data:
     driver: local
   postgres-replica-data:
-    driver: local
-  postgres-init-primary:
-    driver: local
-  postgres-init-replica:
     driver: local
   redis-data:
     driver: local 
