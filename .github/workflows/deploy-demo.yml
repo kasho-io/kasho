@@ -62,7 +62,10 @@ jobs:
             if ! command -v task &> /dev/null; then
               echo "Installing Task..."
               curl -sL https://taskfile.dev/install.sh | sh
-              sudo mv ./bin/task /usr/local/bin/task
+              # Use user's local bin instead of system-wide (no sudo needed)
+              mkdir -p ~/.local/bin
+              mv ./bin/task ~/.local/bin/task
+              export PATH="$HOME/.local/bin:$PATH"
             fi
             
             # Build the kasho base image and production image using Task
