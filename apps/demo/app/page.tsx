@@ -84,6 +84,19 @@ export default function Home() {
     });
     setPrimaryEdits([]);
     setSaveKey(prev => prev + 1); // Force DataTable to reset
+    
+    // Immediately fetch updated data
+    const [primaryRes, replicaRes] = await Promise.all([
+      fetch("/api/primary-table"),
+      fetch("/api/replica-table"),
+    ]);
+    const [primaryData, replicaData] = await Promise.all([
+      primaryRes.json(),
+      replicaRes.json(),
+    ]);
+    setPrimaryRows(primaryData);
+    setReplicaRows(replicaData);
+    
     setSaving(false);
   };
 
