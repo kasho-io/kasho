@@ -1,0 +1,57 @@
+<div className="hero min-h-[50vh] bg-base-200 rounded-lg">
+  <div className="hero-content text-center">
+    <div className="max-w-md">
+      <h1 className="text-5xl font-bold">Kasho</h1>
+      <p className="py-6">PostgreSQL Change Data Capture and Replication System</p>
+      <button className="btn btn-primary">Get Started</button>
+    </div>
+  </div>
+</div>
+
+<div className="container mx-auto px-4 py-8 max-w-7xl">
+
+## What is Kasho?
+
+Kasho is a powerful system for capturing and replicating changes from PostgreSQL databases in real-time. It consists of several key components:
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+  <div className="card bg-base-200 shadow-xl border border-base-300">
+    <div className="card-body">
+      <h2 className="card-title">pg-change-stream</h2>
+      <p>Captures changes from PostgreSQL using logical replication and publishes them to Redis</p>
+      <div className="card-actions justify-end">
+        <button className="btn btn-primary btn-sm">Learn More</button>
+      </div>
+    </div>
+  </div>
+  
+  <div className="card bg-base-200 shadow-xl border border-base-300">
+    <div className="card-body">
+      <h2 className="card-title">pg-translicator</h2>
+      <p>Consumes changes from Redis and applies them to target PostgreSQL databases</p>
+      <div className="card-actions justify-end">
+        <button className="btn btn-primary btn-sm">Learn More</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+## Quick Start
+
+<div className="alert alert-info mt-6">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <span>Kasho requires PostgreSQL 12+ with logical replication enabled</span>
+</div>
+
+```bash
+# Clone the repository
+git clone https://github.com/kasho-io/kasho.git
+
+# Start the development environment
+task dev:start
+
+# Run the bootstrap process
+task dev:bootstrap
+```
+
+</div>
