@@ -6,7 +6,9 @@ __pycache__/
 venv/
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 .idea/
 .DS_Store
 .claude/
