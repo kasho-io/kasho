@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface Row {
   id: string;
@@ -73,6 +73,8 @@ function isRowChanged(original: Row, edited: Partial<Row>) {
 
 export default function DataTable({ rows, loading, editable = false, onEdit, onSave }: DataTableProps) {
   const [editRows, setEditRows] = useState<{ [id: string]: Partial<Row> }>({});
+  const [changedCells, setChangedCells] = useState<Set<string>>(new Set());
+  const previousRowsRef = useRef<Row[] | null>(null);
 
   useEffect(() => {
     if (onEdit && rows) {
@@ -86,6 +88,36 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editRows]);
+
+  // Detect changes between renders
+  useEffect(() => {
+    if (rows && previousRowsRef.current) {
+      const newChangedCells = new Set<string>();
+      
+      rows.forEach((row) => {
+        const prevRow = previousRowsRef.current!.find(r => r.id === row.id);
+        if (prevRow) {
+          // Check each field for changes
+          if (prevRow.name !== row.name) newChangedCells.add(`${row.id}-name`);
+          if (prevRow.email !== row.email) newChangedCells.add(`${row.id}-email`);
+          if (prevRow.password !== row.password) newChangedCells.add(`${row.id}-password`);
+          if (prevRow.updated_at !== row.updated_at) newChangedCells.add(`${row.id}-updated_at`);
+        }
+      });
+      
+      if (newChangedCells.size > 0) {
+        setChangedCells(newChangedCells);
+        
+        // Clear animations after duration
+        setTimeout(() => {
+          setChangedCells(new Set());
+        }, 600);
+      }
+    }
+    
+    // Update reference for next render
+    previousRowsRef.current = rows;
+  }, [rows]);
 
   const handleChange = (id: string, field: keyof Row, value: string) => {
     setEditRows((prev) => ({
@@ -124,7 +156,7 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
               <tr key={row.id}>
                 <td className="p-2 whitespace-nowrap" title={row.id}>{'…' + lastSegment(row.id)}</td>
                 <td className="p-2 whitespace-nowrap" title={row.organization_id}>{'…' + lastSegment(row.organization_id)}</td>
-                <td className="p-2 whitespace-nowrap">
+                <td className={`p-2 whitespace-nowrap ${changedCells.has(`${row.id}-name`) ? 'animate-cell-change' : ''}`}>
                   {editable ? (
                     <input
                       className="input input-xs input-bordered font-mono w-32"
@@ -136,7 +168,7 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
                     row.name
                   )}
                 </td>
-                <td className="p-2 whitespace-nowrap">
+                <td className={`p-2 whitespace-nowrap ${changedCells.has(`${row.id}-email`) ? 'animate-cell-change' : ''}`}>
                   {editable ? (
                     <input
                       className="input input-xs input-bordered font-mono w-48"
@@ -148,7 +180,7 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
                     row.email
                   )}
                 </td>
-                <td className="p-2 whitespace-nowrap">
+                <td className={`p-2 whitespace-nowrap ${changedCells.has(`${row.id}-password`) ? 'animate-cell-change' : ''}`}>
                   {editable ? (
                     <input
                       type="text"
@@ -170,7 +202,7 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
                     </span>
                   )}
                 </td>
-                <td className="p-2 whitespace-nowrap" title={row.updated_at}>{formatUpdatedAt(row.updated_at)}</td>
+                <td className={`p-2 whitespace-nowrap ${changedCells.has(`${row.id}-updated_at`) ? 'animate-cell-change' : ''}`} title={row.updated_at}>{formatUpdatedAt(row.updated_at)}</td>
               </tr>
             ))}
           </tbody>
@@ -178,4 +210,4 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
       </div>
     </div>
   );
-} 
+}
