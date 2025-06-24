@@ -1,6 +1,6 @@
 services:
   prepare-postgres-init-d:
-    user: "0:0"
+    user: "${UID}:${GID}"
     image: kasho
     volumes:
       - ../../sql:/app/sql:ro

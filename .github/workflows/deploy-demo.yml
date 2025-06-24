@@ -61,6 +61,10 @@ jobs:
             
             # Create .env file from secrets
             cat > .env << EOL
+            # User and group IDs for file permissions
+            UID=$(id -u)
+            GID=$(id -g)
+            
             # Redis connection for pg-change-stream
             KV_URL=${{ secrets.KV_URL }}
             
