@@ -1,0 +1,80 @@
+<div className="container mx-auto px-4 py-8 max-w-4xl">
+
+# Quick Start
+
+Get up and running with Kasho in minutes.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+<div className="alert alert-info">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <span>Docker and Docker Compose are required for local development</span>
+</div>
+
+- Docker 20.10+
+- Docker Compose 2.0+
+- Task (optional, but recommended)
+
+## Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/kasho-io/kasho.git
+cd kasho
+```
+
+2. Start the development environment:
+
+```bash
+task dev:start
+```
+
+3. Bootstrap the system:
+
+```bash
+task dev:bootstrap
+```
+
+## Verify Installation
+
+Check that all services are running:
+
+```bash
+docker compose ps
+```
+
+You should see:
+- `pg-change-stream` - Running on port 8080
+- `pg-translicator` - Connected to change stream
+- `postgres-primary` - Source database
+- `postgres-replica` - Target database
+- `redis` - Message broker
+
+## Next Steps
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+  <div className="card bg-base-200 shadow-xl">
+    <div className="card-body">
+      <h2 className="card-title">Architecture Overview</h2>
+      <p>Learn how Kasho components work together</p>
+      <div className="card-actions justify-end">
+        <a href="/architecture" className="btn btn-primary btn-sm">Learn More</a>
+      </div>
+    </div>
+  </div>
+  
+  <div className="card bg-base-200 shadow-xl">
+    <div className="card-body">
+      <h2 className="card-title">Configuration</h2>
+      <p>Configure Kasho for your use case</p>
+      <div className="card-actions justify-end">
+        <a href="/deployment/configuration" className="btn btn-primary btn-sm">Learn More</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>

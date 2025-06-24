@@ -7,4 +7,51 @@
   :root {
     color-scheme: light dark;
   }
+  
+  /* MDX Typography */
+  h1 {
+    @apply text-4xl font-bold mb-4;
+  }
+  
+  h2 {
+    @apply text-3xl font-bold mb-4 mt-8;
+  }
+  
+  h3 {
+    @apply text-2xl font-bold mb-3 mt-6;
+  }
+  
+  h4 {
+    @apply text-xl font-semibold mb-2 mt-4;
+  }
+  
+  p {
+    @apply mb-4 leading-relaxed;
+  }
+  
+  /* Lists inside content should have bullets */
+  main ul {
+    @apply list-disc list-inside mb-4 space-y-1;
+  }
+  
+  main ol {
+    @apply list-decimal list-inside mb-4 space-y-1;
+  }
+  
+  /* Navigation lists should have no bullets */
+  nav ul {
+    @apply list-none;
+  }
+  
+  code {
+    @apply bg-base-200 px-1 py-0.5 rounded text-sm;
+  }
+  
+  pre {
+    @apply mb-4;
+  }
+  
+  pre code {
+    @apply bg-transparent p-0;
+  }
 }
