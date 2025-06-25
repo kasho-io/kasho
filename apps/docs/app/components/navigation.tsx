@@ -31,15 +31,16 @@ export function Navigation() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 min-h-screen bg-base-200 p-4">
-      <div className="mb-8">
+    <aside className="w-64 h-screen bg-base-200 flex flex-col">
+      <div className="p-4 mb-4">
         <Link href="/" className="text-2xl font-bold">
           Kasho Docs
         </Link>
       </div>
       
-      <nav className="space-y-8">
-        {navigation.map((section) => (
+      <nav className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="space-y-8">
+          {navigation.map((section) => (
           <div key={section.title}>
             <h3 className="font-semibold text-xs uppercase tracking-wider text-base-content/60 mb-3">
               {section.title}
@@ -68,6 +69,7 @@ export function Navigation() {
             </ul>
           </div>
         ))}
+        </div>
       </nav>
     </aside>
   );

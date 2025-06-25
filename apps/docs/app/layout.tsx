@@ -21,9 +21,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <div className="flex min-h-screen">
+        <div className="flex h-screen overflow-hidden">
           <Navigation />
-          <main className="flex-1">
+          <main className="flex-1 overflow-y-auto">
             {children}
           </main>
         </div>

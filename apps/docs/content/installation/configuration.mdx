@@ -1,12 +1,10 @@
-<div className="container mx-auto px-6 py-8 max-w-5xl">
-
 # Configuration
 
 Kasho uses environment variables for service configuration and a YAML file for transformation rules.
 
 ## Environment Variables
 
-### pg-change-stream Configuration
+### `pg-change-stream` Configuration
 
 <table className="table table-zebra w-full">
   <thead>
@@ -33,7 +31,7 @@ Kasho uses environment variables for service configuration and a YAML file for t
   </tbody>
 </table>
 
-### pg-translicator Configuration
+### `pg-translicator` Configuration
 
 <table className="table table-zebra w-full">
   <thead>
@@ -47,7 +45,7 @@ Kasho uses environment variables for service configuration and a YAML file for t
   <tbody>
     <tr>
       <td><code>CHANGE_STREAM_SERVICE</code></td>
-      <td>pg-change-stream service address</td>
+      <td>`pg-change-stream` service address</td>
       <td><span className="badge badge-error">Yes</span></td>
       <td><code>pg-change-stream:8080</code></td>
     </tr>
@@ -95,11 +93,11 @@ postgresql://kasho:mypassword@db:5432/mydb?connect_timeout=10&application_name=k
 
 ## Transform Configuration
 
-pg-translicator requires a `transforms.yml` file that defines how data should be transformed during replication.
+`pg-translicator` requires a `transforms.yml` file that defines how data should be transformed during replication.
 
 ### File Location
 
-The transforms file must be mounted at `/app/config/transforms.yml` in the pg-translicator container:
+The transforms file must be mounted at `/app/config/transforms.yml` in the `pg-translicator` container:
 
 ```yaml
 # docker-compose.yml
@@ -210,4 +208,3 @@ REPLICA_DATABASE_URL=postgresql://kasho:password@target-db:5432/target?sslmode=d
 - Configure [Data Transforms](/configuration/transforms)
 - Review the [Quick Start](/quick-start) guide
 
-</div>

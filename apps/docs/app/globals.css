@@ -29,6 +29,16 @@
     @apply mb-4 leading-relaxed;
   }
   
+  /* Link styling */
+  a {
+    @apply text-primary no-underline hover:underline transition-colors;
+  }
+  
+  /* Navigation links shouldn't have underlines or primary color */
+  nav a {
+    @apply no-underline text-base-content;
+  }
+  
   /* Lists inside content should have bullets */
   main ul {
     @apply list-disc list-inside mb-4 space-y-1;
@@ -45,6 +55,16 @@
   
   code {
     @apply bg-base-200 px-1 py-0.5 rounded text-sm;
+  }
+  
+  /* Code inside alerts should not have background color and should wrap properly */
+  .alert code {
+    @apply bg-transparent px-0 py-0 font-mono break-words;
+  }
+  
+  /* Ensure alert content wraps properly */
+  .alert {
+    @apply break-words;
   }
   
   pre {
