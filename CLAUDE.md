@@ -14,3 +14,7 @@
 ## Testing
 - The project has comprehensive test coverage - acknowledge existing tests rather than creating generic test plans
 - Test files are located in `*_test.go` files following Go conventions
+
+## Documentation
+- As the codebase evolves, review the documentation in apps/docs to ensure that none of it is out of date, and if it is out of date, update it.
+- The audience for the documenation are customers of Kasho. These will typically be SRE / Infra / Platform engineers who are technical, understand Docker, containers, and DevOps.
