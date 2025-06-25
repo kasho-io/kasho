@@ -7,7 +7,7 @@ This guide covers the PostgreSQL configuration and user setup required for Kasho
 ### Source PostgreSQL Database
 
 Your source database needs:
-- **PostgreSQL version:** 10 or higher
+- **PostgreSQL version:** 15 or higher
 - **WAL level:** Set to `logical` for replication
 - **Replication slots:** At least 2 available slots
 - **Max WAL senders:** At least 2
@@ -16,8 +16,16 @@ Your source database needs:
 ### Target Database
 
 Your target database needs:
-- **PostgreSQL version:** 10 or higher  
-- **User permissions:** CREATE privilege and full access to tables
+- **PostgreSQL version:** 15 or higher  
+- **User permissions:** SUPERUSER privilege
+
+<div className="alert alert-warning mb-4">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+  <div>
+    <div className="font-semibold">SUPERUSER Required</div>
+    <div>The replica user requires SUPERUSER privileges to set `session_replication_role = 'replica'`, which prevents triggers from firing during replication.</div>
+  </div>
+</div>
 
 ## Step 1: Configure PostgreSQL for Logical Replication
 
@@ -39,14 +47,14 @@ max_wal_senders = 10
 
 Restart PostgreSQL after making these changes.
 
-## Step 2: Create Kasho User
+## Step 2: Setup Both Databases
 
-### Option A: Automated Setup Script
+### Option A: Automated Setup (Recommended)
 
-The easiest way is to use the provided setup script:
+Use the provided setup script to configure both primary and replica databases:
 
 ```bash
-# Set environment variables
+# Set environment variables for both databases
 export PRIMARY_DATABASE_URL="postgresql://kasho:pass@primary:5432/db"
 export REPLICA_DATABASE_URL="postgresql://kasho:pass@replica:5432/db"
 export PRIMARY_DATABASE_SU_USER="postgres"
@@ -54,15 +62,16 @@ export PRIMARY_DATABASE_SU_PASSWORD="postgres"
 export REPLICA_DATABASE_SU_USER="postgres"
 export REPLICA_DATABASE_SU_PASSWORD="postgres"
 
-# Run setup script
-docker run --rm kasho:latest /app/scripts/prepare-primary-db.sh
+# Run setup script that configures both databases
+docker run --rm kasho:latest /app/scripts/prepare-dbs.sh
 ```
 
 This script will:
-- Verify prerequisites (wal_level, etc.)
-- Create the kasho user with appropriate permissions
-- Set up DDL logging (if using DDL replication)
-- Create the publication
+1. Verify prerequisites on the primary (wal_level = logical)
+2. Create the kasho user on the primary with REPLICATION privileges
+3. Create the kasho user on the replica with SUPERUSER privileges
+4. Set up DDL logging on the primary (for schema change replication)
+5. Create the publication on the primary
 
 ### Option B: Manual Setup
 
@@ -100,9 +109,12 @@ GRANT SELECT ON SEQUENCES TO kasho;
 
 #### 3. Create User on Target Database
 
+Connect as a superuser to your target database:
+
 ```sql
--- Create role with same privileges
-CREATE ROLE kasho WITH REPLICATION LOGIN PASSWORD 'your-secure-password';
+-- Create role with SUPERUSER privileges
+-- SUPERUSER is required to set session_replication_role = 'replica'
+CREATE ROLE kasho WITH SUPERUSER LOGIN PASSWORD 'your-secure-password';
 
 -- Grant full permissions (needs to apply changes)
 GRANT USAGE ON SCHEMA public TO kasho;
@@ -135,8 +147,8 @@ Ensure the kasho user can connect for replication. Add to `pg_hba.conf`:
 
 ```
 # TYPE  DATABASE        USER        ADDRESS                 METHOD
-host    replication     kasho       0.0.0.0/0              md5
-host    all            kasho       0.0.0.0/0              md5
+host    replication     kasho       0.0.0.0/0               md5
+host    all             kasho       0.0.0.0/0               md5
 ```
 
 Reload PostgreSQL configuration:
@@ -156,12 +168,17 @@ psql "postgresql://kasho:password@source-host:5432/source_db?sslmode=disable" -c
 psql "postgresql://kasho:password@target-host:5432/target_db?sslmode=disable" -c "SELECT 1"
 ```
 
-## DDL Replication Setup (Optional)
+<div className="alert alert-info mb-4">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <div>
+    <div className="font-semibold">Security Consideration</div>
+    <div>The replica user requires SUPERUSER privileges. In production environments, this should be carefully evaluated. Consider using a dedicated database instance for the replica if security policies restrict SUPERUSER access.</div>
+  </div>
+</div>
 
-If you want to replicate schema changes (CREATE TABLE, ALTER TABLE, etc.), set up DDL logging:
+## Step 5: DDL Replication Setup
 
-<details>
-<summary>Click to expand DDL setup instructions</summary>
+In order to replicate schema changes (CREATE TABLE, ALTER TABLE, etc.), you must set up DDL logging:
 
 ```sql
 -- Create DDL log table
@@ -206,8 +223,6 @@ CREATE EVENT TRIGGER kasho_log_ddl_end
 ON ddl_command_end
 EXECUTE FUNCTION kasho_log_ddl();
 ```
-
-</details>
 
 ## Next Steps
 

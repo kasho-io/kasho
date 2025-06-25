@@ -1,6 +1,28 @@
 # Quick Start
 
-Get Kasho running in minutes with Docker Compose. This guide will help you set up a complete Kasho deployment for evaluation or development.
+This guide will help you understand Kasho's architecture and get it running in your environment. While we use Docker Compose as an example, the concepts apply to any production orchestration system like Kubernetes.
+
+## Production Deployment Overview
+
+Kasho consists of three required containers that work together:
+
+1. **Redis** - Used for distributed state management and caching
+2. **pg-change-stream** - Captures changes from your source PostgreSQL database
+3. **pg-translicator** - Applies transformations and writes to your target database
+
+<div className="alert alert-info mb-6">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <div>
+    <div className="font-semibold">Production Environments</div>
+    <div>Most production deployments use Kubernetes, ECS, or similar orchestration systems. The Docker Compose example below illustrates how the containers interact and can be adapted to your specific environment.</div>
+  </div>
+</div>
+
+### Container Images
+
+All Kasho components are packaged in a single Docker image:
+- Image: `kasho:latest` (or your specific version tag)
+- Commands: `./pg-change-stream` and `./pg-translicator`
 
 ## Prerequisites
 
@@ -13,19 +35,32 @@ Get Kasho running in minutes with Docker Compose. This guide will help you set u
 </div>
 
 Before you begin, ensure you have:
-- Docker 20.10+
-- Docker Compose 2.0+
-- PostgreSQL 10+ databases (source and target)
+- PostgreSQL 15+ databases (source and target)
 - Databases configured with `wal_level = logical`
+- A Redis instance (or Redis-compatible service)
+- Container orchestration system (Kubernetes, ECS, Docker, etc.)
+- Access to pull the Kasho container image
 
-## Step 1: Create Configuration
+## Docker Compose Example
 
-Create a directory for your Kasho deployment:
+<div className="alert alert-info mb-6">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <div>
+    <div className="font-semibold">Example Configuration</div>
+    <div>The following Docker Compose configuration demonstrates how Kasho's containers interact. Adapt this to your production orchestration system (Kubernetes manifests, ECS task definitions, etc.).</div>
+  </div>
+</div>
+
+### Step 1: Example Directory Structure
+
+For this example, create a directory structure:
 
 ```bash
-mkdir kasho-deployment
-cd kasho-deployment
+mkdir kasho-example
+cd kasho-example
 ```
+
+### Step 2: Example Docker Compose Configuration
 
 Create a `docker-compose.yml` file:
 
@@ -64,7 +99,7 @@ volumes:
   redis-data:
 ```
 
-## Step 2: Configure Transforms
+### Step 3: Transforms Configuration
 
 Create a `config` directory and add `transforms.yml`:
 
@@ -85,9 +120,9 @@ tables:
 
 See the [Transform Configuration](/configuration/transforms) guide for all available transforms.
 
-## Step 3: Set Environment Variables
+### Step 4: Environment Variables
 
-Create a `.env` file with your database connections:
+Create a `.env` file with your database connections and service configuration:
 
 ```bash
 # Source database (read-only access needed)
@@ -95,9 +130,23 @@ PRIMARY_DATABASE_URL=postgresql://kasho:password@source-host:5432/source_db?sslm
 
 # Target database (write access needed)
 REPLICA_DATABASE_URL=postgresql://kasho:password@target-host:5432/target_db?sslmode=disable
+
+# Redis connection for pg-change-stream
+KV_URL=redis://redis:6379
+
+# Change stream service for pg-translicator
+CHANGE_STREAM_SERVICE=pg-change-stream:8080
 ```
 
-## Step 4: Start Services
+<div className="alert alert-info mb-4">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <div>
+    <div className="font-semibold">Production Note</div>
+    <div>In production, these service URLs will depend on your infrastructure. For example, in Kubernetes you might use service names like `redis.default.svc.cluster.local:6379`.</div>
+  </div>
+</div>
+
+### Step 5: Run the Example
 
 ```bash
 docker-compose up -d
@@ -114,7 +163,28 @@ You should see:
 - `pg-change-stream` - Running on port 8080
 - `pg-translicator` - Running
 
-## Step 5: Bootstrap Existing Data (Optional)
+## Production Considerations
+
+When deploying to production:
+
+1. **Container Orchestration**: Translate the Docker Compose configuration to your platform:
+   - Kubernetes: Create Deployments, Services, and ConfigMaps
+   - ECS: Define Task Definitions and Services
+   - Other platforms: Follow your standard container deployment practices
+
+2. **Redis**: Use a managed Redis service or ensure high availability
+
+3. **Networking**: Ensure containers can communicate:
+   - `pg-translicator` must reach `pg-change-stream` service
+   - Both services need access to their respective databases
+   - Consider service discovery mechanisms in your environment
+
+4. **Configuration Management**: Mount transform configurations using your platform's methods:
+   - Kubernetes: ConfigMaps or Secrets
+   - ECS: Parameter Store or S3
+   - Docker: Volume mounts or config management tools
+
+## Bootstrap Existing Data
 
 If you have existing data in your source database, you'll need to run the bootstrap process:
 
@@ -123,32 +193,37 @@ If you have existing data in your source database, you'll need to run the bootst
   <span>The bootstrap process ensures zero data loss by capturing changes during the initial data load</span>
 </div>
 
-1. Download and run the bootstrap script:
+1. Execute the bootstrap process in the pg-change-stream container:
 
 ```bash
-# Download the bootstrap script
-docker run --rm kasho:latest cat /app/scripts/bootstrap-kasho.sh > bootstrap-kasho.sh
-chmod +x bootstrap-kasho.sh
-
-# Run bootstrap (will prompt for confirmation)
-./bootstrap-kasho.sh
+# Run bootstrap process (will prompt for confirmation)
+docker exec -it kasho-example-pg-change-stream-1 ./bootstrap-kasho.sh
 ```
 
-2. The script will:
+<div className="alert alert-info mb-4">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <div>
+    <div className="font-semibold">Container Name</div>
+    <div>The container name may vary based on your setup. Use `docker ps` to find the exact name of your pg-change-stream container.</div>
+  </div>
+</div>
+
+2. The bootstrap process will:
    - Create a consistent snapshot of your source database
    - Start capturing changes from that point
    - Load the snapshot data
    - Transition to streaming mode
 
-See the [Bootstrap Process](/installation/bootstrap) guide for detailed information.
+If you prefer, you can manually bootstrap things with a bit more effort. See the [Bootstrap Process](/installation/bootstrap) guide for detailed information.
 
 ## Verify Installation
 
 Check that replication is working:
 
-1. **Check `pg-change-stream` status:**
+1. **Check `pg-change-stream` status (using gRPC):**
    ```bash
-   curl http://localhost:8080/health
+   # Using grpcurl (install with: brew install grpcurl)
+   grpcurl -plaintext localhost:8080 kasho.ChangeStreamService/GetStatus
    ```
 
 2. **View logs:**
@@ -174,7 +249,7 @@ Check that replication is working:
 ## Troubleshooting
 
 **Services won't start:**
-- Check your `.env` file has valid database URLs
+- Ensure your environment variables are set correctly, especially the database URLs.
 - Verify `transforms.yml` exists in the config directory
 - Check logs: `docker-compose logs [service-name]`
 

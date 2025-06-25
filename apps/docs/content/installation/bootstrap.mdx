@@ -24,7 +24,7 @@ The bootstrap process loads existing data from your source database into Kasho w
   <div className="card bg-base-200 border border-base-300">
     <div className="card-body">
       <h3 className="card-title text-lg">STREAMING</h3>
-      <p className="text-sm">Normal operation. Streaming all changes to clients.</p>
+      <p className="text-sm">Normal operation. Streaming all changes to `pg-translicator`.</p>
     </div>
   </div>
 </div>
@@ -60,26 +60,24 @@ grpcurl -plaintext pg-change-stream:8080 kasho.ChangeStreamService/GetStatus
 # Should show state: WAITING
 ```
 
-Run the bootstrap script:
+Run the bootstrap script inside the pg-change-stream container:
 
 ```bash
 # Interactive mode - prompts before transitioning to streaming
-docker run --rm \
-  --network your-network \
-  -e PRIMARY_DATABASE_URL="$PRIMARY_DATABASE_URL" \
-  -e KV_URL="redis://redis:6379" \
-  kasho:latest \
-  /app/scripts/bootstrap-kasho.sh
+docker exec -it <pg-change-stream-container> ./bootstrap-kasho.sh
 
 # Automatic mode - transitions without prompting
-docker run --rm \
-  --network your-network \
-  -e PRIMARY_DATABASE_URL="$PRIMARY_DATABASE_URL" \
-  -e KV_URL="redis://redis:6379" \
-  -e WAIT_FOR_BOOTSTRAP=true \
-  kasho:latest \
-  /app/scripts/bootstrap-kasho.sh
+docker exec -it <pg-change-stream-container> \
+  env WAIT_FOR_BOOTSTRAP=true ./bootstrap-kasho.sh
 ```
+
+<div className="alert alert-info mb-4">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <div>
+    <div className="font-semibold">Finding Your Container Name</div>
+    <div>Use `docker ps` to find your pg-change-stream container name. It will typically be something like `kasho-pg-change-stream-1` or similar based on your deployment method.</div>
+  </div>
+</div>
 
 The script will:
 1. Create a temporary replication slot for consistent snapshot

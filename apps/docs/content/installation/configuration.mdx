@@ -97,15 +97,12 @@ postgresql://kasho:mypassword@db:5432/mydb?connect_timeout=10&application_name=k
 
 ### File Location
 
-The transforms file must be mounted at `/app/config/transforms.yml` in the `pg-translicator` container:
+The transforms file must be mounted at `/app/config/transforms.yml` in the `pg-translicator` container. How you mount this file depends on your deployment platform:
 
-```yaml
-# docker-compose.yml
-services:
-  pg-translicator:
-    volumes:
-      - ./config:/app/config:ro
-```
+- **Kubernetes**: ConfigMap or Volume mount
+- **ECS**: Task definition with mounted file from S3 or EFS
+- **Docker**: Direct volume mount
+- **Other platforms**: Use your platform's file mounting mechanism
 
 ### Basic Structure
 
@@ -133,53 +130,16 @@ tables:
 
 See the [Transform Configuration](/configuration/transforms) guide for detailed information about available transforms.
 
-## Docker Compose Configuration
+## Production Deployment
 
-Here's a complete example with all configuration:
+For production deployments, mount the transforms configuration using your orchestration platform's configuration management:
 
-```yaml
-# docker-compose.yml
-services:
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
+- **Kubernetes**: Use ConfigMaps or mounted volumes
+- **ECS**: Use task definition volumes with S3 or EFS
+- **Docker Swarm**: Use configs or secrets
+- **Other platforms**: Follow your platform's configuration mounting practices
 
-  pg-change-stream:
-    image: kasho:latest
-    command: ./pg-change-stream
-    environment:
-      KV_URL: redis://redis:6379
-      PRIMARY_DATABASE_URL: ${PRIMARY_DATABASE_URL}
-    ports:
-      - "8080:8080"
-    depends_on:
-      - redis
-    restart: unless-stopped
-
-  pg-translicator:
-    image: kasho:latest
-    command: ./pg-translicator
-    environment:
-      CHANGE_STREAM_SERVICE: pg-change-stream:8080
-      REPLICA_DATABASE_URL: ${REPLICA_DATABASE_URL}
-    volumes:
-      - ./config:/app/config:ro
-    depends_on:
-      - pg-change-stream
-    restart: unless-stopped
-
-volumes:
-  redis-data:
-```
-
-```bash
-# .env
-PRIMARY_DATABASE_URL=postgresql://kasho:password@source-db:5432/source?sslmode=disable
-REPLICA_DATABASE_URL=postgresql://kasho:password@target-db:5432/target?sslmode=disable
-```
+The key requirement is that `transforms.yml` must be available at `/app/config/transforms.yml` inside the pg-translicator container.
 
 ## Configuration Best Practices
 
@@ -188,18 +148,15 @@ REPLICA_DATABASE_URL=postgresql://kasho:password@target-db:5432/target?sslmode=d
    - Never commit `.env` files to version control
    - Use `.env.example` as a template
 
-2. **Connection Pooling**
-   - Kasho manages its own connection pooling
-   - Don't use PgBouncer in transaction pooling mode
-
-3. **Security**
+2. **Security**
    - Use strong passwords for database users
    - Enable SSL for production deployments
    - Restrict network access to services
 
-4. **Monitoring**
+3. **Monitoring**
    - Set meaningful `application_name` in URLs
-   - Monitor pg_stat_replication for lag
+   - Monitor replication slot status: `SELECT * FROM pg_replication_slots WHERE slot_name = 'kasho_slot'`
+   - Check pg-change-stream status: `grpcurl -plaintext <host>:8080 kasho.ChangeStreamService/GetStatus`
    - Check service logs regularly
 
 ## Next Steps
