@@ -85,7 +85,16 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
   ```bash
   task dev:app:demo
   ```
-  (Runs on [http://localhost:4000](http://localhost:4000))
+  (Runs on [http://localhost:3001](http://localhost:3001))
+
+#### Documentation (`apps/docs/`)
+- Comprehensive documentation site for Kasho built with Nextra and MDX.
+- Includes installation guides, configuration reference, and getting started tutorials.
+- To run locally:
+  ```bash
+  task dev:app:docs
+  ```
+  (Runs on [http://localhost:3002](http://localhost:3002))
 
 ## Architecture
 
