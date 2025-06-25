@@ -1,80 +1,188 @@
-<div className="container mx-auto px-4 py-8 max-w-4xl">
+<div className="container mx-auto px-6 py-8 max-w-5xl">
 
 # Quick Start
 
-Get up and running with Kasho in minutes.
+Get Kasho running in minutes with Docker Compose. This guide will help you set up a complete Kasho deployment for evaluation or development.
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed:
-
-<div className="alert alert-info">
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-  <span>Docker and Docker Compose are required for local development</span>
+<div className="alert alert-warning mb-6">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+  <div>
+    <div className="font-semibold">Important: Single Translicator Only</div>
+    <div>Currently, only a single pg-translicator instance is supported. Multiple translicators would process the same changes multiple times.</div>
+  </div>
 </div>
 
+Before you begin, ensure you have:
 - Docker 20.10+
 - Docker Compose 2.0+
-- Task (optional, but recommended)
+- PostgreSQL 10+ databases (source and target)
+- Databases configured with `wal_level = logical`
 
-## Installation
+## Step 1: Create Configuration
 
-1. Clone the repository:
+Create a directory for your Kasho deployment:
 
 ```bash
-git clone https://github.com/kasho-io/kasho.git
-cd kasho
+mkdir kasho-deployment
+cd kasho-deployment
 ```
 
-2. Start the development environment:
+Create a `docker-compose.yml` file:
 
-```bash
-task dev:start
+```yaml
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  pg-change-stream:
+    image: kasho:latest
+    command: ./pg-change-stream
+    environment:
+      KV_URL: redis://redis:6379
+      PRIMARY_DATABASE_URL: ${PRIMARY_DATABASE_URL}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+
+  pg-translicator:
+    image: kasho:latest
+    command: ./pg-translicator
+    environment:
+      CHANGE_STREAM_SERVICE: pg-change-stream:8080
+      REPLICA_DATABASE_URL: ${REPLICA_DATABASE_URL}
+    volumes:
+      - ./config:/app/config:ro
+    depends_on:
+      - pg-change-stream
+
+volumes:
+  redis-data:
 ```
 
-3. Bootstrap the system:
+## Step 2: Configure Transforms
+
+Create a `config` directory and add `transforms.yml`:
 
 ```bash
-task dev:bootstrap
+mkdir config
 ```
 
-## Verify Installation
+Create `config/transforms.yml` with your transformation rules:
 
-Check that all services are running:
+```yaml
+version: v1
+tables:
+  # Example: Transform user emails in the public.users table
+  public.users:
+    email: FakeEmail
+    phone: FakePhone
+```
+
+See the [Transform Configuration](/configuration/transforms) guide for all available transforms.
+
+## Step 3: Set Environment Variables
+
+Create a `.env` file with your database connections:
 
 ```bash
-docker compose ps
+# Source database (read-only access needed)
+PRIMARY_DATABASE_URL=postgresql://kasho:password@source-host:5432/source_db?sslmode=disable
+
+# Target database (write access needed)
+REPLICA_DATABASE_URL=postgresql://kasho:password@target-host:5432/target_db?sslmode=disable
+```
+
+## Step 4: Start Services
+
+```bash
+docker-compose up -d
+```
+
+Verify all services are running:
+
+```bash
+docker-compose ps
 ```
 
 You should see:
+- `redis` - Running
 - `pg-change-stream` - Running on port 8080
-- `pg-translicator` - Connected to change stream
-- `postgres-primary` - Source database
-- `postgres-replica` - Target database
-- `redis` - Message broker
+- `pg-translicator` - Running
+
+## Step 5: Bootstrap Existing Data (Optional)
+
+If you have existing data in your source database, you'll need to run the bootstrap process:
+
+<div className="alert alert-info mb-4">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <span>The bootstrap process ensures zero data loss by capturing changes during the initial data load</span>
+</div>
+
+1. Download and run the bootstrap script:
+
+```bash
+# Download the bootstrap script
+docker run --rm kasho:latest cat /app/scripts/bootstrap-kasho.sh > bootstrap-kasho.sh
+chmod +x bootstrap-kasho.sh
+
+# Run bootstrap (will prompt for confirmation)
+./bootstrap-kasho.sh
+```
+
+2. The script will:
+   - Create a consistent snapshot of your source database
+   - Start capturing changes from that point
+   - Load the snapshot data
+   - Transition to streaming mode
+
+See the [Bootstrap Process](/installation/bootstrap) guide for detailed information.
+
+## Verify Installation
+
+Check that replication is working:
+
+1. **Check pg-change-stream status:**
+   ```bash
+   curl http://localhost:8080/health
+   ```
+
+2. **View logs:**
+   ```bash
+   docker-compose logs -f pg-change-stream
+   docker-compose logs -f pg-translicator
+   ```
+
+3. **Make a test change in your source database:**
+   ```sql
+   -- In your source database
+   UPDATE users SET updated_at = NOW() WHERE id = 1;
+   ```
+
+4. **Verify the change appears in your target database**
 
 ## Next Steps
 
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-  <div className="card bg-base-200 shadow-xl">
-    <div className="card-body">
-      <h2 className="card-title">Architecture Overview</h2>
-      <p>Learn how Kasho components work together</p>
-      <div className="card-actions justify-end">
-        <a href="/architecture" className="btn btn-primary btn-sm">Learn More</a>
-      </div>
-    </div>
-  </div>
-  
-  <div className="card bg-base-200 shadow-xl">
-    <div className="card-body">
-      <h2 className="card-title">Configuration</h2>
-      <p>Configure Kasho for your use case</p>
-      <div className="card-actions justify-end">
-        <a href="/deployment/configuration" className="btn btn-primary btn-sm">Learn More</a>
-      </div>
-    </div>
-  </div>
-</div>
+- [Configure your databases](/installation/database-setup) for production use
+- [Understand configuration options](/installation/configuration)
+- [Learn about transforms](/configuration/transforms)
+
+## Troubleshooting
+
+**Services won't start:**
+- Check your `.env` file has valid database URLs
+- Verify `transforms.yml` exists in the config directory
+- Check logs: `docker-compose logs [service-name]`
+
+**Connection errors:**
+- Ensure databases are accessible from Docker containers
+- Verify PostgreSQL has `wal_level = logical`
+- Check firewall rules allow connections
 
 </div>

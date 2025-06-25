@@ -9,37 +9,20 @@ const navigation = [
     items: [
       { title: "Introduction", href: "/" },
       { title: "Quick Start", href: "/quick-start" },
-      { title: "Installation", href: "/installation" },
     ],
   },
   {
-    title: "Architecture",
+    title: "Installation & Setup",
     items: [
-      { title: "Overview", href: "/architecture" },
-      { title: "Components", href: "/architecture/components" },
-      { title: "Data Flow", href: "/architecture/data-flow" },
+      { title: "Database Setup", href: "/installation/database-setup" },
+      { title: "Configuration", href: "/installation/configuration" },
+      { title: "Bootstrap Process", href: "/installation/bootstrap" },
     ],
   },
   {
-    title: "Services",
+    title: "Configuration Reference",
     items: [
-      { title: "pg-change-stream", href: "/services/pg-change-stream" },
-      { title: "pg-translicator", href: "/services/pg-translicator" },
-    ],
-  },
-  {
-    title: "Deployment",
-    items: [
-      { title: "Docker", href: "/deployment/docker" },
-      { title: "Kubernetes", href: "/deployment/kubernetes" },
-      { title: "Configuration", href: "/deployment/configuration" },
-    ],
-  },
-  {
-    title: "API Reference",
-    items: [
-      { title: "gRPC API", href: "/api/grpc" },
-      { title: "Redis Protocol", href: "/api/redis" },
+      { title: "Transform Configuration", href: "/configuration/transforms" },
     ],
   },
 ];
