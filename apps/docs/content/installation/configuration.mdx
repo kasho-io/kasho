@@ -1,0 +1,213 @@
+<div className="container mx-auto px-6 py-8 max-w-5xl">
+
+# Configuration
+
+Kasho uses environment variables for service configuration and a YAML file for transformation rules.
+
+## Environment Variables
+
+### pg-change-stream Configuration
+
+<table className="table table-zebra w-full">
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Description</th>
+      <th>Required</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>KV_URL</code></td>
+      <td>Redis connection URL</td>
+      <td><span className="badge badge-error">Yes</span></td>
+      <td><code>redis://redis:6379</code></td>
+    </tr>
+    <tr>
+      <td><code>PRIMARY_DATABASE_URL</code></td>
+      <td>Source database connection URL</td>
+      <td><span className="badge badge-error">Yes</span></td>
+      <td><code>postgresql://user:pass@host:5432/db</code></td>
+    </tr>
+  </tbody>
+</table>
+
+### pg-translicator Configuration
+
+<table className="table table-zebra w-full">
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Description</th>
+      <th>Required</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>CHANGE_STREAM_SERVICE</code></td>
+      <td>pg-change-stream service address</td>
+      <td><span className="badge badge-error">Yes</span></td>
+      <td><code>pg-change-stream:8080</code></td>
+    </tr>
+    <tr>
+      <td><code>REPLICA_DATABASE_URL</code></td>
+      <td>Target database connection URL</td>
+      <td><span className="badge badge-error">Yes</span></td>
+      <td><code>postgresql://user:pass@host:5432/db</code></td>
+    </tr>
+  </tbody>
+</table>
+
+## Database URL Format
+
+Database URLs follow the standard PostgreSQL connection string format:
+
+```
+postgresql://[user[:password]@][host][:port][/database][?param=value&...]
+```
+
+### Common Parameters
+
+- **`sslmode`** - SSL connection mode
+  - `disable` - No SSL
+  - `require` - SSL required
+  - `verify-ca` - SSL with CA verification
+  - `verify-full` - SSL with full verification
+  
+- **`connect_timeout`** - Connection timeout in seconds (default: 30)
+
+- **`application_name`** - Identifies your application in pg_stat_activity
+
+### Examples
+
+```bash
+# Basic connection without SSL
+postgresql://kasho:mypassword@localhost:5432/mydb?sslmode=disable
+
+# Connection with SSL required
+postgresql://kasho:mypassword@prod-db.example.com:5432/mydb?sslmode=require
+
+# Connection with timeout and app name
+postgresql://kasho:mypassword@db:5432/mydb?connect_timeout=10&application_name=kasho
+```
+
+## Transform Configuration
+
+pg-translicator requires a `transforms.yml` file that defines how data should be transformed during replication.
+
+### File Location
+
+The transforms file must be mounted at `/app/config/transforms.yml` in the pg-translicator container:
+
+```yaml
+# docker-compose.yml
+services:
+  pg-translicator:
+    volumes:
+      - ./config:/app/config:ro
+```
+
+### Basic Structure
+
+```yaml
+version: v1
+tables:
+  schema.table_name:
+    column_name: TransformationType
+```
+
+### Example Configuration
+
+```yaml
+version: v1
+tables:
+  public.users:
+    email: FakeEmail
+    phone: FakePhone
+    address: FakeStreetAddress
+  
+  public.orders:
+    customer_email: FakeEmail
+    billing_address: FakeStreetAddress
+```
+
+See the [Transform Configuration](/configuration/transforms) guide for detailed information about available transforms.
+
+## Docker Compose Configuration
+
+Here's a complete example with all configuration:
+
+```yaml
+# docker-compose.yml
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  pg-change-stream:
+    image: kasho:latest
+    command: ./pg-change-stream
+    environment:
+      KV_URL: redis://redis:6379
+      PRIMARY_DATABASE_URL: ${PRIMARY_DATABASE_URL}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  pg-translicator:
+    image: kasho:latest
+    command: ./pg-translicator
+    environment:
+      CHANGE_STREAM_SERVICE: pg-change-stream:8080
+      REPLICA_DATABASE_URL: ${REPLICA_DATABASE_URL}
+    volumes:
+      - ./config:/app/config:ro
+    depends_on:
+      - pg-change-stream
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+```
+
+```bash
+# .env
+PRIMARY_DATABASE_URL=postgresql://kasho:password@source-db:5432/source?sslmode=disable
+REPLICA_DATABASE_URL=postgresql://kasho:password@target-db:5432/target?sslmode=disable
+```
+
+## Configuration Best Practices
+
+1. **Use Environment Files**
+   - Keep sensitive data in `.env` files
+   - Never commit `.env` files to version control
+   - Use `.env.example` as a template
+
+2. **Connection Pooling**
+   - Kasho manages its own connection pooling
+   - Don't use PgBouncer in transaction pooling mode
+
+3. **Security**
+   - Use strong passwords for database users
+   - Enable SSL for production deployments
+   - Restrict network access to services
+
+4. **Monitoring**
+   - Set meaningful `application_name` in URLs
+   - Monitor pg_stat_replication for lag
+   - Check service logs regularly
+
+## Next Steps
+
+- Set up the [Bootstrap Process](/installation/bootstrap) for existing data
+- Configure [Data Transforms](/configuration/transforms)
+- Review the [Quick Start](/quick-start) guide
+
+</div>

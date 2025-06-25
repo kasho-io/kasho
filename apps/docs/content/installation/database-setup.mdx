@@ -1,0 +1,221 @@
+<div className="container mx-auto px-6 py-8 max-w-5xl">
+
+# Database Setup
+
+This guide covers the PostgreSQL configuration and user setup required for Kasho.
+
+## Database Requirements
+
+### Source PostgreSQL Database
+
+Your source database needs:
+- **PostgreSQL version:** 10 or higher
+- **WAL level:** Set to `logical` for replication
+- **Replication slots:** At least 2 available slots
+- **Max WAL senders:** At least 2
+- **User permissions:** REPLICATION privilege and SELECT on all tables
+
+### Target Database
+
+Your target database needs:
+- **PostgreSQL version:** 10 or higher  
+- **User permissions:** CREATE privilege and full access to tables
+
+## Step 1: Configure PostgreSQL for Logical Replication
+
+<div className="alert alert-warning mb-4">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+  <span>Changing these settings requires a PostgreSQL restart</span>
+</div>
+
+Edit your `postgresql.conf` file:
+
+```ini
+# Enable logical replication
+wal_level = logical
+
+# Allow replication connections
+max_replication_slots = 10
+max_wal_senders = 10
+```
+
+Restart PostgreSQL after making these changes.
+
+## Step 2: Create Kasho User
+
+### Option A: Automated Setup Script
+
+The easiest way is to use the provided setup script:
+
+```bash
+# Set environment variables
+export PRIMARY_DATABASE_URL="postgresql://kasho:pass@primary:5432/db"
+export REPLICA_DATABASE_URL="postgresql://kasho:pass@replica:5432/db"
+export PRIMARY_DATABASE_SU_USER="postgres"
+export PRIMARY_DATABASE_SU_PASSWORD="postgres"
+export REPLICA_DATABASE_SU_USER="postgres"
+export REPLICA_DATABASE_SU_PASSWORD="postgres"
+
+# Run setup script
+docker run --rm kasho:latest /app/scripts/prepare-primary-db.sh
+```
+
+This script will:
+- Verify prerequisites (wal_level, etc.)
+- Create the kasho user with appropriate permissions
+- Set up DDL logging (if using DDL replication)
+- Create the publication
+
+### Option B: Manual Setup
+
+If you prefer manual setup, follow these steps:
+
+#### 1. Verify WAL Level
+
+Connect as a superuser and check:
+
+```sql
+-- Check current setting
+SHOW wal_level;
+
+-- Should return 'logical'
+```
+
+#### 2. Create User on Source Database
+
+```sql
+-- Create role with replication and login privileges
+CREATE ROLE kasho WITH REPLICATION LOGIN PASSWORD 'your-secure-password';
+
+-- Grant read permissions
+GRANT USAGE ON SCHEMA public TO kasho;
+GRANT CREATE ON SCHEMA public TO kasho;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO kasho;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO kasho;
+
+-- Grant future table permissions
+ALTER DEFAULT PRIVILEGES IN SCHEMA public 
+GRANT SELECT ON TABLES TO kasho;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public 
+GRANT SELECT ON SEQUENCES TO kasho;
+```
+
+#### 3. Create User on Target Database
+
+```sql
+-- Create role with same privileges
+CREATE ROLE kasho WITH REPLICATION LOGIN PASSWORD 'your-secure-password';
+
+-- Grant full permissions (needs to apply changes)
+GRANT USAGE ON SCHEMA public TO kasho;
+GRANT CREATE ON SCHEMA public TO kasho;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO kasho;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO kasho;
+
+-- Grant future table permissions
+ALTER DEFAULT PRIVILEGES IN SCHEMA public 
+GRANT ALL ON TABLES TO kasho;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public 
+GRANT ALL ON SEQUENCES TO kasho;
+```
+
+#### 4. Create Publication on Source
+
+```sql
+-- Create publication for all tables
+CREATE PUBLICATION kasho_pub FOR ALL TABLES;
+```
+
+<div className="alert alert-info">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <span>Do NOT create the replication slot manually. It will be created automatically during the bootstrap process.</span>
+</div>
+
+## Step 3: Configure pg_hba.conf
+
+Ensure the kasho user can connect for replication. Add to `pg_hba.conf`:
+
+```
+# TYPE  DATABASE        USER        ADDRESS                 METHOD
+host    replication     kasho       0.0.0.0/0              md5
+host    all            kasho       0.0.0.0/0              md5
+```
+
+Reload PostgreSQL configuration:
+```bash
+pg_ctl reload
+```
+
+## Step 4: Test Connection
+
+Verify the kasho user can connect:
+
+```bash
+# Test source database connection
+psql "postgresql://kasho:password@source-host:5432/source_db?sslmode=disable" -c "SELECT 1"
+
+# Test target database connection  
+psql "postgresql://kasho:password@target-host:5432/target_db?sslmode=disable" -c "SELECT 1"
+```
+
+## DDL Replication Setup (Optional)
+
+If you want to replicate schema changes (CREATE TABLE, ALTER TABLE, etc.), set up DDL logging:
+
+<details>
+<summary>Click to expand DDL setup instructions</summary>
+
+```sql
+-- Create DDL log table
+CREATE TABLE IF NOT EXISTS kasho_ddl_log (
+    id BIGSERIAL PRIMARY KEY,
+    lsn pg_lsn NOT NULL,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    username TEXT NOT NULL,
+    database TEXT NOT NULL,
+    ddl TEXT NOT NULL
+);
+
+-- Create cleanup function
+CREATE OR REPLACE FUNCTION kasho_cleanup_ddl_log() RETURNS void AS $$
+BEGIN
+    DELETE FROM kasho_ddl_log WHERE timestamp < NOW() - INTERVAL '7 days';
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create DDL capture function
+CREATE OR REPLACE FUNCTION kasho_log_ddl() RETURNS event_trigger AS $$
+DECLARE
+    current_lsn pg_lsn;
+    ddl_text TEXT;
+BEGIN
+    SELECT pg_current_wal_lsn() INTO current_lsn;
+    SELECT current_query() INTO ddl_text;
+    
+    INSERT INTO kasho_ddl_log (lsn, username, database, ddl)
+    VALUES (current_lsn, current_user, current_database(), ddl_text);
+    
+    PERFORM kasho_cleanup_ddl_log();
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create event triggers
+CREATE EVENT TRIGGER kasho_log_ddl_start 
+ON ddl_command_start
+EXECUTE FUNCTION kasho_log_ddl();
+
+CREATE EVENT TRIGGER kasho_log_ddl_end 
+ON ddl_command_end
+EXECUTE FUNCTION kasho_log_ddl();
+```
+
+</details>
+
+## Next Steps
+
+Once your databases are configured:
+1. Continue with the [Quick Start](/quick-start) guide
+2. Learn about [Configuration Options](/installation/configuration)
+3. Set up the [Bootstrap Process](/installation/bootstrap) for existing data
+
+</div>

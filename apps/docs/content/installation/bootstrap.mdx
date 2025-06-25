@@ -1,0 +1,237 @@
+<div className="container mx-auto px-6 py-8 max-w-5xl">
+
+# Bootstrap Process
+
+The bootstrap process loads existing data from your source database into Kasho while ensuring zero data loss during the transition.
+
+## Understanding Bootstrap States
+
+pg-change-stream operates in three states during its lifecycle:
+
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
+  <div className="card bg-base-200 border border-base-300">
+    <div className="card-body">
+      <h3 className="card-title text-lg">WAITING</h3>
+      <p className="text-sm">No replication slot exists. Service is ready to begin bootstrap.</p>
+    </div>
+  </div>
+  
+  <div className="card bg-base-200 border border-base-300">
+    <div className="card-body">
+      <h3 className="card-title text-lg">ACCUMULATING</h3>
+      <p className="text-sm">Replication slot created. Capturing changes during initial data load.</p>
+    </div>
+  </div>
+  
+  <div className="card bg-base-200 border border-base-300">
+    <div className="card-body">
+      <h3 className="card-title text-lg">STREAMING</h3>
+      <p className="text-sm">Normal operation. Streaming all changes to clients.</p>
+    </div>
+  </div>
+</div>
+
+## How Bootstrap Works
+
+The bootstrap process ensures data consistency by:
+
+1. **Creating a consistent snapshot** of the source database at a specific point in time
+2. **Starting change accumulation** from that exact point
+3. **Loading the snapshot data** into the target system
+4. **Transitioning to streaming** with all accumulated changes
+
+This approach guarantees that no changes are lost during the initial data migration.
+
+## Running Bootstrap
+
+### Prerequisites
+
+Before starting bootstrap:
+- Ensure pg-change-stream is running and in WAITING state
+- Have sufficient disk space for the database dump
+- Ensure network connectivity between all components
+
+### Option 1: Automated Bootstrap Script (Recommended)
+
+The easiest way to bootstrap is using the provided script:
+
+```bash
+# Check pg-change-stream status
+grpcurl -plaintext pg-change-stream:8080 kasho.ChangeStreamService/GetStatus
+
+# Should show state: WAITING
+```
+
+Run the bootstrap script:
+
+```bash
+# Interactive mode - prompts before transitioning to streaming
+docker run --rm \
+  --network your-network \
+  -e PRIMARY_DATABASE_URL="$PRIMARY_DATABASE_URL" \
+  -e KV_URL="redis://redis:6379" \
+  kasho:latest \
+  /app/scripts/bootstrap-kasho.sh
+
+# Automatic mode - transitions without prompting
+docker run --rm \
+  --network your-network \
+  -e PRIMARY_DATABASE_URL="$PRIMARY_DATABASE_URL" \
+  -e KV_URL="redis://redis:6379" \
+  -e WAIT_FOR_BOOTSTRAP=true \
+  kasho:latest \
+  /app/scripts/bootstrap-kasho.sh
+```
+
+The script will:
+1. Create a temporary replication slot for consistent snapshot
+2. Signal pg-change-stream to start accumulating changes
+3. Take a database dump using the snapshot
+4. Convert the dump to change events
+5. Clean up temporary resources
+6. Transition to streaming mode
+
+### Option 2: Manual Bootstrap Process
+
+For more control, you can run the bootstrap steps manually:
+
+<details>
+<summary>Click to expand manual bootstrap steps</summary>
+
+#### Step 1: Create Temporary Snapshot
+
+```sql
+-- Connect to source database as kasho user
+-- Create a temporary slot to get a consistent snapshot
+SELECT slot_name, lsn, snapshot_name 
+FROM pg_create_logical_replication_slot('kasho_temp_slot', 'pgoutput', true);
+
+-- Note the LSN and snapshot_name values
+```
+
+#### Step 2: Start Accumulation
+
+```bash
+# Tell pg-change-stream to create permanent slot and start accumulating
+grpcurl -plaintext \
+  -d '{"start_lsn": "<lsn-from-step-1>", "snapshot_name": "<snapshot-from-step-1>"}' \
+  pg-change-stream:8080 \
+  kasho.ChangeStreamService/StartBootstrap
+```
+
+#### Step 3: Take Database Dump
+
+```bash
+# Use the snapshot for consistency
+pg_dump \
+  --snapshot=<snapshot-from-step-1> \
+  --no-owner \
+  --no-privileges \
+  --data-only \
+  "$PRIMARY_DATABASE_URL" > dump.sql
+```
+
+#### Step 4: Process Dump
+
+```bash
+# Convert dump to change events
+docker run --rm \
+  -v $(pwd):/data \
+  --network your-network \
+  kasho:latest \
+  pg-bootstrap-sync \
+    --dump-file=/data/dump.sql \
+    --redis-url=redis://redis:6379
+```
+
+#### Step 5: Clean Up and Transition
+
+```sql
+-- Drop the temporary slot
+SELECT pg_drop_replication_slot('kasho_temp_slot');
+```
+
+```bash
+# Transition to streaming mode
+grpcurl -plaintext \
+  pg-change-stream:8080 \
+  kasho.ChangeStreamService/CompleteBootstrap
+```
+
+</details>
+
+## Monitoring Progress
+
+During bootstrap, monitor the progress:
+
+```bash
+# Check current state
+grpcurl -plaintext pg-change-stream:8080 kasho.ChangeStreamService/GetStatus
+
+# Watch logs
+docker logs -f pg-change-stream
+
+# Monitor accumulated changes
+# The AccumulatedChanges count shows buffered changes during bootstrap
+```
+
+## Large Database Considerations
+
+For databases larger than 100GB:
+
+1. **Use compression:**
+   ```bash
+   pg_dump ... | gzip > dump.sql.gz
+   ```
+
+2. **Consider parallel dump:**
+   ```bash
+   pg_dump --jobs=4 ...
+   ```
+
+3. **Monitor disk space** during the dump process
+
+4. **Run during low-traffic periods** to minimize accumulated changes
+
+## Troubleshooting
+
+### "replication slot already exists"
+
+This usually means a previous bootstrap wasn't cleaned up properly:
+
+```sql
+-- Check existing slots
+SELECT * FROM pg_replication_slots;
+
+-- If kasho_slot exists and you want to start over
+SELECT pg_drop_replication_slot('kasho_slot');
+```
+
+Then restart pg-change-stream to return to WAITING state.
+
+### Bootstrap seems stuck
+
+Check for:
+- Network connectivity issues
+- Disk space for dump file
+- Long-running transactions blocking the snapshot
+
+### High memory usage during bootstrap
+
+pg-bootstrap-sync processes the dump in batches. For very large tables, you may need to increase container memory limits.
+
+## After Bootstrap
+
+Once bootstrap completes and pg-change-stream is in STREAMING state:
+
+1. **Verify data integrity** - Compare row counts between source and target
+2. **Monitor replication lag** - Check that changes are flowing normally
+3. **Remove dump files** - Clean up temporary dump files to free disk space
+
+## Next Steps
+
+- Learn about [Transform Configuration](/configuration/transforms)
+- Return to the [Quick Start](/quick-start) guide
+- Review [Configuration Options](/installation/configuration)
+
+</div>
