@@ -1,29 +1,30 @@
 # Welcome to Kasho
 
-Kasho is a data synchronization platform that replicates changes from PostgreSQL databases in real-time using logical replication.
+Kasho solves the age-old problem of "production-like data" for staging, testing, and development environments. It does this by tapping into the replciation layer of the database and putting a transformer in the middle.
 
 ## What is Kasho?
 
-Kasho consists of three main components working together:
+Kasho consists of two main components working together:
 
 - **`pg-change-stream`** - Captures changes from your PostgreSQL database
 - **`pg-translicator`** - Applies changes to target databases with optional transformations
-- **Redis** - Provides reliable message buffering between services
+
+Under the hood, **Redis** is used for reliable, ordered message buffering.
 
 ## Key Features
 
 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
   <div className="card bg-base-200 shadow-xl border border-base-300">
     <div className="card-body">
-      <h3 className="card-title">Real-time Replication</h3>
-      <p>Stream database changes with minimal latency using PostgreSQL's logical replication</p>
+      <h3 className="card-title">Live, Hot, Compliant Replicas</h3>
+      <p>Stream database changes with minimal latency using PostgreSQL's logical replication, including both DDL and DML</p>
     </div>
   </div>
   
   <div className="card bg-base-200 shadow-xl border border-base-300">
     <div className="card-body">
       <h3 className="card-title">Data Transformation</h3>
-      <p>Transform sensitive data during replication with configurable rules</p>
+      <p>Transform sensitive data with configurable rules before writing to the replica</p>
     </div>
   </div>
   
@@ -37,7 +38,7 @@ Kasho consists of three main components working together:
   <div className="card bg-base-200 shadow-xl border border-base-300">
     <div className="card-body">
       <h3 className="card-title">Bootstrap Support</h3>
-      <p>Migrate existing data with zero downtime using the bootstrap process</p>
+      <p>Get up and running with existing data and zero downtime using the included bootstrap process</p>
     </div>
   </div>
 </div>
@@ -46,7 +47,7 @@ Kasho consists of three main components working together:
 
 <div className="alert alert-info mt-6">
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-  <span>Kasho requires PostgreSQL 10+ with logical replication enabled</span>
+  <span>Kasho requires PostgreSQL 15+ with logical replication enabled</span>
 </div>
 
 Ready to get started? Check out the [Quick Start Guide](/quick-start) to deploy Kasho with Docker Compose.
