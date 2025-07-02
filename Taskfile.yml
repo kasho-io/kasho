@@ -54,6 +54,7 @@ tasks:
     desc: Generate Go code from protobuf definitions
     cmds:
       - protoc --go_out=proto/kasho --go_opt=paths=source_relative --go-grpc_out=proto/kasho --go-grpc_opt=paths=source_relative proto/change_stream.proto
+      - protoc --go_out=proto/kasho --go_opt=paths=source_relative --go-grpc_out=proto/kasho --go-grpc_opt=paths=source_relative proto/license.proto
 
   test:
     desc: Run all tests (Go services + Next.js apps)
