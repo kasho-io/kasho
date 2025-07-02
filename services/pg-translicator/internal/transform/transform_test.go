@@ -88,63 +88,58 @@ func TestTransformPasswordBcrypt(t *testing.T) {
 	tests := []struct {
 		name      string
 		cleartext string
-		useSalt   bool
 		cost      int
-		original  string
 		wantErr   bool
 	}{
 		{
-			name:      "basic bcrypt with salt",
+			name:      "basic bcrypt",
 			cleartext: "password123",
-			useSalt:   true,
 			cost:      4, // lower cost for faster testing
-			original:  "testuser",
 			wantErr:   false,
 		},
 		{
-			name:      "bcrypt without salt",
-			cleartext: "password123",
-			useSalt:   false,
+			name:      "empty password",
+			cleartext: "",
 			cost:      4,
-			original:  "testuser",
 			wantErr:   false,
 		},
 		{
 			name:      "long password truncation",
 			cleartext: strings.Repeat("a", 100), // > 72 chars
-			useSalt:   true,
 			cost:      4,
-			original:  "testuser",
+			wantErr:   false,
+		},
+		{
+			name:      "different cost factors",
+			cleartext: "password123",
+			cost:      10,
 			wantErr:   false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hash1, err := TransformPasswordBcrypt(tt.cleartext, tt.useSalt, tt.cost, tt.original)
+			hash1, err := TransformPasswordBcrypt(tt.cleartext, tt.cost)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("TransformPasswordBcrypt() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			
 			if !tt.wantErr {
-				// Test deterministic behavior
-				hash2, err := TransformPasswordBcrypt(tt.cleartext, tt.useSalt, tt.cost, tt.original)
+				// Verify it looks like a bcrypt hash
+				if !strings.HasPrefix(hash1, "$2") {
+					t.Errorf("TransformPasswordBcrypt() result should start with $2, got %v", hash1)
+				}
+				
+				// Verify non-determinism: same input should produce different output
+				hash2, err := TransformPasswordBcrypt(tt.cleartext, tt.cost)
 				if err != nil {
 					t.Errorf("TransformPasswordBcrypt() second call error = %v", err)
 					return
 				}
 				
-				if tt.useSalt {
-					// With salt, should be deterministic (same input -> same output)
-					if hash1 != hash2 {
-						t.Errorf("TransformPasswordBcrypt() with salt should be deterministic, got %v != %v", hash1, hash2)
-					}
-				}
-				
-				// Verify it looks like a bcrypt hash
-				if !strings.HasPrefix(hash1, "$2") {
-					t.Errorf("TransformPasswordBcrypt() result should start with $2, got %v", hash1)
+				if hash1 == hash2 {
+					t.Errorf("TransformPasswordBcrypt() should be non-deterministic, but got same hash twice")
 				}
 			}
 		})

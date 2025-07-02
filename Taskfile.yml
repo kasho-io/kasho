@@ -57,8 +57,9 @@ tasks:
 
   test:
     desc: Run all tests (Go services + Next.js apps)
-    deps: [test:go, test:apps]
     cmds:
+      - task: test:go
+      - task: test:apps
       - echo "✅ All tests passed!"
 
   test:go:
@@ -66,24 +67,32 @@ tasks:
     cmds:
       - |
         dirs="{{.SERVICES}} {{.TOOLS}} {{.PACKAGES}} proto/kasho/proto"
+        failed=0
         for dir in $dirs; do
           echo "🧪 Testing $(basename $dir)..."
           if [ -n "$(find "$dir" -name '*_test.go' -print -quit)" ]; then
-            (cd "$dir" && go test -v -race -coverprofile=coverage.out ./... && go tool cover -func=coverage.out)
+            if ! (cd "$dir" && go test -v -race -coverprofile=coverage.out ./... && go tool cover -func=coverage.out); then
+              failed=1
+            fi
           else
             echo "  ⏭️  No test files found, skipping..."
           fi
         done
+        exit $failed
 
   test:apps:
     desc: Run tests for all Next.js apps
     cmds:
       - |
         dirs="{{.APPS}}"
+        failed=0
         for dir in $dirs; do
           echo "🧪 Testing $(basename $dir) app..."
-          (cd "$dir" && npm run test)
+          if ! (cd "$dir" && npm run test); then
+            failed=1
+          fi
         done
+        exit $failed
 
   # Individual component testing (for convenience)
   test:service:*:
