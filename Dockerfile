@@ -100,7 +100,6 @@ RUN chmod +x /app/scripts/*.sh
 COPY environments/demo/config /app/config/demo/
 COPY environments/development/config /app/config/development/
 COPY README.md /app/
-COPY docs/ /app/docs/
 COPY sql/ /app/sql/
 COPY proto/ /app/proto/
 
