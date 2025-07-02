@@ -1,4 +1,4 @@
-version: v1
+major_version: 0
 tables:
   public.users:
     name: FakeName

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"kasho/pkg/version"
 	"kasho/proto"
 
 	"gopkg.in/yaml.v3"
@@ -179,7 +180,11 @@ func (ct *ColumnTransform) UnmarshalYAML(unmarshal func(interface{}) error) erro
 	}
 
 	// The rest is config
-	ct.Config = raw
+	if len(raw) > 0 {
+		ct.Config = raw
+	} else {
+		ct.Config = make(map[string]any)
+	}
 	return nil
 }
 
@@ -188,15 +193,10 @@ type TableConfig map[string]ColumnTransform
 
 // Config represents the entire configuration
 type Config struct {
-	Version string                   `yaml:"version"`
-	Tables  map[string]TableConfig `yaml:"tables"`
+	MajorVersion int                    `yaml:"major_version"`
+	Tables       map[string]TableConfig `yaml:"tables"`
 }
 
-// Supported configuration versions
-const (
-	ConfigVersionV1 = "v1"
-	CurrentVersion  = ConfigVersionV1
-)
 
 // LoadConfig loads the configuration from a YAML file
 func LoadConfig(path string) (*Config, error) {
@@ -220,20 +220,15 @@ func LoadConfig(path string) (*Config, error) {
 
 // validateAndMigrateConfig validates the config version and handles migrations
 func validateAndMigrateConfig(config *Config) error {
-	// Handle legacy configs without version field (assume v1)
-	if config.Version == "" {
-		fmt.Printf("Warning: No version specified in config, assuming %s\n", ConfigVersionV1)
-		config.Version = ConfigVersionV1
+	// Check if major version matches Kasho major version
+	kashoMajorVersion := version.MajorVersion()
+	
+	if config.MajorVersion != kashoMajorVersion {
+		return fmt.Errorf("config major version mismatch: got %d, expected %d (Kasho version %s)", 
+			config.MajorVersion, kashoMajorVersion, version.Version)
 	}
 
-	switch config.Version {
-	case ConfigVersionV1:
-		// Current version, no migration needed
-		return nil
-	default:
-		return fmt.Errorf("unsupported config version: %s (supported: %s)", 
-			config.Version, ConfigVersionV1)
-	}
+	return nil
 }
 
 // GetTransformedValue generates a transformed value for a given table, column, and original value
