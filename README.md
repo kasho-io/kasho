@@ -140,17 +140,23 @@ cd environments/demo && docker-compose up
 
 ## Getting Started
 
-1. Reset and start the development environment. In a dedicated terminal, run:
+1. Generate a development license. In a dedicated terminal, run:
+```bash
+task dev:license
+```
+This will generate a license file and watch for expiration, automatically renewing it every 24 hours.
+
+2. Reset and start the development environment. In another terminal, run:
 ```bash
 task dev:reset
 ```
 
-2. Bootstrap the replica database from the primary. This will create a consistent snapshot and start streaming changes:
+3. Bootstrap the replica database from the primary. This will create a consistent snapshot and start streaming changes:
 ```bash
 task dev:bootstrap
 ```
 
-3. Run the demo app to visualize the replication. In a separate terminal, run:
+4. Run the demo app to visualize the replication. In a separate terminal, run:
 ```bash
 task dev:app:demo
 ```

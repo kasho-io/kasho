@@ -41,7 +41,8 @@ RUN go get github.com/jackc/pglogrepl@v0.0.0-20250509230407-a9884f6bd75a && \
     go get github.com/spf13/cobra@v1.8.1 && \
     go get github.com/brianvoe/gofakeit/v7@v7.0.2 && \
     go get gopkg.in/yaml.v3@v3.0.1 && \
-    go get golang.org/x/crypto@v0.35.0
+    go get golang.org/x/crypto@v0.35.0 && \
+    go get github.com/golang-jwt/jwt/v5@v5.2.0
 
 # Download all dependencies to populate the module cache
 RUN go mod download

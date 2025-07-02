@@ -19,6 +19,7 @@ RUN --mount=type=cache,target=/go/pkg/mod go work sync
 # Build all services and tools with version information
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-change-stream ./services/pg-change-stream/cmd/server
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-translicator ./services/pg-translicator/cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/licensing ./services/licensing/cmd/server
 RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-bootstrap-sync ./tools/pg-bootstrap-sync
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/env-template ./tools/env-template
 
@@ -34,8 +35,8 @@ WORKDIR /app
 COPY . .
 COPY environments/development/.air.toml /app/.air.toml
 
-# Download dependencies with cache mount
-RUN --mount=type=cache,target=/go/pkg/mod go work sync
+# Download dependencies (using base image's module cache)
+RUN go work sync
 
 # Create necessary directories
 RUN mkdir -p /app/bin /app/scripts /data/redis
@@ -43,6 +44,7 @@ RUN mkdir -p /app/bin /app/scripts /data/redis
 # Build essential tools that are needed immediately with version information
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/env-template ./tools/env-template
 RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/pg-bootstrap-sync ./tools/pg-bootstrap-sync
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/licensing ./services/licensing/cmd/server
 
 # Copy all scripts to scripts directory
 COPY scripts/ /app/scripts/
@@ -53,7 +55,7 @@ ENV KV_URL=redis://127.0.0.1:6379
 ENV GO_ENV=development
 
 # Expose common ports
-EXPOSE 8080 6379
+EXPOSE 50051 50052 6379
 
 # Default command starts Redis and can be overridden
 CMD ["sh", "-c", "redis-server --daemonize no --protected-mode no --logfile /dev/stdout --dir /data/redis --dbfilename redis.rdb & sleep 2 && tail -f /dev/null"]
@@ -84,6 +86,7 @@ WORKDIR /app
 # Copy built binaries from builder stage
 COPY --from=builder /bin/pg-change-stream /app/bin/
 COPY --from=builder /bin/pg-translicator /app/bin/
+COPY --from=builder /bin/licensing /app/bin/
 COPY --from=builder /bin/pg-bootstrap-sync /app/bin/
 COPY --from=builder /bin/env-template /app/bin/
 
@@ -113,7 +116,7 @@ ENV GO_ENV=production
 ENV LOG_LEVEL=info
 
 # Expose common ports
-EXPOSE 8080 6379
+EXPOSE 50051 50052 6379
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
