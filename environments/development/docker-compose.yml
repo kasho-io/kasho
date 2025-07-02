@@ -19,6 +19,21 @@ services:
       - redis-data:/data
     command: redis-server --appendonly yes
 
+  licensing:
+    image: kasho
+    command: ["/app/bin/licensing"]
+    ports:
+      - "${LICENSING_PORT:-50052}:50052"
+    environment:
+      - GRPC_PORT=50052
+    volumes:
+      - ./config:/app/config
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50052"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   pg-change-stream:
     image: kasho
     command: ["sh", "-c", "cd /app/services/pg-change-stream && air -c /app/.air.toml"]
@@ -38,6 +53,7 @@ services:
     depends_on:
       - postgres-primary
       - redis
+      - licensing
 
   pg-translicator:
     image: kasho
@@ -53,6 +69,8 @@ services:
         condition: service_healthy
       postgres-replica:
         condition: service_started
+      licensing:
+        condition: service_healthy
 
   postgres-primary:
     image: postgres:17

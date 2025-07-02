@@ -10,6 +10,7 @@ cat << 'EOF'
 SERVICES:
   /app/bin/pg-change-stream     - Start change stream service
   /app/bin/pg-translicator      - Start translicator service
+  /app/bin/licensing            - Start licensing service
 
 SCRIPTS:
   /app/scripts/prepare-primary-db.sh - Setup primary database for Kasho replication

@@ -165,6 +165,12 @@ tasks:
     cmds:
       - cd environments/development && docker-compose exec -e WAIT_FOR_BOOTSTRAP=true pg-change-stream /app/scripts/bootstrap-kasho.sh
 
+  dev:license:
+    desc: Generate development license in watch mode
+    cmds:
+      - echo "🔑 Starting license generator in watch mode..."
+      - go run ./tools/dev-license -output ./environments/development/config/license.jwt -watch -days 1
+
   dev:app:*:
     desc: Start a specific app in development mode
     cmds:
