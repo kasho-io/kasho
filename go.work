@@ -2,11 +2,14 @@ go 1.24.3
 
 use (
 	./pkg/kvbuffer
+	./pkg/license
 	./pkg/types
 	./pkg/version
 	./proto/kasho/proto
+	./services/licensing
 	./services/pg-change-stream
 	./services/pg-translicator
+	./tools/dev-license
 	./tools/env-template
 	./tools/pg-bootstrap-sync
 )
