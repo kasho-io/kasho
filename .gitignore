@@ -36,3 +36,4 @@ combined-coverage.out
 services/*/server
 tools/env-template/env-template
 tools/pg-bootstrap-sync/pg-bootstrap-sync
+tools/test-version/test-version

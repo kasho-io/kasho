@@ -4,6 +4,9 @@
 # Build the base image first (or use pre-built from registry)
 FROM kasho-base AS builder
 
+# Accept LDFLAGS as build argument
+ARG LDFLAGS=""
+
 # Set working directory
 WORKDIR /app
 
@@ -13,14 +16,17 @@ COPY . .
 # Download all dependencies with cache mount
 RUN --mount=type=cache,target=/go/pkg/mod go work sync
 
-# Build all services and tools
-RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/pg-change-stream ./services/pg-change-stream/cmd/server
-RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/pg-translicator ./services/pg-translicator/cmd/server
-RUN CGO_ENABLED=1 GOOS=linux go build -o /bin/pg-bootstrap-sync ./tools/pg-bootstrap-sync
-RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/env-template ./tools/env-template
+# Build all services and tools with version information
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-change-stream ./services/pg-change-stream/cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-translicator ./services/pg-translicator/cmd/server
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-bootstrap-sync ./tools/pg-bootstrap-sync
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/env-template ./tools/env-template
 
 # Development stage with hot reload
 FROM kasho-base AS development
+
+# Accept LDFLAGS as build argument
+ARG LDFLAGS=""
 
 WORKDIR /app
 
@@ -34,9 +40,9 @@ RUN --mount=type=cache,target=/go/pkg/mod go work sync
 # Create necessary directories
 RUN mkdir -p /app/bin /app/scripts /data/redis
 
-# Build essential tools that are needed immediately
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/bin/env-template ./tools/env-template
-RUN CGO_ENABLED=1 GOOS=linux go build -o /app/bin/pg-bootstrap-sync ./tools/pg-bootstrap-sync
+# Build essential tools that are needed immediately with version information
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/env-template ./tools/env-template
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/pg-bootstrap-sync ./tools/pg-bootstrap-sync
 
 # Copy all scripts to scripts directory
 COPY scripts/ /app/scripts/

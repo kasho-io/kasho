@@ -9,6 +9,19 @@ vars:
     sh: find pkg -maxdepth 2 -name go.mod -exec dirname {} \; | sort
   APPS:
     sh: find apps -maxdepth 2 -name package.json -exec dirname {} \; | grep -v node_modules | sort
+  # Version information
+  GIT_TAG:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo "v0.0.0"
+  VERSION:
+    sh: echo "{{.GIT_TAG}}" | sed 's/^v//'  # Strip v prefix for semver compliance
+  COMMIT:
+    sh: git rev-parse HEAD 2>/dev/null || echo "unknown"
+  DATE:
+    sh: date -u +"%Y-%m-%dT%H:%M:%SZ"
+  LDFLAGS: >-
+    -X kasho/pkg/version.Version={{.VERSION}}
+    -X kasho/pkg/version.GitCommit={{.COMMIT}}
+    -X kasho/pkg/version.BuildDate={{.DATE}}
 
 tasks:
   default:
@@ -20,7 +33,7 @@ tasks:
     desc: Build the kasho Docker image for development
     deps: [build:base]
     cmds:
-      - docker build -t kasho --target development .
+      - docker build -t kasho --target development --build-arg LDFLAGS="{{.LDFLAGS}}" .
 
   build:base:
     desc: Build the base image with cached dependencies
@@ -35,7 +48,7 @@ tasks:
     desc: Build the kasho Docker image for production
     deps: [build:base]
     cmds:
-      - docker build -t kasho:prod --target production .
+      - docker build -t kasho:prod --target production --build-arg LDFLAGS="{{.LDFLAGS}}" .
 
   proto:
     desc: Generate Go code from protobuf definitions
@@ -187,4 +200,12 @@ tasks:
     cmds:
       - echo "🔍 Linting {{index .MATCH 0}} app..."
       - cd apps/{{index .MATCH 0}} && npm run lint
+
+  # Version tasks
+  version:
+    desc: Display version information
+    cmds:
+      - "echo Version: {{.VERSION}}"
+      - "echo Commit: {{.COMMIT}}"
+      - "echo Build Date: {{.DATE}}"
 

@@ -7,12 +7,13 @@ import (
 	"testing"
 
 	"kasho/proto"
+
 	"gopkg.in/yaml.v3"
 )
 
 func TestGetTransformedValue(t *testing.T) {
 	config := &Config{
-		Version: ConfigVersionV1,
+		MajorVersion: 0,
 		Tables: map[string]TableConfig{
 			"users": {
 				"name":  {Type: FakeName},
@@ -161,9 +162,9 @@ func TestValidateAndMigrateConfig(t *testing.T) {
 		wantError bool
 	}{
 		{
-			name: "valid v1 config",
+			name: "valid v0 config",
 			config: &Config{
-				Version: ConfigVersionV1,
+				MajorVersion: 0,
 				Tables: map[string]TableConfig{
 					"users": {"name": {Type: FakeName}},
 				},
@@ -171,8 +172,9 @@ func TestValidateAndMigrateConfig(t *testing.T) {
 			wantError: false,
 		},
 		{
-			name: "config without version (legacy)",
+			name: "config with zero major_version (valid for v0)",
 			config: &Config{
+				MajorVersion: 0,
 				Tables: map[string]TableConfig{
 					"users": {"name": {Type: FakeName}},
 				},
@@ -182,7 +184,7 @@ func TestValidateAndMigrateConfig(t *testing.T) {
 		{
 			name: "unsupported version",
 			config: &Config{
-				Version: "v2",
+				MajorVersion: 2,
 				Tables: map[string]TableConfig{
 					"users": {"name": {Type: FakeName}},
 				},
@@ -199,10 +201,6 @@ func TestValidateAndMigrateConfig(t *testing.T) {
 				return
 			}
 
-			// For legacy configs, ensure version was set to v1
-			if tt.name == "config without version (legacy)" && tt.config.Version != ConfigVersionV1 {
-				t.Errorf("Expected version to be set to %s for legacy config, got %s", ConfigVersionV1, tt.config.Version)
-			}
 		})
 	}
 }
@@ -210,15 +208,15 @@ func TestValidateAndMigrateConfig(t *testing.T) {
 func TestLoadConfig(t *testing.T) {
 	// Create a temporary config file for testing
 	tmpDir := t.TempDir()
-	
+
 	tests := []struct {
 		name      string
 		content   string
 		wantError bool
 	}{
 		{
-			name: "valid v1 config file",
-			content: `version: v1
+			name: "valid config file with major_version 0",
+			content: `major_version: 0
 tables:
   users:
     name: FakeName
@@ -226,7 +224,7 @@ tables:
 			wantError: false,
 		},
 		{
-			name: "legacy config file without version",
+			name: "config file without major_version (defaults to 0)",
 			content: `tables:
   users:
     name: FakeName`,
@@ -234,7 +232,7 @@ tables:
 		},
 		{
 			name: "invalid yaml",
-			content: `version: v1
+			content: `major_version: 0
 tables:
   users
     name: FakeName`,
@@ -242,7 +240,7 @@ tables:
 		},
 		{
 			name: "unsupported version",
-			content: `version: v2
+			content: `major_version: 2
 tables:
   users:
     name: FakeName`,
@@ -271,9 +269,6 @@ tables:
 					t.Error("LoadConfig() returned nil config for valid input")
 					return
 				}
-				if config.Version == "" {
-					t.Error("LoadConfig() returned config with empty version")
-				}
 				if config.Tables == nil {
 					t.Error("LoadConfig() returned config with nil tables")
 				}
@@ -292,13 +287,13 @@ tables:
 
 func TestGetFakeValueExtended(t *testing.T) {
 	config := &Config{
-		Version: ConfigVersionV1,
+		MajorVersion: 0,
 		Tables: map[string]TableConfig{
 			"users": {
 				"name":      {Type: FakeName},        // string->string
 				"age":       {Type: FakeYear},        // int->int (Year transform takes int, returns int)
 				"balance":   {Type: FakeCurrency},    // string->string (FakeCurrency is string transform)
-				"active":    {Type: Bool},        // bool->bool (Bool transform takes bool, returns bool)
+				"active":    {Type: Bool},            // bool->bool (Bool transform takes bool, returns bool)
 				"latitude":  {Type: FakeLatitude},    // float64->float64 (FakeLatitude transform takes float64, returns float64)
 				"timestamp": {Type: FakeDateOfBirth}, // string->string (FakeDateOfBirth is string transform)
 			},
@@ -407,7 +402,7 @@ func TestGetFakeValueExtended(t *testing.T) {
 
 func TestTransformChange(t *testing.T) {
 	config := &Config{
-		Version: ConfigVersionV1,
+		MajorVersion: 0,
 		Tables: map[string]TableConfig{
 			"public.users": {
 				"name":  {Type: FakeName},
@@ -529,11 +524,11 @@ func TestTransformChange(t *testing.T) {
 						t.Errorf("Table mismatch: got %s, want %s", dmlData.Table, originalDML.Table)
 					}
 					if len(dmlData.ColumnNames) != len(originalDML.ColumnNames) {
-						t.Errorf("Column names length mismatch: got %d, want %d", 
+						t.Errorf("Column names length mismatch: got %d, want %d",
 							len(dmlData.ColumnNames), len(originalDML.ColumnNames))
 					}
 					if len(dmlData.ColumnValues) != len(originalDML.ColumnValues) {
-						t.Errorf("Column values length mismatch: got %d, want %d", 
+						t.Errorf("Column values length mismatch: got %d, want %d",
 							len(dmlData.ColumnValues), len(originalDML.ColumnValues))
 					}
 				}
@@ -592,12 +587,12 @@ func TestRegexTransform(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			transformFunc := TransformRegex(tt.pattern, tt.replacement)
 			got, err := transformFunc(tt.input)
-			
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("TransformRegex() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if !tt.wantErr && got != tt.want {
 				t.Errorf("TransformRegex() = %v, want %v", got, tt.want)
 			}
@@ -607,7 +602,7 @@ func TestRegexTransform(t *testing.T) {
 
 func TestGetTransformedValueWithRegex(t *testing.T) {
 	config := &Config{
-		Version: ConfigVersionV1,
+		MajorVersion: 0,
 		Tables: map[string]TableConfig{
 			"users": {
 				"phone": {
@@ -672,12 +667,12 @@ func TestGetTransformedValueWithRegex(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetTransformedValue(config, tt.table, tt.column, tt.original, nil)
-			
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetTransformedValue() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetTransformedValue() = %v, want %v", got, tt.want)
 			}
@@ -699,9 +694,9 @@ name: FakeName
 email: FakeEmail
 phone: FakePhone`,
 			want: TableConfig{
-				"name":  {Type: FakeName},
-				"email": {Type: FakeEmail},
-				"phone": {Type: FakePhone},
+				"name":  {Type: FakeName, Config: map[string]any{}},
+				"email": {Type: FakeEmail, Config: map[string]any{}},
+				"phone": {Type: FakePhone, Config: map[string]any{}},
 			},
 		},
 		{
@@ -716,8 +711,8 @@ phone:
   pattern: '\d{3}-\d{3}-\d{4}'
   replacement: 'XXX-XXX-XXXX'`,
 			want: TableConfig{
-				"name":  {Type: FakeName},
-				"email": {Type: FakeEmail},
+				"name":  {Type: FakeName, Config: map[string]any{}},
+				"email": {Type: FakeEmail, Config: map[string]any{}},
 				"phone": {Type: Regex, Config: map[string]any{"pattern": `\d{3}-\d{3}-\d{4}`, "replacement": "XXX-XXX-XXXX"}},
 			},
 		},
@@ -731,9 +726,9 @@ phone:
   replacement: 'XXX'
 email: FakeEmail`,
 			want: TableConfig{
-				"name":  {Type: FakeName},
+				"name":  {Type: FakeName, Config: map[string]any{}},
 				"phone": {Type: Regex, Config: map[string]any{"pattern": `\d+`, "replacement": "XXX"}},
-				"email": {Type: FakeEmail},
+				"email": {Type: FakeEmail, Config: map[string]any{}},
 			},
 		},
 		{
@@ -747,7 +742,7 @@ slug:
   type: Template
   template: '{{.name | lower | slugify}}'`,
 			want: TableConfig{
-				"name":  {Type: FakeName},
+				"name":  {Type: FakeName, Config: map[string]any{}},
 				"email": {Type: Template, Config: map[string]any{"template": "{{.first_name}}.{{.last_name}}@example.com"}},
 				"slug":  {Type: Template, Config: map[string]any{"template": "{{.name | lower | slugify}}"}},
 			},
@@ -758,12 +753,12 @@ slug:
 		t.Run(tt.name, func(t *testing.T) {
 			var got TableConfig
 			err := yaml.Unmarshal([]byte(tt.yaml), &got)
-			
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UnmarshalYAML() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("UnmarshalYAML() = %v, want %v", got, tt.want)
 			}
@@ -773,7 +768,7 @@ slug:
 
 func TestGetTransformedValueWithTemplate(t *testing.T) {
 	config := &Config{
-		Version: ConfigVersionV1,
+		MajorVersion: 0,
 		Tables: map[string]TableConfig{
 			"users": {
 				"email": {
@@ -896,12 +891,12 @@ func TestGetTransformedValueWithTemplate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetTransformedValue(config, tt.table, tt.column, tt.original, dmlData)
-			
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetTransformedValue() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetTransformedValue() = %v, want %v", got, tt.want)
 			}
@@ -911,7 +906,7 @@ func TestGetTransformedValueWithTemplate(t *testing.T) {
 
 func TestGetTransformedValueTemplateErrors(t *testing.T) {
 	config := &Config{
-		Version: ConfigVersionV1,
+		MajorVersion: 0,
 		Tables: map[string]TableConfig{
 			"users": {
 				"email": {
@@ -969,7 +964,7 @@ func TestGetTransformedValueTemplateErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := GetTransformedValue(config, tt.table, tt.column, tt.original, tt.dmlData)
-			
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetTransformedValue() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -979,11 +974,11 @@ func TestGetTransformedValueTemplateErrors(t *testing.T) {
 
 func TestTransformTemplate(t *testing.T) {
 	tests := []struct {
-		name        string
-		template    string
-		row         map[string]*proto.ColumnValue
-		want        string
-		wantErr     bool
+		name     string
+		template string
+		row      map[string]*proto.ColumnValue
+		want     string
+		wantErr  bool
 	}{
 		{
 			name:     "simple field access",
@@ -1099,22 +1094,22 @@ func TestTransformTemplate(t *testing.T) {
 			want: "<no value>",
 		},
 		{
-			name:        "invalid template syntax",
-			template:    "{{.name",
-			row:         map[string]*proto.ColumnValue{},
-			wantErr:     true,
+			name:     "invalid template syntax",
+			template: "{{.name",
+			row:      map[string]*proto.ColumnValue{},
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := TransformTemplate(tt.template, tt.row)
-			
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("TransformTemplate() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if !tt.wantErr && got != tt.want {
 				t.Errorf("TransformTemplate() = %v, want %v", got, tt.want)
 			}
@@ -1124,7 +1119,7 @@ func TestTransformTemplate(t *testing.T) {
 
 func TestTransformChangeWithCrossColumnTemplates(t *testing.T) {
 	config := &Config{
-		Version: ConfigVersionV1,
+		MajorVersion: 0,
 		Tables: map[string]TableConfig{
 			"public.users": {
 				"name": {Type: FakeName},
