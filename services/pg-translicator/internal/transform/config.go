@@ -350,7 +350,8 @@ func GetTransformedValue(c *Config, table string, column string, original *proto
 					cost = int(c)
 				}
 			}
-			hashedPassword, err = TransformPasswordBcrypt(cleartext, useSalt, cost, originalStr)
+			// Note: bcrypt doesn't use useSalt or originalStr - it always generates random salt
+			hashedPassword, err = TransformPasswordBcrypt(cleartext, cost)
 			
 		case PasswordScrypt:
 			n := 131072 // default 2^17

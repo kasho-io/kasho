@@ -200,9 +200,9 @@ Template transforms are processed after all other transforms, allowing them to a
 Password transforms generate cryptographically secure password hashes using industry-standard algorithms. All password transforms support:
 
 - **Template Processing**: The `cleartext` field supports Go template syntax with full row context
-- **Deterministic Hashing**: Same input produces same hash for referential integrity
+- **Deterministic Hashing**: Same input produces same hash for referential integrity (except bcrypt)
 - **Configurable Parameters**: Algorithm-specific settings with secure defaults
-- **Salt Control**: Optional `use_salt` parameter (defaults to true)
+- **Salt Control**: Optional `use_salt` parameter (defaults to true, not applicable to bcrypt)
 
 **Common Configuration:**
 ```yaml
@@ -227,13 +227,14 @@ password:
 **Parameters:**
 - `cost`: Work factor (4-31), higher = more secure but slower. Default: 10
 - `cleartext`: Template or hardcoded password value
-- `use_salt`: Enable deterministic salting (default: true)
 
 **Features:**
-- Built-in salt generation
+- Built-in random salt generation (non-deterministic)
 - 72-byte password limit (longer passwords truncated)
 - Industry standard, widely supported
 - Good balance of security and performance
+
+**Note:** Unlike other password transforms, bcrypt is non-deterministic by design. It generates a random salt for each hash, making every output unique even with identical inputs. The salt is embedded in the hash output, allowing password verification to work correctly.
 
 ### PasswordScrypt
 
@@ -337,11 +338,10 @@ secure_password:
   cleartext: '{{.email | before "@"}}-{{.created_date | year}}'
   n: 1048576  # Higher memory cost
 
-# Testing/development (no salt for consistency)
+# Testing/development (lower cost for speed)
 test_password:
   type: PasswordBcrypt
   cleartext: 'test123'
-  use_salt: false
   cost: 4  # Lower cost for faster testing
 ```
 

@@ -366,20 +366,16 @@ func processPasswordCleartext(cleartext string, row map[string]*proto.ColumnValu
 }
 
 // TransformPasswordBcrypt applies bcrypt hashing to the cleartext
-func TransformPasswordBcrypt(cleartext string, useSalt bool, cost int, original string) (string, error) {
-	// Generate a deterministic "salt" by seeding the random generator
-	// bcrypt generates its own salt internally, but we can make it deterministic
-	// by using a consistent seed based on the original value
-	if useSalt {
-		seed(original) // This affects gofakeit's random generator
-	}
-	
+// Note: Unlike other password transforms, bcrypt is non-deterministic by design.
+// It generates a random salt internally for each hash, making every output unique
+// even with identical inputs. The salt is embedded in the output hash.
+func TransformPasswordBcrypt(cleartext string, cost int) (string, error) {
 	// bcrypt has a maximum password length of 72 bytes
 	if len(cleartext) > 72 {
 		cleartext = cleartext[:72]
 	}
 	
-	// Generate hash
+	// Generate hash with random salt (built into bcrypt)
 	hash, err := bcrypt.GenerateFromPassword([]byte(cleartext), cost)
 	if err != nil {
 		return "", fmt.Errorf("bcrypt hash failed: %w", err)

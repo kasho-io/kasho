@@ -507,6 +507,7 @@ func TestTransformChange(t *testing.T) {
 				}
 				if result == nil {
 					t.Error("Expected result but got nil")
+					return
 				}
 
 				// Verify the change structure is preserved
