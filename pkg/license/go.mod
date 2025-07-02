@@ -6,7 +6,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	google.golang.org/grpc v1.72.1
 	kasho/pkg/version v0.0.0
-	kasho/proto/kasho/proto v0.0.0
+	kasho/proto v0.0.0
 )
 
 require (
@@ -19,5 +19,5 @@ require (
 
 replace (
 	kasho/pkg/version => ../version
-	kasho/proto/kasho/proto => ../../proto/kasho/proto
+	kasho/proto => ../../proto/kasho/proto
 )

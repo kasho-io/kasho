@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"kasho/pkg/kvbuffer"
+	"kasho/pkg/license"
 	"kasho/proto"
 	"pg-change-stream/internal/server"
 
@@ -20,6 +21,22 @@ import (
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	// Initialize license client
+	licenseConfig := &license.Config{
+		Address: os.Getenv("LICENSE_SERVICE_ADDR"),
+	}
+	licenseClient, err := license.NewClient(licenseConfig)
+	if err != nil {
+		log.Fatalf("Failed to create license client: %v", err)
+	}
+	defer licenseClient.Close()
+
+	// Validate license at startup
+	licenseClient.MustValidate(ctx)
+
+	// Start periodic license validation
+	licenseFail := licenseClient.StartPeriodicValidation(ctx, 5*time.Minute)
 
 	kvURL := os.Getenv("KV_URL")
 	if kvURL == "" {
@@ -80,8 +97,12 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		<-sigChan
-		log.Println("Received shutdown signal")
+		select {
+		case <-sigChan:
+			log.Println("Received shutdown signal")
+		case <-licenseFail:
+			log.Println("License validation failed, shutting down")
+		}
 		s.GracefulStop()
 		cancel()
 	}()

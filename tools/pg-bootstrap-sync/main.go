@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
+	"kasho/pkg/license"
 	"pg-bootstrap-sync/internal/bootstrap"
 )
 
@@ -76,6 +77,25 @@ func runBootstrap(cmd *cobra.Command, args []string) error {
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 
+	// Initialize license client
+	licenseConfig := &license.Config{
+		Address: os.Getenv("LICENSE_SERVICE_ADDR"),
+	}
+	licenseClient, err := license.NewClient(licenseConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create license client: %w", err)
+	}
+	defer licenseClient.Close()
+
+	// Set up context with cancellation
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Validate license at startup
+	if err := licenseClient.ValidateLicense(ctx); err != nil {
+		return fmt.Errorf("license validation failed: %w", err)
+	}
+
 	// Log startup configuration
 	slog.Info("Starting pg-bootstrap-sync",
 		"version", "1.0.0",
@@ -109,10 +129,6 @@ func runBootstrap(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create bootstrapper: %w", err)
 	}
 	defer bootstrapper.Close()
-
-	// Set up context with cancellation
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	// Handle graceful shutdown
 	sigChan := make(chan os.Signal, 1)

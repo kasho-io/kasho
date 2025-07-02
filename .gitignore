@@ -28,6 +28,7 @@ docker-compose.override.yml
 coverage.out
 *.coverprofile
 combined-coverage.out
+*.test
 
 # Project specific
 **/tmp/
