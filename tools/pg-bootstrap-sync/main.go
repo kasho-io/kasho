@@ -79,7 +79,7 @@ func runBootstrap(cmd *cobra.Command, args []string) error {
 
 	// Initialize license client
 	licenseConfig := &license.Config{
-		Address: os.Getenv("LICENSE_SERVICE_ADDR"),
+		Address: os.Getenv("LICENSING_SERVICE_ADDR"),
 	}
 	licenseClient, err := license.NewClient(licenseConfig)
 	if err != nil {

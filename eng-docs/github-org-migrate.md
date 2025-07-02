@@ -15,8 +15,9 @@ Moving to a GitHub organization provides better collaboration features and profe
 - [x] Document secret names and values (store securely)
 - [x] Current secrets include:
   - `DROPLET_HOST`, `DROPLET_USERNAME`, `DROPLET_SSH_KEY`
-  - `KV_URL`, `CHANGE_STREAM_SERVICE`
+  - `KV_URL`, `CHANGE_STREAM_SERVICE_ADDR`
   - `PRIMARY_DATABASE_URL`, `REPLICA_DATABASE_URL`
+  - `LICENSING_SERVICE_ADDR`
   - `PRIMARY_DATABASE_SU_USER/PASSWORD/DB`
   - `REPLICA_DATABASE_SU_USER/PASSWORD/DB`
   - `REPO_URL`

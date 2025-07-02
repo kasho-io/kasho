@@ -55,7 +55,7 @@ The easiest way to bootstrap is using the provided script:
 
 ```bash
 # Check `pg-change-stream` status
-grpcurl -plaintext pg-change-stream:8080 kasho.ChangeStreamService/GetStatus
+grpcurl -plaintext pg-change-stream:50051 kasho.ChangeStreamService/GetStatus
 
 # Should show state: WAITING
 ```
@@ -111,7 +111,7 @@ FROM pg_create_logical_replication_slot('kasho_temp_slot', 'pgoutput', true);
 # Tell `pg-change-stream` to create permanent slot and start accumulating
 grpcurl -plaintext \
   -d '{"start_lsn": "<lsn-from-step-1>", "snapshot_name": "<snapshot-from-step-1>"}' \
-  pg-change-stream:8080 \
+  pg-change-stream:50051 \
   kasho.ChangeStreamService/StartBootstrap
 ```
 
@@ -150,7 +150,7 @@ SELECT pg_drop_replication_slot('kasho_temp_slot');
 ```bash
 # Transition to streaming mode
 grpcurl -plaintext \
-  pg-change-stream:8080 \
+  pg-change-stream:50051 \
   kasho.ChangeStreamService/CompleteBootstrap
 ```
 
@@ -162,7 +162,7 @@ During bootstrap, monitor the progress:
 
 ```bash
 # Check current state
-grpcurl -plaintext pg-change-stream:8080 kasho.ChangeStreamService/GetStatus
+grpcurl -plaintext pg-change-stream:50051 kasho.ChangeStreamService/GetStatus
 
 # Watch logs
 docker logs -f pg-change-stream

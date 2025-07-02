@@ -79,8 +79,9 @@ services:
     environment:
       KV_URL: redis://redis:6379
       PRIMARY_DATABASE_URL: ${PRIMARY_DATABASE_URL}
+      LICENSING_SERVICE_ADDR: ${LICENSING_SERVICE_ADDR}
     ports:
-      - "8080:8080"
+      - "50051:50051"
     depends_on:
       - redis
 
@@ -88,7 +89,7 @@ services:
     image: kasho:latest
     command: ./pg-translicator
     environment:
-      CHANGE_STREAM_SERVICE: pg-change-stream:8080
+      CHANGE_STREAM_SERVICE_ADDR: pg-change-stream:50051
       REPLICA_DATABASE_URL: ${REPLICA_DATABASE_URL}
     volumes:
       - ./config:/app/config:ro
@@ -135,7 +136,10 @@ REPLICA_DATABASE_URL=postgresql://kasho:password@target-host:5432/target_db?sslm
 KV_URL=redis://redis:6379
 
 # Change stream service for pg-translicator
-CHANGE_STREAM_SERVICE=pg-change-stream:8080
+CHANGE_STREAM_SERVICE_ADDR=pg-change-stream:50051
+
+# License service address (optional)
+LICENSING_SERVICE_ADDR=license-service:8090
 ```
 
 <div className="alert alert-info mb-4">
@@ -160,7 +164,7 @@ docker-compose ps
 
 You should see:
 - `redis` - Running
-- `pg-change-stream` - Running on port 8080
+- `pg-change-stream` - Running on port 50051
 - `pg-translicator` - Running
 
 ## Production Considerations
@@ -223,7 +227,7 @@ Check that replication is working:
 1. **Check `pg-change-stream` status (using gRPC):**
    ```bash
    # Using grpcurl (install with: brew install grpcurl)
-   grpcurl -plaintext localhost:8080 kasho.ChangeStreamService/GetStatus
+   grpcurl -plaintext localhost:50051 kasho.ChangeStreamService/GetStatus
    ```
 
 2. **View logs:**
