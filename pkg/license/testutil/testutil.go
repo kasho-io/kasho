@@ -8,7 +8,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
-	"kasho/proto/kasho/proto"
+	"kasho/pkg/license"
+	"kasho/proto"
 )
 
 const bufSize = 1024 * 1024
@@ -72,4 +73,22 @@ func StartMockServer(t *testing.T, mockServer *MockLicenseServer) (*grpc.ClientC
 	}
 
 	return conn, cleanup
+}
+
+// NewTestClient creates a license client connected to a mock server for testing
+// Returns the client and a cleanup function
+func NewTestClient(t *testing.T) (*license.Client, func()) {
+	// Start mock server
+	mockServer := &MockLicenseServer{}
+	conn, serverCleanup := StartMockServer(t, mockServer)
+	
+	// Create client using the mock connection
+	client := license.NewClientFromConn(conn)
+	
+	cleanup := func() {
+		client.Close()
+		serverCleanup()
+	}
+	
+	return client, cleanup
 }

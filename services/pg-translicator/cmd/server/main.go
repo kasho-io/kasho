@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	"kasho/pkg/license"
 	"kasho/proto"
 	"pg-translicator/internal/sql"
 	"pg-translicator/internal/transform"
@@ -45,6 +48,25 @@ func connectWithRetry[T any](ctx context.Context, connectFn func() (T, error)) (
 }
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Initialize license client
+	licenseConfig := &license.Config{
+		Address: os.Getenv("LICENSE_SERVICE_ADDR"),
+	}
+	licenseClient, err := license.NewClient(licenseConfig)
+	if err != nil {
+		log.Fatalf("Failed to create license client: %v", err)
+	}
+	defer licenseClient.Close()
+
+	// Validate license at startup
+	licenseClient.MustValidate(ctx)
+
+	// Start periodic license validation
+	licenseFail := licenseClient.StartPeriodicValidation(ctx, 5*time.Minute)
+
 	// Use hardcoded config directory path - expects mounted /app/config directory
 	configFile := "/app/config/transforms.yml"
 	
@@ -71,9 +93,6 @@ func main() {
 	if dbConnStr == "" {
 		log.Fatal("REPLICA_DATABASE_URL environment variable is required")
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	db, err := connectWithRetry(ctx, func() (*dbsql.DB, error) {
 		log.Printf("Connecting to replica database ...")
@@ -138,24 +157,45 @@ func main() {
 
 	streamClient := proto.NewChangeStreamClient(client)
 
-	for {
-		// Check if replica database has any user tables to determine starting LSN
-		lastLsn := determineStartingLSN(db)
-		log.Printf("Starting stream from LSN: %s", lastLsn)
-		
-		stream, err := streamClient.Stream(ctx, &proto.StreamRequest{LastLsn: lastLsn})
-		if err != nil {
-			log.Printf("Failed to start stream: %v", err)
-			time.Sleep(time.Second)
-			continue
+	// Handle shutdown signals and license failures
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	
+	go func() {
+		select {
+		case <-sigChan:
+			log.Println("Received shutdown signal")
+			cancel()
+		case <-licenseFail:
+			log.Println("License validation failed, shutting down")
+			cancel()
 		}
+	}()
 
+	// Main replication loop
+	go func() {
 		for {
-			change, err := stream.Recv()
-			if err != nil {
-				log.Printf("Error receiving change: %v", err)
-				break
-			}
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				// Check if replica database has any user tables to determine starting LSN
+				lastLsn := determineStartingLSN(db)
+				log.Printf("Starting stream from LSN: %s", lastLsn)
+				
+				stream, err := streamClient.Stream(ctx, &proto.StreamRequest{LastLsn: lastLsn})
+				if err != nil {
+					log.Printf("Failed to start stream: %v", err)
+					time.Sleep(time.Second)
+					continue
+				}
+
+				for {
+					change, err := stream.Recv()
+					if err != nil {
+						log.Printf("Error receiving change: %v", err)
+						break
+					}
 
 			transformedChange, err := transform.TransformChange(config, change)
 			if err != nil {
@@ -200,9 +240,15 @@ func main() {
 				hasInserts = true
 			}
 
-			log.Printf("%s (%s): %s", change.Lsn, change.Type, stmt)
+					log.Printf("%s (%s): %s", change.Lsn, change.Type, stmt)
+				}
+			}
 		}
-	}
+	}()
+
+	// Wait for shutdown
+	<-ctx.Done()
+	log.Println("Shutting down pg-translicator")
 }
 
 // determineStartingLSN checks if the replica has any user tables

@@ -9,7 +9,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"kasho/proto/kasho/proto"
+	"kasho/proto"
 )
 
 const (
@@ -20,20 +20,17 @@ const (
 
 // Client provides methods to interact with the licensing service
 type Client struct {
-	conn         *grpc.ClientConn
-	client       proto.LicenseClient
-	cacheMu      sync.RWMutex
-	cachedInfo   *proto.GetLicenseInfoResponse
-	cacheTime    time.Time
-	allowOffline bool
+	conn       *grpc.ClientConn
+	client     proto.LicenseClient
+	cacheMu    sync.RWMutex
+	cachedInfo *proto.GetLicenseInfoResponse
+	cacheTime  time.Time
 }
 
 // Config holds configuration for the license client
 type Config struct {
 	// Address of the licensing service (defaults to "licensing:50053")
 	Address string
-	// AllowOffline allows the service to continue if licensing service is unavailable (for development)
-	AllowOffline bool
 	// Timeout for RPC calls (defaults to 5 seconds)
 	Timeout time.Duration
 }
@@ -54,20 +51,22 @@ func NewClient(cfg *Config) (*Client, error) {
 
 	conn, err := grpc.Dial(cfg.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		if cfg.AllowOffline {
-			log.Printf("Warning: Failed to connect to licensing service at %s: %v (continuing in offline mode)", cfg.Address, err)
-			return &Client{
-				allowOffline: true,
-			}, nil
-		}
 		return nil, fmt.Errorf("failed to connect to licensing service: %w", err)
 	}
 
 	return &Client{
-		conn:         conn,
-		client:       proto.NewLicenseClient(conn),
-		allowOffline: cfg.AllowOffline,
+		conn:   conn,
+		client: proto.NewLicenseClient(conn),
 	}, nil
+}
+
+// NewClientFromConn creates a new license client from an existing gRPC connection
+// This is primarily used for testing
+func NewClientFromConn(conn *grpc.ClientConn) *Client {
+	return &Client{
+		conn:   conn,
+		client: proto.NewLicenseClient(conn),
+	}
 }
 
 // Close closes the connection to the licensing service
@@ -80,11 +79,6 @@ func (c *Client) Close() error {
 
 // ValidateLicense checks if the current license is valid
 func (c *Client) ValidateLicense(ctx context.Context) error {
-	if c.allowOffline && c.client == nil {
-		log.Println("Warning: Running in offline mode, license validation skipped")
-		return nil
-	}
-
 	if ctx == nil {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(context.Background(), defaultTimeout)
@@ -93,10 +87,6 @@ func (c *Client) ValidateLicense(ctx context.Context) error {
 
 	resp, err := c.client.ValidateLicense(ctx, &proto.ValidateLicenseRequest{})
 	if err != nil {
-		if c.allowOffline {
-			log.Printf("Warning: License validation failed: %v (continuing in offline mode)", err)
-			return nil
-		}
 		return fmt.Errorf("license validation failed: %w", err)
 	}
 
@@ -122,13 +112,6 @@ func (c *Client) ValidateLicense(ctx context.Context) error {
 
 // GetLicenseInfo returns information about the current license (with caching)
 func (c *Client) GetLicenseInfo(ctx context.Context) (*proto.GetLicenseInfoResponse, error) {
-	if c.allowOffline && c.client == nil {
-		return &proto.GetLicenseInfoResponse{
-			Valid:        true,
-			CustomerName: "Development Mode",
-		}, nil
-	}
-
 	// Check cache
 	c.cacheMu.RLock()
 	if c.cachedInfo != nil && time.Since(c.cacheTime) < cacheExpiry {
@@ -147,13 +130,6 @@ func (c *Client) GetLicenseInfo(ctx context.Context) (*proto.GetLicenseInfoRespo
 
 	resp, err := c.client.GetLicenseInfo(ctx, &proto.GetLicenseInfoRequest{})
 	if err != nil {
-		if c.allowOffline {
-			log.Printf("Warning: Failed to get license info: %v (returning offline mode info)", err)
-			return &proto.GetLicenseInfoResponse{
-				Valid:        true,
-				CustomerName: "Development Mode",
-			}, nil
-		}
 		return nil, fmt.Errorf("failed to get license info: %w", err)
 	}
 
@@ -171,4 +147,30 @@ func (c *Client) MustValidate(ctx context.Context) {
 	if err := c.ValidateLicense(ctx); err != nil {
 		log.Fatalf("License validation failed: %v", err)
 	}
+}
+
+// StartPeriodicValidation starts a goroutine that periodically validates the license
+// Returns a channel that will be closed when validation fails
+func (c *Client) StartPeriodicValidation(ctx context.Context, interval time.Duration) <-chan struct{} {
+	failChan := make(chan struct{})
+	
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		defer close(failChan)
+		
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := c.ValidateLicense(ctx); err != nil {
+					log.Printf("License validation failed: %v", err)
+					return
+				}
+			}
+		}
+	}()
+	
+	return failChan
 }
