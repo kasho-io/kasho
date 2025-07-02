@@ -1,4 +1,7 @@
 
+-- Suppress row count output for INSERT statements
+\set QUIET 1
+
 CREATE TABLE organizations (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL,
