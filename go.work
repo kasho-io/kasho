@@ -9,7 +9,7 @@ use (
 	./services/licensing
 	./services/pg-change-stream
 	./services/pg-translicator
-	./tools/dev-license
+	./tools/generate-license
 	./tools/env-template
 	./tools/pg-bootstrap-sync
 )

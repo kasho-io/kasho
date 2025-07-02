@@ -7,15 +7,16 @@ import (
 	"sync"
 	"time"
 
+	"kasho/proto"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"kasho/proto"
 )
 
 const (
-	defaultTimeout      = 5 * time.Second
-	cacheExpiry         = 5 * time.Minute
-	defaultLicenseAddr  = "licensing:50052"
+	defaultTimeout     = 5 * time.Second
+	cacheExpiry        = 5 * time.Minute
+	defaultLicenseAddr = "licensing:50052"
 )
 
 // Client provides methods to interact with the licensing service
@@ -94,17 +95,23 @@ func (c *Client) ValidateLicense(ctx context.Context) error {
 		return fmt.Errorf("license is invalid: %s", resp.Reason)
 	}
 
-	// Log successful validation with expiry info
+	// Get license info to include customer name in logs
+	info, err := c.GetLicenseInfo(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get license info: %w", err)
+	}
+
+	// Log successful validation with customer name and expiry info
 	if resp.ExpiresAt > 0 {
 		expiresAt := time.Unix(resp.ExpiresAt, 0)
 		daysUntilExpiry := time.Until(expiresAt).Hours() / 24
 		if daysUntilExpiry < 30 {
-			log.Printf("Warning: License expires in %.0f days on %s", daysUntilExpiry, expiresAt.Format(time.RFC3339))
+			log.Printf("Warning: License for %s expires in %.0f days on %s", info.CustomerName, daysUntilExpiry, expiresAt.Format(time.RFC3339))
 		} else {
-			log.Printf("License validated successfully, expires in %.0f days", daysUntilExpiry)
+			log.Printf("License validated successfully for %s, expires in %.0f days", info.CustomerName, daysUntilExpiry)
 		}
 	} else {
-		log.Printf("License validated successfully")
+		log.Printf("License validated successfully for %s, no expiration", info.CustomerName)
 	}
 
 	return nil
@@ -153,12 +160,12 @@ func (c *Client) MustValidate(ctx context.Context) {
 // Returns a channel that will be closed when validation fails
 func (c *Client) StartPeriodicValidation(ctx context.Context, interval time.Duration) <-chan struct{} {
 	failChan := make(chan struct{})
-	
+
 	go func() {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 		defer close(failChan)
-		
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -171,6 +178,6 @@ func (c *Client) StartPeriodicValidation(ctx context.Context, interval time.Dura
 			}
 		}
 	}()
-	
+
 	return failChan
 }

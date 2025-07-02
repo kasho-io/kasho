@@ -1,4 +1,4 @@
-module kasho/tools/dev-license
+module kasho/tools/generate-license
 
 go 1.24.3
 

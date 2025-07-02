@@ -27,6 +27,12 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - Supports custom transformation rules
 - Integrates with external systems
 
+#### licensing (`services/licensing/`)
+- gRPC service for license validation
+- JWT-based license verification with RSA signatures
+- Provides license validation and information endpoints
+- Used by all other services to enforce licensing
+
 ### Environments
 
 #### Development (`environments/development/`)
@@ -51,6 +57,9 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - `generate-fake-saas-data`: Utility for generating realistic SaaS application test data
   - Creates sample organizations, users, subscriptions, and related data
   - Used for populating test databases with realistic data
+- `generate-license`: License generation tool for creating JWT-based licenses
+  - Requires a private key file (obtain from authorized source)
+  - Private keys must never be committed to the repository
 
 ### Shared Packages (`pkg/`)
 - `kvbuffer`: Shared Redis-based buffer for change events
@@ -61,6 +70,12 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
   - JSON marshaling wrappers for protobuf types
   - Shared data structures across services
   - Type conversion utilities for database change events
+- `license`: License validation and client library
+  - JWT-based license validation with RSA signatures
+  - Client library for services to validate licenses
+  - Periodic validation with graceful shutdown
+- `version`: Build version information package
+  - Embeds version, commit, and build date at compile time
 
 ### SQL (`sql/`)
 - Scripts that will be needed to get a Postgres server ready to use kasho
@@ -140,11 +155,26 @@ cd environments/demo && docker-compose up
 
 ## Getting Started
 
-1. Generate a development license. In a dedicated terminal, run:
+1. Generate a development license (requires private key file):
 ```bash
-task dev:license
+# Note: You need to obtain the private key file from an authorized source
+
+# Generate a 30-day license
+go run ./tools/generate-license \
+  -private-key /path/to/private-key.pem \
+  -customer-id "dev-customer" \
+  -customer-name "Development Customer" \
+  -output ./environments/development/config/license.jwt \
+  -days 30
+
+# Generate a non-expiring license
+go run ./tools/generate-license \
+  -private-key /path/to/private-key.pem \
+  -customer-id "dev-customer" \
+  -customer-name "Development Customer" \
+  -output ./environments/development/config/license.jwt \
+  -no-expiration
 ```
-This will generate a license file and watch for expiration, automatically renewing it every 24 hours.
 
 2. Reset and start the development environment. In another terminal, run:
 ```bash

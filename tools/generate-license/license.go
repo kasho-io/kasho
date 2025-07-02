@@ -36,15 +36,19 @@ func ParsePrivateKey(pemData string) (*rsa.PrivateKey, error) {
 func GenerateToken(privateKey *rsa.PrivateKey, customerID, customerName string, issuedAt, expiresAt time.Time) (string, error) {
 	claims := license.Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "kasho.io",
-			Subject:   customerID,
-			IssuedAt:  jwt.NewNumericDate(issuedAt),
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			Issuer:   "kasho.io",
+			Subject:  customerID,
+			IssuedAt: jwt.NewNumericDate(issuedAt),
 		},
 		Name: customerName,
 		Kasho: license.KashoClaims{
 			MajorVersion: version.MajorVersion(),
 		},
+	}
+
+	// Only set ExpiresAt if it's not the zero value
+	if !expiresAt.IsZero() {
+		claims.RegisteredClaims.ExpiresAt = jwt.NewNumericDate(expiresAt)
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)

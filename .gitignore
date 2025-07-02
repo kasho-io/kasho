@@ -34,9 +34,12 @@ combined-coverage.out
 **/tmp/
 .task/
 
+*.pem
+
 environments/*/config/license.jwt
 services/*/server
 tools/env-template/env-template
 tools/pg-bootstrap-sync/pg-bootstrap-sync
 tools/test-version/test-version
-tools/dev-license/dev-license
+tools/generate-license/generate-license
+
