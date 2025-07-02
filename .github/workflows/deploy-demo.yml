@@ -169,7 +169,7 @@ jobs:
             # Wait for pg-change-stream to be ready
             echo "⏳ Waiting for pg-change-stream to be ready..."
             for i in {1..30}; do
-              if docker exec demo-pg-change-stream-1 nc -z localhost 8080 2>/dev/null; then
+              if docker exec demo-pg-change-stream-1 nc -z localhost 50051 2>/dev/null; then
                 echo "✅ pg-change-stream is ready"
                 break
               fi
@@ -195,7 +195,7 @@ jobs:
               --network demo_default \
               -e PRIMARY_DATABASE_URL="${{ secrets.PRIMARY_DATABASE_URL }}" \
               -e KV_URL="${{ secrets.KV_URL }}" \
-              -e CHANGE_STREAM_SERVICE="pg-change-stream:8080" \
+              -e CHANGE_STREAM_SERVICE="pg-change-stream:50051" \
               -e REPLICATION_SLOT_NAME="kasho_slot" \
               -e WAIT_FOR_BOOTSTRAP="true" \
               kasho:prod \

@@ -24,13 +24,13 @@ services:
     image: kasho
     command: ["/app/bin/pg-change-stream"]
     ports:
-      - "${CHANGE_STREAM_PORT:-8080}:8080"
+      - "${CHANGE_STREAM_PORT:-50051}:50051"
     env_file:
       - .env
     volumes:
       - redis-data:/data/redis
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "8080"]
+      test: ["CMD", "nc", "-z", "localhost", "50051"]
       interval: 5s
       timeout: 3s
       retries: 5

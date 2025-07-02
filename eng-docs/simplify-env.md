@@ -13,12 +13,12 @@ Currently, Kasho uses decomposed environment variables:
 
 Simplified URL-based configuration:
 - **pg-change-stream**: `KV_URL`, `PRIMARY_DATABASE_URL`
-- **pg-translicator**: `CHANGE_STREAM_SERVICE`, `REPLICA_DATABASE_URL`
+- **pg-translicator**: `CHANGE_STREAM_SERVICE_ADDR`, `REPLICA_DATABASE_URL`
 
 Where:
 - `PRIMARY_DATABASE_URL`: `postgresql://kasho_user:password@host:port/dbname?sslmode=disable`
 - `REPLICA_DATABASE_URL`: `postgresql://kasho_user:password@host:port/dbname?sslmode=disable`
-- `CHANGE_STREAM_SERVICE`: `pg-change-stream:8080` (host:port format)
+- `CHANGE_STREAM_SERVICE_ADDR`: `pg-change-stream:50051` (host:port format)
 
 ## Implementation Plan
 
@@ -33,7 +33,7 @@ Where:
 
 #### pg-translicator Service
 - [x] Modify configuration loading to accept `REPLICA_DATABASE_URL`
-- [x] Modify configuration loading to accept `CHANGE_STREAM_SERVICE`
+- [x] Modify configuration loading to accept `CHANGE_STREAM_SERVICE_ADDR`
 - [x] Parse database URL to extract connection parameters
 - [x] Parse service address to extract host and port
 - [x] Maintain backward compatibility with decomposed variables

@@ -198,7 +198,8 @@ set -euo pipefail
 # Configuration from environment or defaults
 PRIMARY_DATABASE_URL="${PRIMARY_DATABASE_URL:-postgresql://kasho:kasho@postgres-primary:5432/primary_db?sslmode=disable}"
 KV_URL="${KV_URL:-redis://redis:6379}"
-CHANGE_STREAM_SERVICE="${CHANGE_STREAM_SERVICE:-pg-change-stream:8080}"
+CHANGE_STREAM_SERVICE_ADDR="${CHANGE_STREAM_SERVICE_ADDR:-pg-change-stream:50051}"
+LICENSING_SERVICE_ADDR="${LICENSING_SERVICE_ADDR:-license-service:50052}"
 REPLICATION_SLOT_NAME="${REPLICATION_SLOT_NAME:-kasho_slot}"
 
 echo "Starting Kasho bootstrap process..."
@@ -232,7 +233,7 @@ fi
 echo "Starting change accumulation..."
 grpcurl -plaintext \
   -d "{\"start_lsn\": \"$START_LSN\"}" \
-  "$CHANGE_STREAM_SERVICE" change_stream.ChangeStream/StartBootstrap
+  "$CHANGE_STREAM_SERVICE_ADDR" change_stream.ChangeStream/StartBootstrap
 
 # Step 3: Take database dump
 echo "Dumping database (this may take a while)..."
@@ -262,7 +263,7 @@ if [[ "${WAIT_FOR_COMPLETION:-false}" == "true" ]]; then
   echo "Bootstrap complete!"
   
   # Optional: Signal streaming mode
-  # grpcurl -plaintext "$CHANGE_STREAM_HOST" change_stream.ChangeStream/CompleteBootstrap
+  # grpcurl -plaintext "$CHANGE_STREAM_SERVICE_ADDR" change_stream.ChangeStream/CompleteBootstrap
 fi
 ```
 
@@ -279,7 +280,8 @@ docker exec -it kasho bootstrap-kasho.sh
 docker exec -it kasho \
   -e PRIMARY_DATABASE_URL="postgresql://kasho:kasho@primary:5432/mydb?sslmode=disable" \
   -e KV_URL="redis://redis:6379" \
-  -e CHANGE_STREAM_SERVICE="pg-change-stream:8080" \
+  -e CHANGE_STREAM_SERVICE_ADDR="pg-change-stream:50051" \
+  -e LICENSING_SERVICE_ADDR="license-service:8090" \
   bootstrap-kasho.sh
 
 # Note: Replace 'kasho' with your actual container name if different

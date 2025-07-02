@@ -29,7 +29,7 @@ EXAMPLES:
   docker run --rm --network <network-name> \
     -e PRIMARY_DATABASE_URL="postgresql://..." \
     -e KV_URL="redis://..." \
-    -e CHANGE_STREAM_SERVICE="pg-change-stream:8080" \
+    -e CHANGE_STREAM_SERVICE_ADDR="pg-change-stream:50051" \
     kasho /app/scripts/bootstrap-kasho.sh
 
 BOOTSTRAP WORKFLOW:
@@ -51,11 +51,15 @@ pg-change-stream service:
                           Example: postgresql://user:pass@host:5432/db?sslmode=disable
 
 pg-translicator service:
-  CHANGE_STREAM_SERVICE  - Change stream service address
-                          Example: pg-change-stream:8080
+  CHANGE_STREAM_SERVICE_ADDR - Change stream service address
+                              Example: pg-change-stream:50051
   
-  REPLICA_DATABASE_URL   - Replica database connection URL
-                          Example: postgresql://user:pass@host:5432/db?sslmode=disable
+  REPLICA_DATABASE_URL       - Replica database connection URL
+                              Example: postgresql://user:pass@host:5432/db?sslmode=disable
+
+All services:
+  LICENSING_SERVICE_ADDR     - License service address
+                              Example: licensing:50052
 
 URL FORMATS:
   Database URLs: postgresql://[user[:password]@][host][:port][/database][?param=value&...]

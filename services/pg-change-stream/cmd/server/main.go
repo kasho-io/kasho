@@ -24,7 +24,7 @@ func main() {
 
 	// Initialize license client
 	licenseConfig := &license.Config{
-		Address: os.Getenv("LICENSE_SERVICE_ADDR"),
+		Address: os.Getenv("LICENSING_SERVICE_ADDR"),
 	}
 	licenseClient, err := license.NewClient(licenseConfig)
 	if err != nil {
@@ -82,10 +82,17 @@ func main() {
 	changeStreamServer.SetState(state)
 	log.Printf("Starting in %s state", state.Current)
 	
-	lis, err := net.Listen("tcp", ":8080")
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+	// Get gRPC port from environment or use default
+	port := os.Getenv("GRPC_PORT")
+	if port == "" {
+		port = "50051"
 	}
+	
+	lis, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		log.Fatalf("failed to listen on port %s: %v", port, err)
+	}
+	log.Printf("gRPC server listening on port %s", port)
 	s := grpc.NewServer()
 	proto.RegisterChangeStreamServer(s, changeStreamServer)
 	go func() {

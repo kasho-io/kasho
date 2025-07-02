@@ -15,7 +15,7 @@ import (
 const (
 	defaultTimeout      = 5 * time.Second
 	cacheExpiry         = 5 * time.Minute
-	defaultLicenseAddr  = "licensing:50053"
+	defaultLicenseAddr  = "licensing:50052"
 )
 
 // Client provides methods to interact with the licensing service
@@ -29,7 +29,7 @@ type Client struct {
 
 // Config holds configuration for the license client
 type Config struct {
-	// Address of the licensing service (defaults to "licensing:50053")
+	// Address of the licensing service (defaults to "licensing:50052")
 	Address string
 	// Timeout for RPC calls (defaults to 5 seconds)
 	Timeout time.Duration

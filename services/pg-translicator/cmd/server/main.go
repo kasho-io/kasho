@@ -53,7 +53,7 @@ func main() {
 
 	// Initialize license client
 	licenseConfig := &license.Config{
-		Address: os.Getenv("LICENSE_SERVICE_ADDR"),
+		Address: os.Getenv("LICENSING_SERVICE_ADDR"),
 	}
 	licenseClient, err := license.NewClient(licenseConfig)
 	if err != nil {
@@ -141,9 +141,9 @@ func main() {
 		}
 	}()
 
-	serverAddr := os.Getenv("CHANGE_STREAM_SERVICE")
+	serverAddr := os.Getenv("CHANGE_STREAM_SERVICE_ADDR")
 	if serverAddr == "" {
-		log.Fatal("CHANGE_STREAM_SERVICE environment variable is required")
+		log.Fatal("CHANGE_STREAM_SERVICE_ADDR environment variable is required")
 	}
 	client, err := connectWithRetry(ctx, func() (*grpc.ClientConn, error) {
 		log.Printf("Connecting to change stream service ...")

@@ -28,6 +28,12 @@ Kasho uses environment variables for service configuration and a YAML file for t
       <td><span className="badge badge-error">Yes</span></td>
       <td><code>postgresql://user:pass@host:5432/db</code></td>
     </tr>
+    <tr>
+      <td><code>LICENSING_SERVICE_ADDR</code></td>
+      <td>Licensing service address</td>
+      <td><span className="badge badge-error">Yes</span></td>
+      <td><code>licensing:50052</code></td>
+    </tr>
   </tbody>
 </table>
 
@@ -44,10 +50,10 @@ Kasho uses environment variables for service configuration and a YAML file for t
   </thead>
   <tbody>
     <tr>
-      <td><code>CHANGE_STREAM_SERVICE</code></td>
+      <td><code>CHANGE_STREAM_SERVICE_ADDR</code></td>
       <td>`pg-change-stream` service address</td>
       <td><span className="badge badge-error">Yes</span></td>
-      <td><code>pg-change-stream:8080</code></td>
+      <td><code>pg-change-stream:50051</code></td>
     </tr>
     <tr>
       <td><code>REPLICA_DATABASE_URL</code></td>
@@ -55,8 +61,37 @@ Kasho uses environment variables for service configuration and a YAML file for t
       <td><span className="badge badge-error">Yes</span></td>
       <td><code>postgresql://user:pass@host:5432/db</code></td>
     </tr>
+    <tr>
+      <td><code>LICENSING_SERVICE_ADDR</code></td>
+      <td>Licensing service address</td>
+      <td><span className="badge badge-error">Yes</span></td>
+      <td><code>licensing:50052</code></td>
+    </tr>
   </tbody>
 </table>
+
+### `pg-bootstrap-sync` Configuration
+
+<table className="table table-zebra w-full">
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Description</th>
+      <th>Required</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>LICENSING_SERVICE_ADDR</code></td>
+      <td>Licensing service address</td>
+      <td><span className="badge badge-error">Yes</span></td>
+      <td><code>licensing:50052</code></td>
+    </tr>
+  </tbody>
+</table>
+
+**Note**: `pg-bootstrap-sync` also uses command-line flags for configuration. See the [Bootstrap Process](/installation/bootstrap) guide for details.
 
 ## Database URL Format
 
@@ -156,7 +191,7 @@ The key requirement is that `transforms.yml` must be available at `/app/config/t
 3. **Monitoring**
    - Set meaningful `application_name` in URLs
    - Monitor replication slot status: `SELECT * FROM pg_replication_slots WHERE slot_name = 'kasho_slot'`
-   - Check pg-change-stream status: `grpcurl -plaintext <host>:8080 kasho.ChangeStreamService/GetStatus`
+   - Check pg-change-stream status: `grpcurl -plaintext <host>:50051 kasho.ChangeStreamService/GetStatus`
    - Check service logs regularly
 
 ## Next Steps
