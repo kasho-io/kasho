@@ -1,0 +1,71 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Launch Kasho",
+      "dependsOn": [
+        "dev:reset",
+        "dev:app:homepage",
+        "dev:app:docs",
+        "dev:app:demo",
+        "kasho shell"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "dev:reset",
+      "type": "shell",
+      "command": "task dev:reset",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+      },
+      "isBackground": true,
+    },
+    {
+      "label": "dev:app:homepage",
+      "type": "shell",
+      "command": "task dev:app:homepage",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+      },
+      "isBackground": true,
+    },
+    {
+      "label": "dev:app:docs",
+      "type": "shell",
+      "command": "task dev:app:docs",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+      },
+      "isBackground": true,
+    },
+    {
+      "label": "dev:app:demo",
+      "type": "shell",
+      "command": "task dev:app:demo",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+      },
+      "isBackground": true,
+    },
+    {
+      "label": "kasho shell",
+      "type": "shell",
+      "command": "echo 'You probably want to run \"task dev:bootstrap\" once things are up and running'; zsh",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "echo": false,
+        "focus": true,
+      },
+      "isBackground": true,
+    },
+  ]
+}
