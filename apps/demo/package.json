@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test": "npm run lint && npx tsc --noEmit",
     "test:ci": "npm run test",
+    "type-check": "npx tsc --noEmit",
     "prettier": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "dependencies": {
@@ -20,8 +21,5 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
-  "devDependencies": {
-    "@types/react": "19.1.8",
-    "typescript": "5.8.3"
-  }
+  "devDependencies": {}
 }

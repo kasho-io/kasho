@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "echo \"No tests yet\" && exit 0",
+    "type-check": "npx tsc --noEmit",
     "prettier": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "dependencies": {
