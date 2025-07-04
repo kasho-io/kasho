@@ -3,4 +3,4 @@ export const USER_TABLE_QUERY = `
   FROM users
   ORDER BY id ASC
   LIMIT 5
-`; 
+`;

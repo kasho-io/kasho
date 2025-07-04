@@ -8,5 +8,6 @@
   "tailwindCSS.experimental.classRegex": [
     ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
     ["className\\s*=\\s*{([^}]*)}", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
-  ]
+  ],
+  "prettier.configPath": ".prettierrc"
 }

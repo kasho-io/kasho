@@ -21,9 +21,7 @@ const navigation = [
   },
   {
     title: "Configuration Reference",
-    items: [
-      { title: "Transform Configuration", href: "/configuration/transforms" },
-    ],
+    items: [{ title: "Transform Configuration", href: "/configuration/transforms" }],
   },
 ];
 
@@ -37,22 +35,22 @@ export function Navigation() {
           Kasho Docs
         </Link>
       </div>
-      
+
       <nav className="flex-1 overflow-y-auto px-4 pb-4">
         <div className="space-y-8">
           {navigation.map((section) => (
-          <div key={section.title}>
-            <h3 className="font-semibold text-xs uppercase tracking-wider text-base-content/60 mb-3">
-              {section.title}
-            </h3>
-            <ul className="space-y-0.5">
-              {section.items.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={`
+            <div key={section.title}>
+              <h3 className="font-semibold text-xs uppercase tracking-wider text-base-content/60 mb-3">
+                {section.title}
+              </h3>
+              <ul className="space-y-0.5">
+                {section.items.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        className={`
                         block px-3 py-1.5 rounded-md text-sm transition-colors
                         ${
                           isActive
@@ -60,15 +58,15 @@ export function Navigation() {
                             : "text-base-content/80 hover:text-base-content hover:bg-base-300/50"
                         }
                       `}
-                    >
-                      {item.title}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
+                      >
+                        {item.title}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </div>
       </nav>
     </aside>

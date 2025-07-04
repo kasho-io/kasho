@@ -1,6 +1,6 @@
 # kasho homepage
 
-This is the homepage app. 
+This is the homepage app.
 
 ## Getting Started
 

@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 vars:
   SERVICES:
@@ -13,7 +13,7 @@ vars:
   GIT_TAG:
     sh: git describe --tags --always --dirty 2>/dev/null || echo "v0.0.0"
   VERSION:
-    sh: echo "{{.GIT_TAG}}" | sed 's/^v//'  # Strip v prefix for semver compliance
+    sh: echo "{{.GIT_TAG}}" | sed 's/^v//' # Strip v prefix for semver compliance
   COMMIT:
     sh: git rev-parse HEAD 2>/dev/null || echo "unknown"
   DATE:
@@ -165,7 +165,6 @@ tasks:
     cmds:
       - cd environments/development && docker-compose exec -e WAIT_FOR_BOOTSTRAP=true pg-change-stream /app/scripts/bootstrap-kasho.sh
 
-
   dev:app:*:
     desc: Start a specific app in development mode
     cmds:
@@ -212,6 +211,24 @@ tasks:
       - echo "🔍 Linting {{index .MATCH 0}} app..."
       - cd apps/{{index .MATCH 0}} && npm run lint
 
+  # Install tasks
+  install:
+    desc: Install all dependencies for root and apps
+    cmds:
+      - npm install
+
+  # Prettier tasks
+  prettier:
+    desc: Run prettier for all applications
+    cmds:
+      - npm run prettier
+
+  prettier:app:*:
+    desc: Run prettier for a specific app
+    cmds:
+      - echo "🎨 Formatting {{index .MATCH 0}} app..."
+      - cd apps/{{index .MATCH 0}} && npm run prettier
+
   # Version tasks
   version:
     desc: Display version information
@@ -219,4 +236,3 @@ tasks:
       - "echo Version: {{.VERSION}}"
       - "echo Commit: {{.COMMIT}}"
       - "echo Build Date: {{.DATE}}"
-
