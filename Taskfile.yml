@@ -217,6 +217,13 @@ tasks:
     cmds:
       - npm install
 
+  install:app:*:
+    desc: Install dependencies for root and a specific app (CI-friendly)
+    cmds:
+      - echo "📦 Installing dependencies for {{index .MATCH 0}} app..."
+      - npm ci
+      - cd apps/{{index .MATCH 0}} && npm ci
+
   # Prettier tasks
   prettier:
     desc: Run prettier for all applications
