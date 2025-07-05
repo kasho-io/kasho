@@ -7,8 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "npm run lint && npx tsc --noEmit",
-    "test:ci": "npm run test"
+    "test": "echo \"No tests yet\" && exit 0",
+    "prettier": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "type-check": "npx tsc --noEmit",
+    "test:ci": "npm run lint && npm run type-check && npm run test:ci"
   },
   "dependencies": {
     "@types/pg": "^8.15.2",

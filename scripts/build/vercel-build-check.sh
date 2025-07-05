@@ -30,21 +30,9 @@ run_app_tests() {
         npm ci
     fi
     
-    # Run linting
-    echo "🔍 Running linter..."
-    npm run lint
     
-    # Run type checking
-    echo "🔎 Running type checker..."
-    npx tsc --noEmit
+    npm run test:ci
     
-    # Run tests if test script exists
-    if npm run | grep -q "test"; then
-        echo "🧪 Running unit tests..."
-        npm run test
-    else
-        echo "ℹ️  No test script found, skipping unit tests"
-    fi
     
     echo "✅ All checks passed for $APP_NAME"
 }
