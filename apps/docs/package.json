@@ -3,7 +3,10 @@
         "dev": "next",
         "build": "next build",
         "start": "next start",
-        "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind"
+        "lint": "next lint",
+        "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind",
+        "test": "npm run lint && npx tsc --noEmit",
+        "test:ci": "npm run test"
     },
     "dependencies": {
         "next": "^15.3.4",
@@ -15,6 +18,8 @@
     "devDependencies": {
         "@types/node": "24.0.10",
         "@types/react": "19.1.8",
+        "eslint": "9.30.1",
+        "eslint-config-next": "15.3.5",
         "pagefind": "^1.3.0"
     }
 }
