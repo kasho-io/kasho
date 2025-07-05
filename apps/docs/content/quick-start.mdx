@@ -42,12 +42,19 @@ All Kasho components are packaged in a single Docker image available from GitHub
   Currently, only a single `pg-translicator` instance is supported. Multiple translicators would process the same changes multiple times.
 </Callout>
 
+<Callout type="info">
+  **License Required**
+  
+  Kasho requires a valid license file to operate. See the [Licensing](/installation/licensing) guide for details. If you're interested in becoming a design partner, contact [hello@kasho.io](mailto:hello@kasho.io).
+</Callout>
+
 Before you begin, ensure you have:
 - PostgreSQL 15+ databases (source and target)
 - Databases configured with `wal_level = logical`
 - A Redis instance (or Redis-compatible service)
 - Container orchestration system (Kubernetes, ECS, Docker, etc.)
 - GitHub account with access to pull from GitHub Container Registry
+- Valid Kasho license file
 
 ## Docker Compose Example
 
@@ -86,6 +93,8 @@ services:
       KV_URL: redis://redis:6379
       PRIMARY_DATABASE_URL: ${PRIMARY_DATABASE_URL}
       LICENSING_SERVICE_ADDR: ${LICENSING_SERVICE_ADDR}
+    volumes:
+      - ./config:/app/config:ro  # Contains license.jwt
     ports:
       - "50051:50051"
     depends_on:
@@ -98,7 +107,7 @@ services:
       CHANGE_STREAM_SERVICE_ADDR: pg-change-stream:50051
       REPLICA_DATABASE_URL: ${REPLICA_DATABASE_URL}
     volumes:
-      - ./config:/app/config:ro
+      - ./config:/app/config:ro  # Contains transforms.yml and license.jwt
     depends_on:
       - pg-change-stream
 
@@ -106,12 +115,17 @@ volumes:
   redis-data:
 ```
 
-### Step 3: Transforms Configuration
+### Step 3: Configuration Files
 
-Create a `config` directory and add `transforms.yml`:
+Create a `config` directory for your transforms and license:
 
 ```bash
 mkdir config
+```
+
+Place your `license.jwt` file in the config directory:
+```bash
+cp /path/to/your/license.jwt config/
 ```
 
 Create `config/transforms.yml` with your transformation rules:
