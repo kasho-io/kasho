@@ -2,7 +2,7 @@ name: Deploy Demo Environment
 
 on:
   workflow_run:
-    workflows: ["Test Suite"]
+    workflows: ["Publish Container Images"]
     types:
       - completed
     branches:
@@ -75,9 +75,11 @@ jobs:
               export PATH="$HOME/.local/bin:$PATH"
             fi
             
-            # Build the kasho base image and production image using Task
-            task build:base
-            task build:prod
+            # Log in to GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Pull the develop image
+            docker pull ghcr.io/${{ github.repository }}:develop
             
             cd environments/demo
             
@@ -117,7 +119,7 @@ jobs:
             echo "${{ secrets.DEMO_LICENSE_JWT }}" > config/license.jwt
             
             docker compose down -v
-            docker compose up --build -d
+            docker compose up -d
             
             # Wait for services to start
             sleep 10
@@ -206,7 +208,7 @@ jobs:
               -e CHANGE_STREAM_SERVICE="pg-change-stream:50051" \
               -e REPLICATION_SLOT_NAME="kasho_slot" \
               -e WAIT_FOR_BOOTSTRAP="true" \
-              kasho:prod \
+              ghcr.io/${{ github.repository }}:develop \
               /app/scripts/bootstrap-kasho.sh
             
             echo "✅ Bootstrap process completed successfully"
