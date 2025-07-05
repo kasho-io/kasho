@@ -6,6 +6,7 @@ services:
       - ../../sql:/app/sql:ro
       - ./primary-init.d:/app/primary-init.d
       - ./replica-init.d:/app/replica-init.d
+      - ../../scripts/development/populate-postgres-init.sh:/app/scripts/populate-postgres-init.sh:ro
     env_file:
       - .env
     environment:
