@@ -216,6 +216,26 @@ tasks:
       - echo "🔍 Linting {{index .MATCH 0}} app..."
       - cd apps/{{index .MATCH 0}} && npm run lint
 
+  # Prettier tasks
+  apps:prettier:
+    desc: Run prettier for all frontend applications
+    cmds:
+      - echo "🎨 Formatting all apps..."
+      - npx prettier --write "apps/**/*.{ts,tsx,js,jsx,json,md}"
+
+  apps:prettier:*:
+    desc: Run prettier for a specific app
+    cmds:
+      - |
+        app="{{index .MATCH 0}}"
+        if [ -d "apps/$app" ]; then
+          echo "🎨 Formatting $app app..."
+          cd apps/$app && npx prettier --write "**/*.{ts,tsx,js,jsx,json,md}"
+        else
+          echo "❌ App '$app' not found in apps/ directory"
+          exit 1
+        fi
+
   # Version tasks
   version:
     desc: Display version information

@@ -44,3 +44,4 @@ tools/pg-bootstrap-sync/pg-bootstrap-sync
 tools/test-version/test-version
 tools/generate-license/generate-license
 
+**/node_modules
