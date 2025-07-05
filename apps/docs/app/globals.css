@@ -1,0 +1,48 @@
+/* Custom brand colors */
+:root {
+  /* Brand accent color */
+  --accent-rgb: 55, 216, 187;
+  --nextra-primary-hue: 165deg;
+  --nextra-primary-saturation: 75%;
+}
+
+/* Use Nextra's CSS variables for fonts */
+:root {
+  --nextra-font-sans: var(--font-inter);
+  --nextra-font-mono: var(--font-jetbrains-mono);
+}
+
+/* Custom accent color for links */
+.nextra-content a {
+  color: rgb(var(--accent-rgb));
+}
+
+.nextra-content a:hover {
+  opacity: 0.8;
+}
+
+/* Fix logo alignment in navbar */
+.nextra-nav-container nav > a:first-child {
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+}
+
+/* Theme-specific logo display */
+.nextra-logo-light {
+  display: block;
+  height: 70px;
+}
+
+.nextra-logo-dark {
+  display: none;
+}
+
+html.dark .nextra-logo-light {
+  display: none;
+}
+
+html.dark .nextra-logo-dark {
+  display: block;
+  height: 70px;
+}
