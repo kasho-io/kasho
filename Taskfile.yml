@@ -4,7 +4,7 @@ vars:
   SERVICES:
     sh: find services -maxdepth 2 -name go.mod -exec dirname {} \; | sort
   TOOLS:
-    sh: find tools -maxdepth 2 -name go.mod -exec dirname {} \; | sort
+    sh: find tools -maxdepth 3 -name go.mod -exec dirname {} \; | sort
   PACKAGES:
     sh: find pkg -maxdepth 2 -name go.mod -exec dirname {} \; | sort
   APPS:
@@ -40,7 +40,7 @@ tasks:
       - go.work.sum
       - "**/*.go"
       - "!**/*_test.go"
-      - scripts/**/*.sh
+      - scripts/runtime/**/*.sh
       - environments/development/.air.toml
 
   build:base:
@@ -63,7 +63,7 @@ tasks:
       - go.work.sum
       - "**/*.go"
       - "!**/*_test.go"
-      - scripts/**/*.sh
+      - scripts/runtime/**/*.sh
 
   proto:
     desc: Generate Go code from protobuf definitions

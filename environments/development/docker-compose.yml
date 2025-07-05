@@ -9,7 +9,7 @@ services:
       - .env
     environment:
       - ENV=development
-    command: ["/app/scripts/populate-postgres-init.sh"]
+    command: ["/app/scripts/development/populate-postgres-init.sh"]
 
   redis:
     image: redis:7-alpine
