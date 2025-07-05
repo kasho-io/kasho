@@ -28,12 +28,5 @@
 **/*.lock.json
 **/*.lock.yaml
 **/*.lock.yml
-# Ignore all YAML files:
-**/*.yaml
-**/*.yml
-# Ignore all JSON files:
-**/*.json
-# Ignore all Markdown files:
-**/*.md
 # Ignore all Text files:
 **/*.txt
