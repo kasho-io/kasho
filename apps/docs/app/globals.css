@@ -1,15 +1,58 @@
-/* Custom brand colors */
+/* Light theme - matching DaisyUI light theme */
 :root {
-  /* Brand accent color */
+  --background: #ffffff;
+  --foreground: #1f2937;
   --accent-rgb: 55, 216, 187;
+  
+  /* Nextra theme overrides for light mode */
+  --nextra-bg: #ffffff;
+  --nextra-bg-2: #f9fafb;
+  --nextra-bg-3: #f3f4f6;
+  --nextra-border: #e5e7eb;
+  --nextra-border-2: #d1d5db;
+  --nextra-content: #1f2937;
+  --nextra-content-2: #4b5563;
+  --nextra-content-3: #6b7280;
+  
+  /* Primary color matching accent */
   --nextra-primary-hue: 165deg;
   --nextra-primary-saturation: 75%;
+  --nextra-primary-lightness: 50%;
 }
 
-/* Use Nextra's CSS variables for fonts */
+/* Dark theme - matching DaisyUI dark theme */
+html.dark {
+  --background: #1f2937;
+  --foreground: #f9fafb;
+  
+  /* Nextra theme overrides for dark mode */
+  --nextra-bg: #1f2937;
+  --nextra-bg-2: #111827;
+  --nextra-bg-3: #030712;
+  --nextra-border: #374151;
+  --nextra-border-2: #4b5563;
+  --nextra-content: #f9fafb;
+  --nextra-content-2: #e5e7eb;
+  --nextra-content-3: #d1d5db;
+}
+
+/* Override Nextra's default fonts with our custom fonts */
 :root {
-  --nextra-font-sans: var(--font-inter);
-  --nextra-font-mono: var(--font-jetbrains-mono);
+  --nextra-font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --nextra-font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+/* Apply the font to body like demo app does */
+body {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Apply JetBrains Mono to all code elements */
+code, pre, kbd, samp,
+.nextra-code, .nextra-pre,
+pre code, pre[class*="language-"],
+code[class*="language-"] {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace !important;
 }
 
 /* Custom accent color for links */
