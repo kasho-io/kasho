@@ -195,7 +195,7 @@ jobs:
             cd ../..
             
             # Check if bootstrap script exists
-            if [ ! -f "./scripts/bootstrap-kasho.sh" ]; then
+            if [ ! -f "./scripts/runtime/bootstrap-kasho.sh" ]; then
               echo "❌ bootstrap-kasho.sh not found"
               exit 1
             fi
