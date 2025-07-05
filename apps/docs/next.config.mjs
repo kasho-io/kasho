@@ -1,17 +1,16 @@
-import createMDX from '@next/mdx'
+import nextra from 'nextra'
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
-  reactStrictMode: true,
-}
-
-const withMDX = createMDX({
-  // Add markdown plugins here, as desired
-  options: {
-    remarkPlugins: [],
-    rehypePlugins: [],
-  },
+// Set up Nextra with its configuration
+const withNextra = nextra({
+  // No need for contentDirBasePath in v4 - it uses content/ by default
 })
 
-export default withMDX(nextConfig)
+// Export the final Next.js config with Nextra included
+export default withNextra({
+  turbopack: {
+    resolveAlias: {
+      // Path to your `mdx-components` file with extension
+      'next-mdx-import-source-file': './mdx-components.tsx'
+    }
+  }
+})
