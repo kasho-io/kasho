@@ -1,0 +1,104 @@
+# Container Images
+
+Kasho is distributed as Docker container images hosted on GitHub Container Registry (ghcr.io).
+
+## Available Images
+
+### Production Image
+The main Kasho image contains all components needed for deployment:
+
+```
+ghcr.io/jeffrey/kasho:latest
+```
+
+### Image Tags
+
+- **`:latest`** - The most recent stable release
+- **`:v1.0.0`** - Specific version releases (recommended for production)
+- **`:develop`** - Latest development build from the main branch (_not recommended_)
+- **`:sha-abc123`** - Specific commit builds (for debugging, _not recommended_)
+
+## Authentication
+
+GitHub Container Registry requires authentication to pull images:
+
+```bash
+# Login with your GitHub username
+docker login ghcr.io -u YOUR_GITHUB_USERNAME
+
+# You'll be prompted for a password - use a personal access token
+# with 'read:packages' scope (create at github.com/settings/tokens)
+```
+
+## Pulling Images
+
+Once authenticated, you can pull images:
+
+```bash
+# Pull the latest stable release
+docker pull ghcr.io/jeffrey/kasho:latest
+
+# Pull a specific version
+docker pull ghcr.io/jeffrey/kasho:v1.0.0
+
+# Pull the development version
+docker pull ghcr.io/jeffrey/kasho:develop
+```
+
+## Using in Docker Compose
+
+Update your `docker-compose.yml` to use the full image path:
+
+```yaml
+services:
+  pg-change-stream:
+    image: ghcr.io/jeffrey/kasho:latest
+    command: ./pg-change-stream
+    # ... rest of configuration
+
+  pg-translicator:
+    image: ghcr.io/jeffrey/kasho:latest
+    command: ./pg-translicator
+    # ... rest of configuration
+```
+
+## Using in Kubernetes
+
+For Kubernetes deployments, you'll need to create an image pull secret:
+
+```bash
+kubectl create secret docker-registry ghcr \
+  --docker-server=ghcr.io \
+  --docker-username=YOUR_GITHUB_USERNAME \
+  --docker-password=YOUR_GITHUB_TOKEN \
+  --docker-email=YOUR_EMAIL
+```
+
+Then reference it in your deployments:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pg-change-stream
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+      - name: ghcr
+      containers:
+      - name: pg-change-stream
+        image: ghcr.io/jeffrey/kasho:latest
+        command: ["./pg-change-stream"]
+```
+
+## Version Policy
+
+- **Production**: Always use specific version tags (e.g., `v1.0.0`)
+- **Testing**: You can use `:latest` or specific versions
+- **Development**: Use `:develop` for latest features (may be unstable)
+
+## Finding Available Versions
+
+You can view all available versions and tags at:
+https://github.com/jeffrey/kasho/pkgs/container/kasho
