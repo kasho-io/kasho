@@ -49,7 +49,7 @@ export default function Home() {
             </svg>
             <div>
               <h3 className="font-bold">Seeking Design Partners</h3>
-              <div className="text-sm">We're looking for early adopters to help shape Kasho. Interested? <a href="mailto:hello@kasho.io" className="link link-hover font-semibold">Contact us at hello@kasho.io</a></div>
+              <div className="text-sm">We&apos;re looking for early adopters to help shape Kasho. Interested? <a href="mailto:hello@kasho.io" className="link link-hover font-semibold">Contact us at hello@kasho.io</a></div>
             </div>
           </div>
         </div>
