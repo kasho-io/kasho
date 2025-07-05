@@ -1,3 +1,3 @@
 export default {
-  transforms: 'Transform Configuration'
-}
+  transforms: "Transform Configuration",
+};

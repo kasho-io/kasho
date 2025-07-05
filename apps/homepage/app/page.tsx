@@ -7,23 +7,23 @@ import { ObfuscatedEmail } from "../components/ObfuscatedEmail";
 export default function Home() {
   const isDev = process.env.NODE_ENV === "development";
   const demoUrl = isDev ? "http://localhost:4000" : "https://demo.kasho.io";
-  
+
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
     // Check initial theme preference
     const checkTheme = () => {
-      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       setIsDarkMode(isDark);
     };
 
     checkTheme();
 
     // Listen for theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', checkTheme);
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    mediaQuery.addEventListener("change", checkTheme);
 
-    return () => mediaQuery.removeEventListener('change', checkTheme);
+    return () => mediaQuery.removeEventListener("change", checkTheme);
   }, []);
 
   return (
@@ -41,7 +41,9 @@ export default function Home() {
           <h2 className="text-base-content text-lg sm:text-xl md:text-2xl font-bold font-mono text-center max-w-md sm:max-w-lg">
             Anonymized, live replicas on demand for development, testing and staging.
           </h2>
-          <h3 className="text-base-content text-lg sm:text-xl md:text-2xl font-bold font-mono text-center mt-4">COMING SOON.</h3>
+          <h3 className="text-base-content text-lg sm:text-xl md:text-2xl font-bold font-mono text-center mt-4">
+            COMING SOON.
+          </h3>
         </div>
         <div className="mt-8 w-full max-w-lg">
           <div className="alert alert-info shadow-lg">
@@ -60,7 +62,7 @@ export default function Home() {
         target="_blank"
         rel="noopener noreferrer"
         className="absolute left-1/2 -translate-x-1/2 text-sm text-primary hover:text-primary-focus font-semibold underline"
-        style={{ bottom: '1.5rem', paddingBottom: 'env(safe-area-inset-bottom)' }}
+        style={{ bottom: "1.5rem", paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         Try the live demo &rarr;
       </a>

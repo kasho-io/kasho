@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+import { Pool } from "pg";
 
 const primaryPool = new Pool({
   connectionString: process.env.PRIMARY_DATABASE_URL,
@@ -16,4 +16,4 @@ export async function queryPrimary(sql: string, params?: unknown[]) {
 export async function queryReplica(sql: string, params?: unknown[]) {
   const result = await replicaPool.query(sql, params);
   return result.rows;
-} 
+}
