@@ -1,12 +1,13 @@
 {
-  "files.associations": {
-    "*.css": "tailwindcss"
-  },
-  "editor.quickSuggestions": {
-    "strings": true
-  },
-  "tailwindCSS.experimental.classRegex": [
-    ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
-    ["className\\s*=\\s*{([^}]*)}", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
-  ]
+    "files.associations": {
+        "*.css": "tailwindcss"
+    },
+    "editor.quickSuggestions": {
+        "strings": true
+    },
+    "tailwindCSS.experimental.classRegex": [
+        ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+        ["className\\s*=\\s*{([^}]*)}", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+    ],
+    "prettier.configPath": ".prettierrc"
 }

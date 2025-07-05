@@ -1,0 +1,39 @@
+# Ignore artifacts:
+**/.git
+**/.svn
+**/.hg
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/logs
+**/tmp
+**/environments
+
+# Ignore all HTML files:
+**/*.html
+
+# Ignore all Go files:
+**/*.go
+# Ignore all Shell files:
+**/*.sh
+# Ignore all Sum files:
+**/*.sum
+# Ignore all Mod files:
+**/*.mod
+# Ignore all Work files:
+**/*.work
+# Ignore all Lock files:
+**/*.lock
+**/*.lock.json
+**/*.lock.yaml
+**/*.lock.yml
+# Ignore all YAML files:
+**/*.yaml
+**/*.yml
+# Ignore all JSON files:
+**/*.json
+# Ignore all Markdown files:
+**/*.md
+# Ignore all Text files:
+**/*.txt
