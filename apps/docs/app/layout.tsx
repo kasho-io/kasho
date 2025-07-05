@@ -1,49 +1,41 @@
-import { Footer, Layout, Navbar } from 'nextra-theme-docs'
-import { Head } from 'nextra/components'
-import { getPageMap } from 'nextra/page-map'
-import { Inter, JetBrains_Mono } from 'next/font/google'
-import 'nextra-theme-docs/style.css'
-import './globals.css'
+import { Footer, Layout, Navbar } from "nextra-theme-docs";
+import { Head } from "nextra/components";
+import { getPageMap } from "nextra/page-map";
+import { Inter, JetBrains_Mono } from "next/font/google";
+import "nextra-theme-docs/style.css";
+import "./globals.css";
 
 const inter = Inter({
-  variable: '--font-inter',
-  subsets: ['latin'],
-  display: 'swap',
-})
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 const jetbrainsMono = JetBrains_Mono({
-  variable: '--font-jetbrains-mono',
-  subsets: ['latin'],
-  display: 'swap',
-})
- 
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata = {
-  title: 'Kasho Documentation',
-  description: 'Documentation for Kasho - Anonymized, live replicas on demand',
-}
- 
-const banner = null // Remove the banner for now
+  title: "Kasho Documentation",
+  description: "Documentation for Kasho - Anonymized, live replicas on demand",
+};
+
+const banner = null; // Remove the banner for now
 const navbar = (
   <Navbar
     logo={
       <>
-        <img 
-          src="/kasho-wordmark-light.png" 
-          alt="Kasho" 
-          className="nextra-logo-light"
-        />
-        <img 
-          src="/kasho-wordmark-dark.png" 
-          alt="Kasho" 
-          className="nextra-logo-dark"
-        />
+        <img src="/kasho-wordmark-light.png" alt="Kasho" className="nextra-logo-light" />
+        <img src="/kasho-wordmark-dark.png" alt="Kasho" className="nextra-logo-dark" />
       </>
     }
     // ... Your additional navbar options
   />
-)
-const footer = <Footer>© {new Date().getFullYear()} Kasho</Footer>
- 
+);
+const footer = <Footer>© {new Date().getFullYear()} Kasho</Footer>;
+
 export default async function RootLayout({ children }) {
   return (
     <html
@@ -72,5 +64,5 @@ export default async function RootLayout({ children }) {
         </Layout>
       </body>
     </html>
-  )
+  );
 }

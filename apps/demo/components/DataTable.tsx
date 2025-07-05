@@ -18,7 +18,7 @@ interface DataTableProps {
 }
 
 function lastSegment(uuid: string) {
-  return uuid.split('-').pop() || uuid;
+  return uuid.split("-").pop() || uuid;
 }
 
 function last8(str: string) {
@@ -29,36 +29,39 @@ function formatDate(dateStr: string) {
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
   return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
   });
 }
 
 function formatUpdatedAt(dateStr: string) {
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
-  
+
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffHours = diffMs / (1000 * 60 * 60);
-  
+
   // If within the past 24 hours, show relative time
   if (diffHours < 24) {
-    if (diffMs < 60000) { // Less than 1 minute
-      return 'just now';
-    } else if (diffMs < 3600000) { // Less than 1 hour
+    if (diffMs < 60000) {
+      // Less than 1 minute
+      return "just now";
+    } else if (diffMs < 3600000) {
+      // Less than 1 hour
       const minutes = Math.floor(diffMs / 60000);
       return `${minutes}m ago`;
-    } else { // Less than 24 hours
+    } else {
+      // Less than 24 hours
       const hours = Math.floor(diffHours);
       return `${hours}h ago`;
     }
   }
-  
+
   // Otherwise, show formatted date
   return formatDate(dateStr);
 }
@@ -80,9 +83,9 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
     if (onEdit && rows) {
       const edited = rows
         .filter((row) => editRows[row.id] && isRowChanged(row, editRows[row.id]))
-        .map((row) => ({ 
-          id: row.id, 
-          ...(editRows[row.id] || {}) 
+        .map((row) => ({
+          id: row.id,
+          ...(editRows[row.id] || {}),
         }));
       onEdit(edited as Row[]);
     }
@@ -93,9 +96,9 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
   useEffect(() => {
     if (rows && previousRowsRef.current) {
       const newChangedCells = new Set<string>();
-      
+
       rows.forEach((row) => {
-        const prevRow = previousRowsRef.current!.find(r => r.id === row.id);
+        const prevRow = previousRowsRef.current!.find((r) => r.id === row.id);
         if (prevRow) {
           // Check each field for changes
           if (prevRow.name !== row.name) newChangedCells.add(`${row.id}-name`);
@@ -104,17 +107,17 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
           if (prevRow.updated_at !== row.updated_at) newChangedCells.add(`${row.id}-updated_at`);
         }
       });
-      
+
       if (newChangedCells.size > 0) {
         setChangedCells(newChangedCells);
-        
+
         // Clear animations after duration
         setTimeout(() => {
           setChangedCells(new Set());
         }, 600);
       }
     }
-    
+
     // Update reference for next render
     previousRowsRef.current = rows;
   }, [rows]);
@@ -127,7 +130,7 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (onSave && (e.key === 'Enter' || e.key === 'Return')) {
+    if (onSave && (e.key === "Enter" || e.key === "Return")) {
       onSave();
     }
   };
@@ -149,62 +152,81 @@ export default function DataTable({ rows, loading, editable = false, onEdit, onS
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={6} className="text-center p-2 whitespace-nowrap">Loading...</td>
+                <td colSpan={6} className="text-center p-2 whitespace-nowrap">
+                  Loading...
+                </td>
               </tr>
             )}
-            {!loading && Array.isArray(rows) && rows.map((row) => (
-              <tr key={row.id}>
-                <td className="p-2 whitespace-nowrap" title={row.id}>{'…' + lastSegment(row.id)}</td>
-                <td className="p-2 whitespace-nowrap" title={row.organization_id}>{'…' + lastSegment(row.organization_id)}</td>
-                <td className={`p-2 whitespace-nowrap ${changedCells.has(`${row.id}-name`) ? 'animate-cell-change' : ''}`}>
-                  {editable ? (
-                    <input
-                      className="input input-xs input-bordered font-mono w-32"
-                      value={editRows[row.id]?.name ?? row.name}
-                      onChange={(e) => handleChange(row.id, 'name', e.target.value)}
-                      onKeyDown={handleInputKeyDown}
-                    />
-                  ) : (
-                    row.name
-                  )}
-                </td>
-                <td className={`p-2 whitespace-nowrap ${changedCells.has(`${row.id}-email`) ? 'animate-cell-change' : ''}`}>
-                  {editable ? (
-                    <input
-                      className="input input-xs input-bordered font-mono w-48"
-                      value={editRows[row.id]?.email ?? row.email}
-                      onChange={(e) => handleChange(row.id, 'email', e.target.value)}
-                      onKeyDown={handleInputKeyDown}
-                    />
-                  ) : (
-                    row.email
-                  )}
-                </td>
-                <td className={`p-2 whitespace-nowrap ${changedCells.has(`${row.id}-password`) ? 'animate-cell-change' : ''}`}>
-                  {editable ? (
-                    <input
-                      type="text"
-                      placeholder="Enter cleartext password"
-                      className="input input-xs input-bordered font-mono w-64"
-                      value={editRows[row.id]?.password ?? row.password}
-                      onChange={(e) => handleChange(row.id, 'password', e.target.value)}
-                      onFocus={() => {
-                        // Clear the field when user starts editing to replace the hash
-                        if (editRows[row.id]?.password === undefined) {
-                          handleChange(row.id, 'password', '');
-                        }
-                      }}
-                      onKeyDown={handleInputKeyDown}
-                    />
-                  ) : (
-                    <span className="font-mono text-xs" title={row.password}>
-                      {'…' + last8(row.password)}
-                    </span>
-                  )}
-                </td>
-                <td className={`p-2 whitespace-nowrap ${changedCells.has(`${row.id}-updated_at`) ? 'animate-cell-change' : ''}`} title={row.updated_at}>{formatUpdatedAt(row.updated_at)}</td>
-              </tr>
-            ))}
+            {!loading &&
+              Array.isArray(rows) &&
+              rows.map((row) => (
+                <tr key={row.id}>
+                  <td className="p-2 whitespace-nowrap" title={row.id}>
+                    {"…" + lastSegment(row.id)}
+                  </td>
+                  <td className="p-2 whitespace-nowrap" title={row.organization_id}>
+                    {"…" + lastSegment(row.organization_id)}
+                  </td>
+                  <td
+                    className={`p-2 whitespace-nowrap ${changedCells.has(`${row.id}-name`) ? "animate-cell-change" : ""}`}
+                  >
+                    {editable ? (
+                      <input
+                        className="input input-xs input-bordered font-mono w-32"
+                        value={editRows[row.id]?.name ?? row.name}
+                        onChange={(e) => handleChange(row.id, "name", e.target.value)}
+                        onKeyDown={handleInputKeyDown}
+                      />
+                    ) : (
+                      row.name
+                    )}
+                  </td>
+                  <td
+                    className={`p-2 whitespace-nowrap ${changedCells.has(`${row.id}-email`) ? "animate-cell-change" : ""}`}
+                  >
+                    {editable ? (
+                      <input
+                        className="input input-xs input-bordered font-mono w-48"
+                        value={editRows[row.id]?.email ?? row.email}
+                        onChange={(e) => handleChange(row.id, "email", e.target.value)}
+                        onKeyDown={handleInputKeyDown}
+                      />
+                    ) : (
+                      row.email
+                    )}
+                  </td>
+                  <td
+                    className={`p-2 whitespace-nowrap ${changedCells.has(`${row.id}-password`) ? "animate-cell-change" : ""}`}
+                  >
+                    {editable ? (
+                      <input
+                        type="text"
+                        placeholder="Enter cleartext password"
+                        className="input input-xs input-bordered font-mono w-64"
+                        value={editRows[row.id]?.password ?? row.password}
+                        onChange={(e) => handleChange(row.id, "password", e.target.value)}
+                        onFocus={() => {
+                          // Clear the field when user starts editing to replace the hash
+                          if (editRows[row.id]?.password === undefined) {
+                            handleChange(row.id, "password", "");
+                          }
+                        }}
+                        onKeyDown={handleInputKeyDown}
+                      />
+                    ) : (
+                      <span className="font-mono text-xs" title={row.password}>
+                        {"…" + last8(row.password)}
+                      </span>
+                    )}
+                  </td>
+                  <td
+                    className={`p-2 whitespace-nowrap ${changedCells.has(`${row.id}-updated_at`) ? "animate-cell-change" : ""}`}
+                    title={row.updated_at}
+                  >
+                    {formatUpdatedAt(row.updated_at)}
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
