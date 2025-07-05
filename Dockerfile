@@ -20,8 +20,8 @@ RUN --mount=type=cache,target=/go/pkg/mod go work sync
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-change-stream ./services/pg-change-stream/cmd/server
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-translicator ./services/pg-translicator/cmd/server
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/licensing ./services/licensing/cmd/server
-RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-bootstrap-sync ./tools/pg-bootstrap-sync
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/env-template ./tools/env-template
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-bootstrap-sync ./tools/runtime/pg-bootstrap-sync
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/env-template ./tools/runtime/env-template
 
 # Development stage with hot reload
 FROM ghcr.io/kasho-io/kasho-base:latest AS development
@@ -42,13 +42,13 @@ RUN go work sync
 RUN mkdir -p /app/bin /app/scripts /data/redis
 
 # Build essential tools that are needed immediately with version information
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/env-template ./tools/env-template
-RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/pg-bootstrap-sync ./tools/pg-bootstrap-sync
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/env-template ./tools/runtime/env-template
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/pg-bootstrap-sync ./tools/runtime/pg-bootstrap-sync
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/licensing ./services/licensing/cmd/server
 
 # Copy all scripts to scripts directory
 COPY scripts/ /app/scripts/
-RUN chmod +x /app/scripts/*.sh
+RUN find /app/scripts -name '*.sh' -exec chmod +x {} +
 
 # Set default environment variables
 ENV KV_URL=redis://127.0.0.1:6379
@@ -90,18 +90,14 @@ COPY --from=builder /bin/licensing /app/bin/
 COPY --from=builder /bin/pg-bootstrap-sync /app/bin/
 COPY --from=builder /bin/env-template /app/bin/
 
-# Copy all scripts to scripts directory
-COPY scripts/ /app/scripts/
+# Copy only runtime scripts to scripts directory
+COPY scripts/runtime/ /app/scripts/
 
 # Make scripts executable
 RUN chmod +x /app/scripts/*.sh
 
-# Copy configuration files and documentation
-COPY environments/demo/config /app/config/demo/
-COPY environments/development/config /app/config/development/
-COPY README.md /app/
-COPY sql/ /app/sql/
-COPY proto/ /app/proto/
+# Copy only necessary SQL files
+COPY sql/setup/ /app/sql/setup/
 
 # Set ownership
 RUN chown -R kasho:kasho /app
