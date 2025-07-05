@@ -6,28 +6,14 @@ The bootstrap process loads existing data from your source database into Kasho w
 
 `pg-change-stream` operates in three states during its lifecycle:
 
-<div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
-  <div className="card bg-base-200 border border-base-300">
-    <div className="card-body">
-      <h3 className="card-title text-lg">WAITING</h3>
-      <p className="text-sm">No replication slot exists. Service is ready to begin bootstrap.</p>
-    </div>
-  </div>
-  
-  <div className="card bg-base-200 border border-base-300">
-    <div className="card-body">
-      <h3 className="card-title text-lg">ACCUMULATING</h3>
-      <p className="text-sm">Replication slot created. Capturing changes during initial data load.</p>
-    </div>
-  </div>
-  
-  <div className="card bg-base-200 border border-base-300">
-    <div className="card-body">
-      <h3 className="card-title text-lg">STREAMING</h3>
-      <p className="text-sm">Normal operation. Streaming all changes to `pg-translicator`.</p>
-    </div>
-  </div>
-</div>
+### WAITING
+No replication slot exists. Service is ready to begin bootstrap.
+
+### ACCUMULATING
+Replication slot created. Capturing changes during initial data load.
+
+### STREAMING
+Normal operation. Streaming all changes to `pg-translicator`.
 
 ## How Bootstrap Works
 

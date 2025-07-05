@@ -1,5 +1,7 @@
 # Database Setup
 
+import { Callout } from 'nextra/components'
+
 This guide covers the PostgreSQL configuration and user setup required for Kasho.
 
 ## Database Requirements
@@ -19,20 +21,17 @@ Your target database needs:
 - **PostgreSQL version:** 15 or higher  
 - **User permissions:** SUPERUSER privilege
 
-<div className="alert alert-warning mb-4">
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-  <div>
-    <div className="font-semibold">SUPERUSER Required</div>
-    <div>The replica user requires SUPERUSER privileges to set `session_replication_role = 'replica'`, which prevents triggers from firing during replication.</div>
-  </div>
-</div>
+<Callout type="warning">
+  **SUPERUSER Required**
+  
+  The replica user requires SUPERUSER privileges to set `session_replication_role = 'replica'`, which prevents triggers from firing during replication.
+</Callout>
 
 ## Step 1: Configure PostgreSQL for Logical Replication
 
-<div className="alert alert-warning mb-4">
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-  <span>Changing these settings requires a PostgreSQL restart</span>
-</div>
+<Callout type="warning">
+  Changing these settings requires a PostgreSQL restart
+</Callout>
 
 Edit your `postgresql.conf` file:
 
@@ -136,10 +135,9 @@ GRANT ALL ON SEQUENCES TO kasho;
 CREATE PUBLICATION kasho_pub FOR ALL TABLES;
 ```
 
-<div className="alert alert-info">
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-  <span>Do NOT create the replication slot manually. It will be created automatically during the bootstrap process.</span>
-</div>
+<Callout type="info">
+  Do NOT create the replication slot manually. It will be created automatically during the bootstrap process.
+</Callout>
 
 ## Step 3: Configure pg_hba.conf
 
@@ -168,13 +166,11 @@ psql "postgresql://kasho:password@source-host:5432/source_db?sslmode=disable" -c
 psql "postgresql://kasho:password@target-host:5432/target_db?sslmode=disable" -c "SELECT 1"
 ```
 
-<div className="alert alert-info mb-4">
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-  <div>
-    <div className="font-semibold">Security Consideration</div>
-    <div>The replica user requires SUPERUSER privileges. In production environments, this should be carefully evaluated. Consider using a dedicated database instance for the replica if security policies restrict SUPERUSER access.</div>
-  </div>
-</div>
+<Callout type="info">
+  **Security Consideration**
+  
+  The replica user requires SUPERUSER privileges. In production environments, this should be carefully evaluated. Consider using a dedicated database instance for the replica if security policies restrict SUPERUSER access.
+</Callout>
 
 ## Step 5: DDL Replication Setup
 

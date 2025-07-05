@@ -1,3 +1,5 @@
+import { Callout } from 'nextra/components'
+
 # Quick Start
 
 This guide will help you understand Kasho's architecture and get it running in your environment. While we use Docker Compose as an example, the concepts apply to any production orchestration system like Kubernetes.
@@ -10,13 +12,11 @@ Kasho consists of three required containers that work together:
 2. **pg-change-stream** - Captures changes from your source PostgreSQL database
 3. **pg-translicator** - Applies transformations and writes to your target database
 
-<div className="alert alert-info mb-6">
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-  <div>
-    <div className="font-semibold">Production Environments</div>
-    <div>Most production deployments use Kubernetes, ECS, or similar orchestration systems. The Docker Compose example below illustrates how the containers interact and can be adapted to your specific environment.</div>
-  </div>
-</div>
+<Callout type="info">
+  **Production Environments**
+  
+  Most production deployments use Kubernetes, ECS, or similar orchestration systems. The Docker Compose example below illustrates how the containers interact and can be adapted to your specific environment.
+</Callout>
 
 ### Container Images
 
@@ -26,13 +26,11 @@ All Kasho components are packaged in a single Docker image:
 
 ## Prerequisites
 
-<div className="alert alert-warning mb-6">
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-  <div>
-    <div className="font-semibold">Important: Single Translicator Only</div>
-    <div>Currently, only a single `pg-translicator` instance is supported. Multiple translicators would process the same changes multiple times.</div>
-  </div>
-</div>
+<Callout type="warning">
+  **Important: Single Translicator Only**
+  
+  Currently, only a single `pg-translicator` instance is supported. Multiple translicators would process the same changes multiple times.
+</Callout>
 
 Before you begin, ensure you have:
 - PostgreSQL 15+ databases (source and target)
@@ -43,13 +41,11 @@ Before you begin, ensure you have:
 
 ## Docker Compose Example
 
-<div className="alert alert-info mb-6">
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-  <div>
-    <div className="font-semibold">Example Configuration</div>
-    <div>The following Docker Compose configuration demonstrates how Kasho's containers interact. Adapt this to your production orchestration system (Kubernetes manifests, ECS task definitions, etc.).</div>
-  </div>
-</div>
+<Callout type="info">
+  **Example Configuration**
+  
+  The following Docker Compose configuration demonstrates how Kasho's containers interact. Adapt this to your production orchestration system (Kubernetes manifests, ECS task definitions, etc.).
+</Callout>
 
 ### Step 1: Example Directory Structure
 
@@ -192,10 +188,9 @@ When deploying to production:
 
 If you have existing data in your source database, you'll need to run the bootstrap process:
 
-<div className="alert alert-info mb-4">
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-  <span>The bootstrap process ensures zero data loss by capturing changes during the initial data load</span>
-</div>
+<Callout type="info">
+  The bootstrap process ensures zero data loss by capturing changes during the initial data load
+</Callout>
 
 1. Execute the bootstrap process in the pg-change-stream container:
 
@@ -204,13 +199,11 @@ If you have existing data in your source database, you'll need to run the bootst
 docker exec -it kasho-example-pg-change-stream-1 ./bootstrap-kasho.sh
 ```
 
-<div className="alert alert-info mb-4">
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-  <div>
-    <div className="font-semibold">Container Name</div>
-    <div>The container name may vary based on your setup. Use `docker ps` to find the exact name of your pg-change-stream container.</div>
-  </div>
-</div>
+<Callout type="info">
+  **Container Name**
+  
+  The container name may vary based on your setup. Use `docker ps` to find the exact name of your pg-change-stream container.
+</Callout>
 
 2. The bootstrap process will:
    - Create a consistent snapshot of your source database

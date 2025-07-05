@@ -6,90 +6,25 @@ Kasho uses environment variables for service configuration and a YAML file for t
 
 ### `pg-change-stream` Configuration
 
-<table className="table table-zebra w-full">
-  <thead>
-    <tr>
-      <th>Variable</th>
-      <th>Description</th>
-      <th>Required</th>
-      <th>Example</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>KV_URL</code></td>
-      <td>Redis connection URL</td>
-      <td><span className="badge badge-error">Yes</span></td>
-      <td><code>redis://redis:6379</code></td>
-    </tr>
-    <tr>
-      <td><code>PRIMARY_DATABASE_URL</code></td>
-      <td>Source database connection URL</td>
-      <td><span className="badge badge-error">Yes</span></td>
-      <td><code>postgresql://user:pass@host:5432/db</code></td>
-    </tr>
-    <tr>
-      <td><code>LICENSING_SERVICE_ADDR</code></td>
-      <td>Licensing service address</td>
-      <td><span className="badge badge-error">Yes</span></td>
-      <td><code>licensing:50052</code></td>
-    </tr>
-  </tbody>
-</table>
+| Variable | Description | Required | Example |
+|----------|-------------|----------|---------|
+| `KV_URL` | Redis connection URL | Yes | `redis://redis:6379` |
+| `PRIMARY_DATABASE_URL` | Source database connection URL | Yes | `postgresql://user:pass@host:5432/db` |
+| `LICENSING_SERVICE_ADDR` | Licensing service address | Yes | `licensing:50052` |
 
 ### `pg-translicator` Configuration
 
-<table className="table table-zebra w-full">
-  <thead>
-    <tr>
-      <th>Variable</th>
-      <th>Description</th>
-      <th>Required</th>
-      <th>Example</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>CHANGE_STREAM_SERVICE_ADDR</code></td>
-      <td>`pg-change-stream` service address</td>
-      <td><span className="badge badge-error">Yes</span></td>
-      <td><code>pg-change-stream:50051</code></td>
-    </tr>
-    <tr>
-      <td><code>REPLICA_DATABASE_URL</code></td>
-      <td>Target database connection URL</td>
-      <td><span className="badge badge-error">Yes</span></td>
-      <td><code>postgresql://user:pass@host:5432/db</code></td>
-    </tr>
-    <tr>
-      <td><code>LICENSING_SERVICE_ADDR</code></td>
-      <td>Licensing service address</td>
-      <td><span className="badge badge-error">Yes</span></td>
-      <td><code>licensing:50052</code></td>
-    </tr>
-  </tbody>
-</table>
+| Variable | Description | Required | Example |
+|----------|-------------|----------|---------|
+| `CHANGE_STREAM_SERVICE_ADDR` | `pg-change-stream` service address | Yes | `pg-change-stream:50051` |
+| `REPLICA_DATABASE_URL` | Target database connection URL | Yes | `postgresql://user:pass@host:5432/db` |
+| `LICENSING_SERVICE_ADDR` | Licensing service address | Yes | `licensing:50052` |
 
 ### `pg-bootstrap-sync` Configuration
 
-<table className="table table-zebra w-full">
-  <thead>
-    <tr>
-      <th>Variable</th>
-      <th>Description</th>
-      <th>Required</th>
-      <th>Example</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>LICENSING_SERVICE_ADDR</code></td>
-      <td>Licensing service address</td>
-      <td><span className="badge badge-error">Yes</span></td>
-      <td><code>licensing:50052</code></td>
-    </tr>
-  </tbody>
-</table>
+| Variable | Description | Required | Example |
+|----------|-------------|----------|---------|
+| `LICENSING_SERVICE_ADDR` | Licensing service address | Yes | `licensing:50052` |
 
 **Note**: `pg-bootstrap-sync` also uses command-line flags for configuration. See the [Bootstrap Process](/installation/bootstrap) guide for details.
 
