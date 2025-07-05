@@ -33,7 +33,15 @@ tasks:
     desc: Build the kasho Docker image for development
     deps: [build:base]
     cmds:
-      - docker build -t kasho --target development --build-arg LDFLAGS="{{.LDFLAGS}}" .
+      - docker build -t kasho --target development --build-arg LDFLAGS="-X kasho/pkg/version.Version=dev -X kasho/pkg/version.GitCommit=dev -X kasho/pkg/version.BuildDate=dev" .
+    sources:
+      - Dockerfile
+      - go.work
+      - go.work.sum
+      - "**/*.go"
+      - "!**/*_test.go"
+      - scripts/**/*.sh
+      - environments/development/.air.toml
 
   build:base:
     desc: Build the base image with cached dependencies
@@ -49,6 +57,13 @@ tasks:
     deps: [build:base]
     cmds:
       - docker build -t kasho:prod --target production --build-arg LDFLAGS="{{.LDFLAGS}}" .
+    sources:
+      - Dockerfile
+      - go.work
+      - go.work.sum
+      - "**/*.go"
+      - "!**/*_test.go"
+      - scripts/**/*.sh
 
   proto:
     desc: Generate Go code from protobuf definitions
