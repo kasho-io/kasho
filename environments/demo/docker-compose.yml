@@ -1,7 +1,7 @@
 services:
   prepare-postgres-init-d:
     user: "${UID}:${GID}"
-    image: ghcr.io/jeffrey/kasho:develop
+    image: ghcr.io/kasho-io/kasho:develop
     volumes:
       - ../../sql:/app/sql:ro
       - ./primary-init.d:/app/primary-init.d
@@ -21,7 +21,7 @@ services:
     command: redis-server --appendonly yes
 
   licensing:
-    image: ghcr.io/jeffrey/kasho:develop
+    image: ghcr.io/kasho-io/kasho:develop
     command: ["/app/bin/licensing"]
     ports:
       - "${LICENSING_PORT:-50052}:50052"
@@ -36,7 +36,7 @@ services:
       retries: 5
 
   pg-change-stream:
-    image: ghcr.io/jeffrey/kasho:develop
+    image: ghcr.io/kasho-io/kasho:develop
     command: ["/app/bin/pg-change-stream"]
     ports:
       - "${CHANGE_STREAM_PORT:-50051}:50051"
@@ -55,7 +55,7 @@ services:
       - licensing
 
   pg-translicator:
-    image: ghcr.io/jeffrey/kasho:develop
+    image: ghcr.io/kasho-io/kasho:develop
     command: ["/app/bin/pg-translicator"]
     env_file:
       - .env
