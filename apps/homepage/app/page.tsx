@@ -42,6 +42,17 @@ export default function Home() {
           </h2>
           <h3 className="text-base-content text-lg sm:text-xl md:text-2xl font-bold font-mono text-center mt-4">COMING SOON.</h3>
         </div>
+        <div className="mt-8 w-full max-w-lg">
+          <div className="alert alert-info shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+              <h3 className="font-bold">Seeking Design Partners</h3>
+              <div className="text-sm">We're looking for early adopters to help shape Kasho. Interested? <a href="mailto:hello@kasho.io" className="link link-hover font-semibold">Contact us at hello@kasho.io</a></div>
+            </div>
+          </div>
+        </div>
       </div>
       <a
         href={demoUrl}
