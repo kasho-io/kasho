@@ -14,7 +14,12 @@ interface PageProps {
 
 // Since importPage returns Promise<any>, we need to define the result type
 interface PageResult {
-  default: React.ComponentType<any>
+  default: React.ComponentType<{
+    params: { mdxPath?: string[] }
+    searchParams: Promise<{
+      [key: string]: string | string[] | undefined
+    }>
+  }>
   toc: Heading[]
   metadata: Metadata
 }
@@ -39,7 +44,7 @@ export default async function Page(props: PageProps) {
   const { default: MDXContent, toc, metadata } = result
   return (
     <Wrapper toc={toc} metadata={metadata}>
-      <MDXContent {...props} params={params} />
+      <MDXContent params={params} searchParams={props.searchParams} />
     </Wrapper>
   )
 }

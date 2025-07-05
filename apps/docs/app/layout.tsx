@@ -1,8 +1,7 @@
 import { Footer, Layout, Navbar } from 'nextra-theme-docs'
-import { Banner, Head } from 'nextra/components'
+import { Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import { Inter, JetBrains_Mono } from 'next/font/google'
-import Image from 'next/image'
 import 'nextra-theme-docs/style.css'
 import './globals.css'
 
