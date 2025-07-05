@@ -9,6 +9,7 @@
 **/logs
 **/tmp
 **/environments
+**/.next/*
 
 # Ignore all HTML files:
 **/*.html
