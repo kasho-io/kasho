@@ -99,6 +99,9 @@ RUN chmod +x /app/scripts/*.sh
 # Copy only necessary SQL files
 COPY sql/setup/ /app/sql/setup/
 
+# Copy proto files for grpcurl
+COPY proto/ /app/proto/
+
 # Set ownership
 RUN chown -R kasho:kasho /app
 
