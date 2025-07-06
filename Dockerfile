@@ -2,7 +2,7 @@
 # Includes all services and tools in a single image for simplified deployment
 
 # Build the base image first (or use pre-built from registry)
-FROM ghcr.io/kasho-io/kasho-base:latest AS builder
+FROM kasho-base:latest AS builder
 
 # Accept LDFLAGS as build argument
 ARG LDFLAGS=""
@@ -24,7 +24,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-bootstrap
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/env-template ./tools/runtime/env-template
 
 # Development stage with hot reload
-FROM ghcr.io/kasho-io/kasho-base:latest AS development
+FROM kasho-base:latest AS development
 
 # Accept LDFLAGS as build argument
 ARG LDFLAGS=""

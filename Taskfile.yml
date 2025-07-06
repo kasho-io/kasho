@@ -47,28 +47,12 @@ tasks:
   build:base:
     desc: Build the base image with cached dependencies
     cmds:
-      - docker buildx create --name kasho-builder --driver docker-container --use || true
-      - docker buildx build --platform linux/386,linux/amd64,linux/arm,linux/arm64,linux/ppc64le,linux/s390x -f Dockerfile.base -t kasho-base --load .
+      - docker build -f Dockerfile.base -t kasho-base .
     sources:
       - Dockerfile.base
       - Taskfile.yml
       - go.work
       - "**/go.mod"
-
-  build:prod:
-    desc: Build the kasho Docker image for production
-    deps: [build:base]
-    cmds:
-      - docker buildx create --name kasho-builder --driver docker-container --use || true
-      - docker buildx build --platform linux/386,linux/amd64,linux/arm,linux/arm64,linux/ppc64le,linux/s390x -t kasho:prod --target production --build-arg LDFLAGS="{{.LDFLAGS}}" --load .
-    sources:
-      - Dockerfile
-      - Taskfile.yml
-      - go.work
-      - go.work.sum
-      - "**/*.go"
-      - "!**/*_test.go"
-      - scripts/runtime/**/*.sh
 
   proto:
     desc: Generate Go code from protobuf definitions
