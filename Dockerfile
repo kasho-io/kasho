@@ -46,9 +46,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/env-temp
 RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/pg-bootstrap-sync ./tools/runtime/pg-bootstrap-sync
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/licensing ./services/licensing/cmd/server
 
-# Copy all scripts to scripts directory
-COPY scripts/ /app/scripts/
-RUN find /app/scripts -name '*.sh' -exec chmod +x {} +
+# Copy only runtime scripts to scripts directory (same as production)
+COPY scripts/runtime/ /app/scripts/
+RUN chmod +x /app/scripts/*.sh
 
 # Set default environment variables
 ENV KV_URL=redis://127.0.0.1:6379
