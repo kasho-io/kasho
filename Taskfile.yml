@@ -36,6 +36,7 @@ tasks:
       - docker build -t kasho --target development --build-arg LDFLAGS="-X kasho/pkg/version.Version=dev -X kasho/pkg/version.GitCommit=dev -X kasho/pkg/version.BuildDate=dev" .
     sources:
       - Dockerfile
+      - Taskfile.yml
       - go.work
       - go.work.sum
       - "**/*.go"
@@ -46,9 +47,11 @@ tasks:
   build:base:
     desc: Build the base image with cached dependencies
     cmds:
-      - docker build -f Dockerfile.base -t kasho-base .
+      - docker buildx create --name kasho-builder --driver docker-container --use || true
+      - docker buildx build --platform linux/386,linux/amd64,linux/arm,linux/arm64,linux/ppc64le,linux/s390x -f Dockerfile.base -t kasho-base --load .
     sources:
       - Dockerfile.base
+      - Taskfile.yml
       - go.work
       - "**/go.mod"
 
@@ -56,9 +59,11 @@ tasks:
     desc: Build the kasho Docker image for production
     deps: [build:base]
     cmds:
-      - docker build -t kasho:prod --target production --build-arg LDFLAGS="{{.LDFLAGS}}" .
+      - docker buildx create --name kasho-builder --driver docker-container --use || true
+      - docker buildx build --platform linux/386,linux/amd64,linux/arm,linux/arm64,linux/ppc64le,linux/s390x -t kasho:prod --target production --build-arg LDFLAGS="{{.LDFLAGS}}" --load .
     sources:
       - Dockerfile
+      - Taskfile.yml
       - go.work
       - go.work.sum
       - "**/*.go"
