@@ -1,4 +1,5 @@
 import { Callout } from 'nextra/components'
+import { ObfuscatedEmail } from '../components/ObfuscatedEmail'
 
 # Quick Start
 
@@ -21,7 +22,7 @@ Kasho consists of three required containers that work together:
 ### Container Images
 
 All Kasho components are packaged in a single Docker image available from GitHub Container Registry:
-- Image: `ghcr.io/jeffrey/kasho:latest` (or specific version like `v1.0.0`)
+- Image: `ghcr.io/kasho-io/kasho:latest` (or specific version like `v0.2.0`)
 - Commands: `./pg-change-stream` and `./pg-translicator`
 
 <Callout type="info">
@@ -45,7 +46,7 @@ All Kasho components are packaged in a single Docker image available from GitHub
 <Callout type="info">
   **License Required**
   
-  Kasho requires a valid license file to operate. See the [Licensing](/installation/licensing) guide for details. If you're interested in becoming a design partner, contact [hello@kasho.io](mailto:hello@kasho.io).
+  Kasho requires a valid license file to operate. See the [Licensing](/installation/licensing) guide for details. If you're interested in becoming a design partner, contact <ObfuscatedEmail user="hello" domain="kasho.io" />.
 </Callout>
 
 Before you begin, ensure you have:
@@ -87,7 +88,7 @@ services:
       - redis-data:/data
 
   pg-change-stream:
-    image: ghcr.io/jeffrey/kasho:latest
+    image: ghcr.io/kasho-io/kasho:latest
     command: ./pg-change-stream
     environment:
       KV_URL: redis://redis:6379
@@ -101,7 +102,7 @@ services:
       - redis
 
   pg-translicator:
-    image: ghcr.io/jeffrey/kasho:latest
+    image: ghcr.io/kasho-io/kasho:latest
     command: ./pg-translicator
     environment:
       CHANGE_STREAM_SERVICE_ADDR: pg-change-stream:50051

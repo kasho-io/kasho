@@ -8,13 +8,13 @@ Kasho is distributed as Docker container images hosted on GitHub Container Regis
 The main Kasho image contains all components needed for deployment:
 
 ```
-ghcr.io/jeffrey/kasho:latest
+ghcr.io/kasho-io/kasho:latest
 ```
 
 ### Image Tags
 
 - **`:latest`** - The most recent stable release
-- **`:v1.0.0`** - Specific version releases (recommended for production)
+- **`:v0.2.0`** - Specific version releases (recommended for production)
 - **`:develop`** - Latest development build from the main branch (_not recommended_)
 - **`:sha-abc123`** - Specific commit builds (for debugging, _not recommended_)
 
@@ -36,13 +36,13 @@ Once authenticated, you can pull images:
 
 ```bash
 # Pull the latest stable release
-docker pull ghcr.io/jeffrey/kasho:latest
+docker pull ghcr.io/kasho-io/kasho:latest
 
 # Pull a specific version
-docker pull ghcr.io/jeffrey/kasho:v1.0.0
+docker pull ghcr.io/kasho-io/kasho:v0.2.0
 
 # Pull the development version
-docker pull ghcr.io/jeffrey/kasho:develop
+docker pull ghcr.io/kasho-io/kasho:develop
 ```
 
 ## Using in Docker Compose
@@ -52,12 +52,12 @@ Update your `docker-compose.yml` to use the full image path:
 ```yaml
 services:
   pg-change-stream:
-    image: ghcr.io/jeffrey/kasho:latest
+    image: ghcr.io/kasho-io/kasho:latest
     command: ./pg-change-stream
     # ... rest of configuration
 
   pg-translicator:
-    image: ghcr.io/jeffrey/kasho:latest
+    image: ghcr.io/kasho-io/kasho:latest
     command: ./pg-translicator
     # ... rest of configuration
 ```
@@ -88,13 +88,13 @@ spec:
       - name: ghcr
       containers:
       - name: pg-change-stream
-        image: ghcr.io/jeffrey/kasho:latest
+        image: ghcr.io/kasho-io/kasho:latest
         command: ["./pg-change-stream"]
 ```
 
 ## Version Policy
 
-- **Production**: Always use specific version tags (e.g., `v1.0.0`)
+- **Production**: Always use specific version tags (e.g., `v0.2.0`)
 - **Testing**: You can use `:latest` or specific versions
 - **Development**: Use `:develop` for latest features (may be unstable)
 

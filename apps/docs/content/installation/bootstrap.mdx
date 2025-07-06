@@ -120,7 +120,7 @@ pg_dump \
 docker run --rm \
   -v $(pwd):/data \
   --network your-network \
-  ghcr.io/jeffrey/kasho:latest \
+  ghcr.io/kasho-io/kasho:latest \
   pg-bootstrap-sync \
     --dump-file=/data/dump.sql \
     --redis-url=redis://redis:6379
