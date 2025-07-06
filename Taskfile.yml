@@ -222,6 +222,12 @@ tasks:
       - echo "🎨 Formatting all apps..."
       - npx prettier --write "apps/**/*.{ts,tsx,js,jsx,json,md}"
 
+  apps:prettier:check:
+    desc: Check prettier formatting for all frontend applications (without writing)
+    cmds:
+      - echo "🔍 Checking prettier formatting for all apps..."
+      - npx prettier --check "apps/**/*.{ts,tsx,js,jsx,json,md}"
+
   apps:prettier:*:
     desc: Run prettier for a specific app
     cmds:
