@@ -235,7 +235,7 @@ tasks:
         app="{{index .MATCH 0}}"
         if [ -d "apps/$app" ]; then
           echo "🎨 Formatting $app app..."
-          cd apps/$app && npm run prettier"
+          cd apps/$app && npm run prettier
         else
           echo "❌ App '$app' not found in apps/ directory"
           exit 1
