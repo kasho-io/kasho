@@ -1,8 +1,11 @@
 # Kasho Consolidated Container
 # Includes all services and tools in a single image for simplified deployment
 
+# Build argument for base image (defaults to local for development)
+ARG BASE_IMAGE=kasho-base:latest
+
 # Build the base image first (or use pre-built from registry)
-FROM kasho-base:latest AS builder
+FROM ${BASE_IMAGE} AS builder
 
 # Accept LDFLAGS as build argument
 ARG LDFLAGS=""
@@ -24,7 +27,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-bootstrap
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/env-template ./tools/runtime/env-template
 
 # Development stage with hot reload
-FROM kasho-base:latest AS development
+FROM ${BASE_IMAGE} AS development
 
 # Accept LDFLAGS as build argument
 ARG LDFLAGS=""
