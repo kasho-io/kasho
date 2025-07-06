@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { ObfuscatedEmail } from "../components/ObfuscatedEmail";
 
 export default function Home() {
   const isDev = process.env.NODE_ENV === "development";
@@ -49,7 +50,7 @@ export default function Home() {
             </svg>
             <div>
               <h3 className="font-bold">Seeking Design Partners</h3>
-              <div className="text-sm">We&apos;re looking for early adopters to help shape Kasho. Interested? <a href="mailto:hello@kasho.io" className="link link-hover font-semibold">Contact us at hello@kasho.io</a></div>
+              <div className="text-sm">We&apos;re looking for early adopters to help shape Kasho. Interested? <span className="font-semibold">Contact us at <ObfuscatedEmail user="hello" domain="kasho.io" className="link link-hover" /></span></div>
             </div>
           </div>
         </div>
