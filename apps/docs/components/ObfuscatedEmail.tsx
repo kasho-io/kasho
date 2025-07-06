@@ -1,7 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-
 interface ObfuscatedEmailProps {
   user: string
   domain: string
@@ -9,24 +7,26 @@ interface ObfuscatedEmailProps {
 }
 
 export function ObfuscatedEmail({ user, domain, className }: ObfuscatedEmailProps) {
-  const [revealed, setRevealed] = useState(false)
   const email = `${user}@${domain}`
+  const reversedEmail = email.split('').reverse().join('')
   
-  if (revealed) {
-    return (
-      <a href={`mailto:${email}`} className={className}>
-        {email}
-      </a>
-    )
+  const handleClick = () => {
+    window.location.href = `mailto:${email}`
   }
   
   return (
-    <button
-      onClick={() => setRevealed(true)}
-      className={className || 'text-primary underline hover:no-underline'}
-      title="Click to reveal email"
+    <span 
+      className={className}
+      style={{
+        unicodeBidi: 'bidi-override',
+        direction: 'rtl',
+        textDecoration: 'underline',
+        cursor: 'pointer'
+      }}
+      onClick={handleClick}
+      title="Click to email"
     >
-      {user}[at]{domain}
-    </button>
+      {reversedEmail}
+    </span>
   )
 }
