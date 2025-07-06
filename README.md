@@ -15,6 +15,7 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 ### Services
 
 #### pg-change-stream (`services/pg-change-stream/`)
+
 - Go service that captures and streams database changes
 - Uses PostgreSQL's logical replication
 - Provides gRPC interface for real-time change streaming
@@ -22,12 +23,14 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - Uses Redis for buffering and pub/sub
 
 #### pg-translicator (`services/pg-translicator/`)
+
 - Go service for translating and transforming database changes
 - Processes change events from pg-change-stream
 - Supports custom transformation rules
 - Integrates with external systems
 
 #### licensing (`services/licensing/`)
+
 - gRPC service for license validation
 - JWT-based license verification with RSA signatures
 - Provides license validation and information endpoints
@@ -36,12 +39,14 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 ### Environments
 
 #### Development (`environments/development/`)
+
 - Docker Compose setup for local development
 - Includes PostgreSQL primary and replica databases
 - Redis for caching
 - All core services configured for development with hot reload
 
 #### Demo (`environments/demo/`)
+
 - Production-like environment for demonstration and testing
 - Uses production Docker image builds
 - Includes PostgreSQL primary and replica databases
@@ -49,6 +54,7 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - Automated deployment via GitHub Actions
 
 ### Tools (`tools/`)
+
 - `pg-bootstrap-sync`: CLI tool for bootstrapping replica databases from PostgreSQL dump files
   - Parses pg_dump files and converts them to Change objects for the replication system
   - Supports both COPY and INSERT format dump files
@@ -62,6 +68,7 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
   - Private keys must never be committed to the repository
 
 ### Shared Packages (`pkg/`)
+
 - `kvbuffer`: Shared Redis-based buffer for change events
   - Used by both pg-change-stream and pg-bootstrap-sync
   - Supports both real PostgreSQL LSNs and synthetic bootstrap LSNs
@@ -78,6 +85,7 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
   - Embeds version, commit, and build date at compile time
 
 ### SQL (`sql/`)
+
 - Scripts that will be needed to get a Postgres server ready to use kasho
 - They should be run in the order that they are numbered
 - `00-setup-wal-level.sql` is not necessary in development because the `docker-compose.yml` file handles it.
@@ -85,6 +93,7 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 ### Apps
 
 #### Homepage (`apps/homepage/`)
+
 - Public-facing landing page for Kasho.
 - Shows the Kasho wordmark and a brief description.
 - To run locally:
@@ -94,6 +103,7 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
   (Runs on [http://localhost:3000](http://localhost:3000))
 
 #### Demo (`apps/demo/`)
+
 - Interactive demo app for showcasing Kasho's real-time database replication and transformation features.
 - Includes a UI for connecting to primary and replica databases, and visualizing real-time changes.
 - To run locally:
@@ -103,6 +113,7 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
   (Runs on [http://localhost:3001](http://localhost:3001))
 
 #### Documentation (`apps/docs/`)
+
 - Comprehensive documentation site for Kasho built with Nextra and MDX.
 - Includes installation guides, configuration reference, and getting started tutorials.
 - To run locally:
@@ -125,16 +136,27 @@ Kasho uses a consolidated Docker approach for simplified deployment:
 The project uses Docker, Golang, and Task.
 
 1. Install dependencies:
+
    - Docker
    - Go 1.24 or later
    - Task (task runner)
+   - npm, nodeJS
 
 2. Install Task:
+
 ```bash
 go install github.com/go-task/task/v3/cmd/task@latest
 ```
 
 Type `task` by itself for a list of commands.
+
+3. Developer tool
+
+Install a pre-commit hook for running prettier on commit for apps/\*:
+
+```bash
+scripts/development/install-git-hooks.sh
+```
 
 ## Deployment
 
@@ -146,7 +168,7 @@ docker build -t kasho .
 
 # Run individual services
 docker run kasho ./pg-change-stream
-docker run kasho ./pg-translicator  
+docker run kasho ./pg-translicator
 docker run kasho ./pg-bootstrap-sync --help
 
 # Or use environment-specific docker-compose files
@@ -156,6 +178,7 @@ cd environments/demo && docker-compose up
 ## Getting Started
 
 1. Generate a development license (requires private key file):
+
 ```bash
 # Note: You need to obtain the private key file from an authorized source
 
@@ -177,16 +200,19 @@ go run ./tools/generate-license \
 ```
 
 2. Reset and start the development environment. In another terminal, run:
+
 ```bash
 task dev:reset
 ```
 
 3. Bootstrap the replica database from the primary. This will create a consistent snapshot and start streaming changes:
+
 ```bash
 task dev:bootstrap
 ```
 
 4. Run the demo app to visualize the replication. In a separate terminal, run:
+
 ```bash
 task dev:app:demo
 ```
@@ -200,4 +226,3 @@ task dev:app:demo
 ## License
 
 Copyright &copy; Jeffrey Wescott, 2025. All rights reserved.
- 
