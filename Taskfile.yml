@@ -146,7 +146,7 @@ tasks:
     desc: Run tests for a specific app
     cmds:
       - echo "🧪 Testing {{index .MATCH 0}} app..."
-      - cd apps/{{index .MATCH 0}} && npm run test
+      - npm run test --workspace=apps/{{index .MATCH 0}}
 
   dev:
     desc: Start development environment (alias for dev:start)
@@ -174,6 +174,7 @@ tasks:
 
   dev:app:*:
     desc: Start a specific app in development mode
+    deps: [apps:deps:install]
     cmds:
       - |
         app="{{index .MATCH 0}}"
@@ -183,7 +184,7 @@ tasks:
           docs) port="${APP_DOCS_PORT:-3002}" ;;
           *) port=3000 ;;
         esac
-        cd apps/$app && npm run dev -- --port $port
+        npm run dev --workspace=apps/$app -- --port $port
 
   # Lint tasks
   lint:
@@ -216,7 +217,7 @@ tasks:
     desc: Lint a specific app
     cmds:
       - echo "🔍 Linting {{index .MATCH 0}} app..."
-      - cd apps/{{index .MATCH 0}} && npm run lint
+      - npm run lint --workspace=apps/{{index .MATCH 0}}
 
   # Prettier tasks
   apps:prettier:
@@ -238,11 +239,32 @@ tasks:
         app="{{index .MATCH 0}}"
         if [ -d "apps/$app" ]; then
           echo "🎨 Formatting $app app..."
-          cd apps/$app && npm run prettier
+          npm run prettier --workspace=apps/$app
         else
           echo "❌ App '$app' not found in apps/ directory"
           exit 1
         fi
+
+  # Workspace management tasks
+  apps:deps:install:
+    desc: Install dependencies for all apps using workspace
+    cmds:
+      - npm install
+
+  apps:deps:update:
+    desc: Update dependencies for all apps
+    cmds:
+      - npm update --workspaces
+
+  apps:deps:clean:
+    desc: Clean node_modules for all apps
+    cmds:
+      - rm -rf node_modules apps/*/node_modules
+
+  apps:lockfiles:clean:
+    desc: Remove individual app package-lock.json files (workspace manages locking)
+    cmds:
+      - rm -f apps/*/package-lock.json
 
   # Version tasks
   version:
