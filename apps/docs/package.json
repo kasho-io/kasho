@@ -10,9 +10,9 @@
     "test": "echo \"No tests yet\" && exit 0",
     "test:ci": "npm run prettier:check && npm run lint && npm run type-check && npm run test",
     "type-check": "npx tsc --noEmit",
-    "prettier": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "prettier:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind"
+    "prettier": "npx prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "prettier:check": "npx prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "postbuild": "npx pagefind --site .next/server/app --output-path public/_pagefind"
   },
   "dependencies": {
     "@napi-rs/simple-git": "^0.1.19",
