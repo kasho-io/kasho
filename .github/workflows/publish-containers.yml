@@ -16,14 +16,54 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  check-changes:
+    # Only run for workflow_run trigger (not for tag pushes)
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    outputs:
+      should-build: ${{ steps.changes.outputs.docker }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for Docker-related changes
+        id: changes
+        uses: dorny/paths-filter@v2
+        with:
+          # Keep these paths in sync with Taskfile.yml's "build" task sources
+          filters: |
+            docker:
+              - 'Dockerfile'
+              - 'Dockerfile.base'
+              - 'Taskfile.yml'
+              - 'go.work'
+              - 'go.work.sum'
+              - '**/*.go'
+              - '!**/*_test.go'
+              - 'scripts/runtime/**/*.sh'
+              - 'environments/development/.air.toml'
+              - '**/go.mod'
+              - '**/go.sum'
+              - 'proto/**'
+              - '.github/workflows/publish-containers.yml'
+
   build-and-push:
-    # For workflow_run trigger, only run if tests passed
-    # For tag push, always run
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
+    # Need to wait for check-changes if it exists (workflow_run trigger)
+    # For tag pushes, check-changes job won't run, so no dependency
+    if: |
+      ${{ 
+        always() && 
+        (github.event_name == 'push' || 
+         (github.event_name == 'workflow_run' && 
+          github.event.workflow_run.conclusion == 'success' && 
+          (needs.check-changes.result == 'skipped' || needs.check-changes.outputs.should-build == 'true')))
+      }}
+    needs: 
+      - check-changes
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    outputs:
+      built-develop-image: ${{ steps.set-outputs.outputs.built-develop-image }}
     
     steps:
       - name: Checkout repository
@@ -83,3 +123,39 @@ jobs:
             LDFLAGS=-X kasho/pkg/version.Version=${{ steps.meta.outputs.version || 'develop' }} -X kasho/pkg/version.GitCommit=${{ github.sha }} -X kasho/pkg/version.BuildDate=${{ steps.date.outputs.date }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Save build status
+        if: ${{ github.event_name == 'workflow_run' }}
+        run: |
+          echo "BUILT_DEVELOP_IMAGE=true" > build-status.txt
+          
+      - name: Upload build status artifact
+        if: ${{ github.event_name == 'workflow_run' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-status
+          path: build-status.txt
+          retention-days: 1
+
+  publish-status:
+    runs-on: ubuntu-latest
+    needs: [check-changes, build-and-push]
+    if: always() && github.event_name == 'workflow_run'
+    steps:
+      - name: Container Publish Status
+        run: |
+          echo "📊 Container Publish Status Report"
+          echo "================================="
+          echo "Tests passed: ${{ github.event.workflow_run.conclusion == 'success' }}"
+          echo "Docker changes detected: ${{ needs.check-changes.outputs.should-build }}"
+          echo "Build job status: ${{ needs.build-and-push.result }}"
+          
+          if [[ "${{ github.event.workflow_run.conclusion }}" != "success" ]]; then
+            echo "❌ Publish skipped: Tests failed"
+          elif [[ "${{ needs.check-changes.outputs.should-build }}" != "true" ]]; then
+            echo "⏭️ Publish skipped: No Docker-related changes detected"
+          elif [[ "${{ needs.build-and-push.result }}" == "success" ]]; then
+            echo "✅ Container images published successfully"
+          else
+            echo "❌ Container publish failed"
+          fi

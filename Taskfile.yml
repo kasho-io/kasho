@@ -34,6 +34,8 @@ tasks:
     deps: [build:base]
     cmds:
       - docker build -t kasho --target development --build-arg LDFLAGS="-X kasho/pkg/version.Version=dev -X kasho/pkg/version.GitCommit=dev -X kasho/pkg/version.BuildDate=dev" .
+    # NOTE: Keep these sources in sync with .github/workflows/publish-containers.yml
+    # The publish-containers workflow uses the same list to determine when to rebuild containers
     sources:
       - Dockerfile
       - Taskfile.yml
@@ -43,6 +45,7 @@ tasks:
       - "!**/*_test.go"
       - scripts/runtime/**/*.sh
       - environments/development/.air.toml
+      - proto/**
 
   build:base:
     desc: Build the base image with cached dependencies
