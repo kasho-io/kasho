@@ -32,15 +32,13 @@ jobs:
           sudo mv ./bin/task /usr/local/bin/task
 
       - name: Install dependencies
-        run: npm ci
-        working-directory: ${{ inputs.app-directory }}
+        run: task apps:deps:install
 
       - name: Run tests
         run: task test:app:${{ inputs.app-name }}
 
       - name: Build application
-        run: npm run build
-        working-directory: ${{ inputs.app-directory }}
+        run: task apps:build:${{ inputs.app-name }}
         env:
           NODE_ENV: production
 
