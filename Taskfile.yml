@@ -245,6 +245,19 @@ tasks:
           exit 1
         fi
 
+  apps:build:*:
+    desc: Build a specific app
+    cmds:
+      - |
+        app="{{index .MATCH 0}}"
+        if [ -d "apps/$app" ]; then
+          echo "🏗️ Building $app app..."
+          npm run build --workspace=apps/$app
+        else
+          echo "❌ App '$app' not found in apps/ directory"
+          exit 1
+        fi
+
   # Workspace management tasks
   apps:deps:install:
     desc: Install dependencies for all apps using workspace
