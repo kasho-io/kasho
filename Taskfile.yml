@@ -1,6 +1,8 @@
 version: "3"
 
 vars:
+  REPO_ROOT:
+    sh: pwd
   SERVICES:
     sh: find services -maxdepth 2 -name go.mod -exec dirname {} \; | sort
   TOOLS:
@@ -262,22 +264,36 @@ tasks:
   apps:deps:install:
     desc: Install dependencies for all apps using workspace
     cmds:
-      - npm install
+      - cd {{.REPO_ROOT}} && npm install
 
   apps:deps:update:
     desc: Update dependencies for all apps
     cmds:
-      - npm update --workspaces
+      - cd {{.REPO_ROOT}} && npm update --workspaces
 
   apps:deps:clean:
     desc: Clean node_modules for all apps
     cmds:
-      - rm -rf node_modules apps/*/node_modules
+      - cd {{.REPO_ROOT}} && rm -rf node_modules apps/*/node_modules
 
   apps:lockfiles:clean:
     desc: Remove individual app package-lock.json files (workspace manages locking)
     cmds:
-      - rm -f apps/*/package-lock.json
+      - cd {{.REPO_ROOT}} && rm -f apps/*/package-lock.json
+
+  apps:deps:install:*:
+    desc: Install dependencies for a specific app
+    cmds:
+      - |
+        app="{{index .MATCH 0}}"
+        if [ -d "{{.REPO_ROOT}}/apps/$app" ]; then
+          echo "📦 Installing workspace dependencies and dependencies for $app app..."
+          cd {{.REPO_ROOT}} && npm install && npm install --workspace=apps/$app
+          echo "✅ Dependencies installed for $app"
+        else
+          echo "❌ App '$app' not found in apps/ directory"
+          exit 1
+        fi
 
   # Version tasks
   version:
