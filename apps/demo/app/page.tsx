@@ -99,21 +99,23 @@ export default function Home() {
           height={32}
         />
       </div>
-      {/* Desktop: top-left */}
-      <div className="absolute top-2 left-2 z-10 hidden sm:block">
-        <Image
-          src={isDarkMode ? "/kasho-icon-dark.png" : "/kasho-icon-light.png"}
-          alt="Kasho Icon"
-          width={32}
-          height={32}
-        />
-      </div>
 
       {/* Header Section */}
       <div className="bg-base-100 border-b border-base-300 p-4">
         <div className="max-w-6xl mx-auto space-y-4">
           <div>
-            <h1 className="text-2xl font-bold mb-2">Kasho Live Demo</h1>
+            <div className="flex items-center gap-3 mb-2">
+              {/* Desktop: icon prefix */}
+              <div className="hidden sm:block">
+                <Image
+                  src={isDarkMode ? "/kasho-icon-dark.png" : "/kasho-icon-light.png"}
+                  alt="Kasho Icon"
+                  width={32}
+                  height={32}
+                />
+              </div>
+              <h1 className="text-2xl font-bold">Kasho Live Demo</h1>
+            </div>
             <p className="text-sm opacity-70 mb-3">
               Real-time database replication with data transformation. Watch changes propagate from primary to replica
               with live transforms.
