@@ -6,7 +6,8 @@ import { ObfuscatedEmail } from "../components/ObfuscatedEmail";
 
 export default function Home() {
   const isDev = process.env.NODE_ENV === "development";
-  const demoUrl = isDev ? "http://localhost:3001" : "https://demo.kasho.io";
+  const demoPort = process.env.APP_DEMO_PORT ?? "3001";
+  const demoUrl = isDev ? `http://localhost:${demoPort}` : "https://demo.kasho.io";
 
   const [isDarkMode, setIsDarkMode] = useState(false);
 
