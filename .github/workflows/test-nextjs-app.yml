@@ -32,7 +32,7 @@ jobs:
           sudo mv ./bin/task /usr/local/bin/task
 
       - name: Install dependencies
-        run: task apps:deps:install
+        run: task apps:deps:install:${{ inputs.app-name }}
 
       - name: Run tests
         run: task test:app:${{ inputs.app-name }}
