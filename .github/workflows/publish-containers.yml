@@ -52,22 +52,6 @@ jobs:
             echo "⚠️ No change detection artifact found, proceeding with build"
           fi
 
-  debug-condition:
-    needs: [check-changes]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Debug workflow conditions
-        run: |
-          echo "🔍 Debug Information:"
-          echo "Event name: ${{ github.event_name }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "Is tag: ${{ startsWith(github.ref, 'refs/tags/') }}"
-          echo "Check-changes result: ${{ needs.check-changes.result }}"
-          echo "Should-build output: ${{ needs.check-changes.outputs.should-build }}"
-          echo "Should-build == 'true': ${{ needs.check-changes.outputs.should-build == 'true' }}"
-          echo "Full condition result: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || (github.event_name == 'workflow_run' && needs.check-changes.result == 'success' && needs.check-changes.outputs.should-build == 'true') }}"
-
   build-and-push:
     # Only depend on check-changes for workflow_run events
     needs: [check-changes]
