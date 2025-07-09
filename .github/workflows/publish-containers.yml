@@ -20,6 +20,9 @@ jobs:
     # Only run for workflow_run trigger (not for tag pushes)
     if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
     outputs:
       should-build: ${{ steps.check.outputs.should-build }}
     steps:
