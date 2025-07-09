@@ -38,11 +38,7 @@ jobs:
         id: check
         run: |
           if [ -f change-detection.json ]; then
-            echo "📋 Contents of change-detection.json:"
-            cat change-detection.json
-            echo ""
             docker_changes=$(jq -r '.docker_changes' change-detection.json)
-            echo "🔍 docker_changes value: '$docker_changes'"
             if [ "$docker_changes" = "true" ]; then
               echo "should-build=true" >> $GITHUB_OUTPUT
               echo "✅ Docker-related changes detected, proceeding with build"
@@ -50,8 +46,6 @@ jobs:
               echo "should-build=false" >> $GITHUB_OUTPUT
               echo "⏭️ No Docker-related changes detected, skipping build"
             fi
-            echo "📊 GITHUB_OUTPUT contents:"
-            cat $GITHUB_OUTPUT || echo "No GITHUB_OUTPUT file"
           else
             # If no artifact, assume we should build (fail-safe)
             echo "should-build=true" >> $GITHUB_OUTPUT
@@ -63,13 +57,10 @@ jobs:
     needs: [check-changes]
     if: |
       ${{ 
-        always() &&
-        (
-          (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || 
-          (github.event_name == 'workflow_run' && 
-           needs.check-changes.result == 'success' &&
-           needs.check-changes.outputs.should-build == 'true')
-        )
+        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || 
+        (github.event_name == 'workflow_run' && 
+         needs.check-changes.result == 'success' &&
+         needs.check-changes.outputs.should-build == 'true')
       }}
     runs-on: ubuntu-latest
     permissions:
