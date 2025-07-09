@@ -57,11 +57,10 @@ jobs:
     # For tag pushes, check-changes job won't run, so no dependency
     if: |
       ${{ 
-        always() && 
-        (github.event_name == 'push' || 
-         (github.event_name == 'workflow_run' && 
-          github.event.workflow_run.conclusion == 'success' && 
-          (needs.check-changes.result == 'skipped' || needs.check-changes.outputs.should-build == 'true')))
+        (github.event_name == 'push') || 
+        (github.event_name == 'workflow_run' && 
+         github.event.workflow_run.conclusion == 'success' && 
+         needs.check-changes.outputs.should-build == 'true')
       }}
     needs: 
       - check-changes
