@@ -46,6 +46,25 @@ jobs:
               - 'apps/homepage/**'
             proto:
               - 'proto/**'
+      
+      - name: Save change detection results for publish workflow
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cat > change-detection.json << EOF
+          {
+            "docker_changes": "${{ steps.changes.outputs.go-services == 'true' || steps.changes.outputs.proto == 'true' }}",
+            "go_services": "${{ steps.changes.outputs.go-services }}",
+            "proto": "${{ steps.changes.outputs.proto }}"
+          }
+          EOF
+          
+      - name: Upload change detection artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: change-detection
+          path: change-detection.json
+          retention-days: 1
 
   # Test Go services (pg-change-stream, pg-translicator)
   test-go-services:
@@ -126,25 +145,3 @@ jobs:
           fi
           echo "All tests passed!"
 
-  # Signal that tests passed and what changed
-  tests-passed:
-    needs: [test-summary, detect-changes]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Save change detection results
-        run: |
-          cat > change-detection.json << EOF
-          {
-            "docker_changes": "${{ needs.detect-changes.outputs.go-services == 'true' || needs.detect-changes.outputs.proto == 'true' }}",
-            "go_services": "${{ needs.detect-changes.outputs.go-services }}",
-            "proto": "${{ needs.detect-changes.outputs.proto }}"
-          }
-          EOF
-          
-      - name: Upload change detection artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: change-detection
-          path: change-detection.json
-          retention-days: 1
