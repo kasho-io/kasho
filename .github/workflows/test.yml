@@ -126,14 +126,25 @@ jobs:
           fi
           echo "All tests passed!"
 
-  # Signal that tests passed - other workflows can depend on this
+  # Signal that tests passed and what changed
   tests-passed:
-    needs: test-summary
+    needs: [test-summary, detect-changes]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    outputs:
-      tests-passed: ${{ steps.set-output.outputs.tests-passed }}
     steps:
-      - name: Set tests passed output
-        id: set-output
-        run: echo "tests-passed=true" >> $GITHUB_OUTPUT
+      - name: Save change detection results
+        run: |
+          cat > change-detection.json << EOF
+          {
+            "docker_changes": "${{ needs.detect-changes.outputs.go-services == 'true' || needs.detect-changes.outputs.proto == 'true' }}",
+            "go_services": "${{ needs.detect-changes.outputs.go-services }}",
+            "proto": "${{ needs.detect-changes.outputs.proto }}"
+          }
+          EOF
+          
+      - name: Upload change detection artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: change-detection
+          path: change-detection.json
+          retention-days: 1

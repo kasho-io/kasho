@@ -21,29 +21,33 @@ jobs:
     if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     outputs:
-      should-build: ${{ steps.changes.outputs.docker }}
+      should-build: ${{ steps.check.outputs.should-build }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Check for Docker-related changes
-        id: changes
-        uses: dorny/paths-filter@v2
+      - name: Download change detection artifact
+        uses: actions/download-artifact@v4
         with:
-          # Keep these paths in sync with Taskfile.yml's "build" task sources
-          filters: |
-            docker:
-              - 'Dockerfile'
-              - 'Dockerfile.base'
-              - 'Taskfile.yml'
-              - 'go.work'
-              - 'go.work.sum'
-              - '**/*.go'
-              - '!**/*_test.go'
-              - 'scripts/runtime/**/*.sh'
-              - 'environments/development/.air.toml'
-              - '**/go.mod'
-              - '**/go.sum'
-              - 'proto/**'
-              - '.github/workflows/publish-containers.yml'
+          name: change-detection
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+        continue-on-error: true
+        
+      - name: Check if Docker build is needed
+        id: check
+        run: |
+          if [ -f change-detection.json ]; then
+            docker_changes=$(jq -r '.docker_changes' change-detection.json)
+            if [ "$docker_changes" = "true" ]; then
+              echo "should-build=true" >> $GITHUB_OUTPUT
+              echo "✅ Docker-related changes detected, proceeding with build"
+            else
+              echo "should-build=false" >> $GITHUB_OUTPUT
+              echo "⏭️ No Docker-related changes detected, skipping build"
+            fi
+          else
+            # If no artifact, assume we should build (fail-safe)
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "⚠️ No change detection artifact found, proceeding with build"
+          fi
 
   build-and-push:
     # Need to wait for check-changes if it exists (workflow_run trigger)
