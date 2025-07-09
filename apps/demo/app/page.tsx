@@ -17,6 +17,8 @@ interface Row {
 export default function Home() {
   const [primaryRows, setPrimaryRows] = useState<Row[] | null>(null);
   const [replicaRows, setReplicaRows] = useState<Row[] | null>(null);
+  const [primaryError, setPrimaryError] = useState<string | null>(null);
+  const [replicaError, setReplicaError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [primaryEdits, setPrimaryEdits] = useState<Row[]>([]);
   const [saving, setSaving] = useState(false);
@@ -34,8 +36,22 @@ export default function Home() {
       const [primaryRes, replicaRes] = await Promise.all([fetch("/api/primary-table"), fetch("/api/replica-table")]);
       const [primaryData, replicaData] = await Promise.all([primaryRes.json(), replicaRes.json()]);
       if (!isMounted) return;
-      setPrimaryRows(primaryData);
-      setReplicaRows(replicaData);
+
+      if (primaryRes.ok) {
+        setPrimaryRows(primaryData);
+        setPrimaryError(null);
+      } else {
+        setPrimaryRows([]);
+        setPrimaryError(`${primaryData.error}: ${primaryData.details}`);
+      }
+
+      if (replicaRes.ok) {
+        setReplicaRows(replicaData);
+        setReplicaError(null);
+      } else {
+        setReplicaRows([]);
+        setReplicaError(`${replicaData.error}: ${replicaData.details}`);
+      }
       if (firstLoad.current) {
         setLoading(false);
         firstLoad.current = false;
@@ -71,11 +87,15 @@ export default function Home() {
 
   const handleSave = async () => {
     setSaving(true);
-    await fetch("/api/primary-table", {
+    const patchRes = await fetch("/api/primary-table", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rows: primaryEdits }),
     });
+    if (!patchRes.ok) {
+      setPrimaryError(`${patchRes.statusText}: ${patchRes.status}`);
+      return;
+    }
     setPrimaryEdits([]);
     setSaveKey((prev) => prev + 1); // Force DataTable to reset
 
@@ -142,6 +162,11 @@ export default function Home() {
                 {saving ? "Saving..." : "Save"}
               </button>
             )}
+            {primaryError && (
+              <div className="max-w-6xl mx-auto w-full text-red-500 text-sm p-2" role="alert">
+                ⚠️ {primaryError}
+              </div>
+            )}
           </div>
           <div className="mb-3 bg-info/10 border border-info/20 rounded overflow-hidden">
             <button
@@ -190,6 +215,11 @@ export default function Home() {
             Replica <span className="text-sm font-normal opacity-70 font-mono">(replica_db@postgres-replica:5432)</span>
           </span>
         </div>
+        {replicaError && (
+          <div className="max-w-6xl mx-auto w-full text-red-500 text-sm p-2" role="alert">
+            ⚠️ {replicaError}
+          </div>
+        )}
         <DataTable rows={replicaRows} loading={loading} />
       </div>
     </div>
