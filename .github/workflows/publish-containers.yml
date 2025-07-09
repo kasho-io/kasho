@@ -38,7 +38,11 @@ jobs:
         id: check
         run: |
           if [ -f change-detection.json ]; then
+            echo "📋 Contents of change-detection.json:"
+            cat change-detection.json
+            echo ""
             docker_changes=$(jq -r '.docker_changes' change-detection.json)
+            echo "🔍 docker_changes value: '$docker_changes'"
             if [ "$docker_changes" = "true" ]; then
               echo "should-build=true" >> $GITHUB_OUTPUT
               echo "✅ Docker-related changes detected, proceeding with build"
