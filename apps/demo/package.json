@@ -1,6 +1,6 @@
 {
   "name": "demo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev --port ${APP_DEMO_PORT:-3001} --turbopack",
@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "echo \"No tests yet\" && exit 0",
-    "prettier": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "prettier:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "prettier": "npx prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "prettier:check": "npx prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "type-check": "npx tsc --noEmit",
     "test:ci": "npm run prettier:check && npm run lint && npm run type-check && npm run test"
   },
@@ -23,16 +23,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "15.1.8",
-    "eslint-config-prettier": "^10.1.5",
-    "prettier": "^3.6.2",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "@types/react": "19.1.8",
+    "typescript": "5.8.3"
   }
 }

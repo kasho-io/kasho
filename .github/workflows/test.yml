@@ -25,6 +25,7 @@ jobs:
       go-services: ${{ steps.changes.outputs.go-services }}
       demo-app: ${{ steps.changes.outputs.demo-app }}
       homepage-app: ${{ steps.changes.outputs.homepage-app }}
+      docs-app: ${{ steps.changes.outputs.docs-app }}
       proto: ${{ steps.changes.outputs.proto }}
     steps:
       - uses: actions/checkout@v4
@@ -44,6 +45,8 @@ jobs:
               - 'apps/demo/**'
             homepage-app:
               - 'apps/homepage/**'
+            docs-app:
+              - 'apps/docs/**'
             proto:
               - 'proto/**'
       
@@ -90,6 +93,15 @@ jobs:
       app-directory: apps/homepage
       app-name: homepage
 
+  # Test docs Next.js app
+  test-docs-app:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.docs-app == 'true' || github.event.inputs.force_all_tests == 'true'
+    uses: ./.github/workflows/test-nextjs-app.yml
+    with:
+      app-directory: apps/docs
+      app-name: docs
+
   # Validate protobuf definitions
   test-proto:
     needs: detect-changes
@@ -121,7 +133,7 @@ jobs:
   # Summary job that all other workflows depend on
   test-summary:
     runs-on: ubuntu-latest
-    needs: [detect-changes, test-go-services, test-demo-app, test-homepage-app, test-proto]
+    needs: [detect-changes, test-go-services, test-demo-app, test-homepage-app, test-docs-app, test-proto]
     if: always()
     steps:
       - name: Check test results
@@ -137,6 +149,10 @@ jobs:
           fi
           if [[ "${{ needs.test-homepage-app.result }}" == "failure" ]]; then
             echo "Homepage app tests failed"
+            exit 1
+          fi
+          if [[ "${{ needs.test-docs-app.result }}" == "failure" ]]; then
+            echo "Docs app tests failed"
             exit 1
           fi
           if [[ "${{ needs.test-proto.result }}" == "failure" ]]; then
