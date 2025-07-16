@@ -130,7 +130,7 @@ func (b *Bootstrapper) Bootstrap(ctx context.Context) error {
 	b.stats.DDLCount = parseResult.Metadata.DDLCount
 	b.stats.DMLCount = parseResult.Metadata.DMLCount
 
-	b.logFinalStatistics()
+	b.logFinalStatistics(ctx)
 	return nil
 }
 
@@ -194,7 +194,7 @@ func (b *Bootstrapper) storeChanges(ctx context.Context, changes []*types.Change
 }
 
 // logFinalStatistics logs final bootstrap statistics
-func (b *Bootstrapper) logFinalStatistics() {
+func (b *Bootstrapper) logFinalStatistics(ctx context.Context) {
 	duration := b.stats.EndTime.Sub(b.stats.StartTime)
 	
 	logLevel := slog.LevelInfo
@@ -221,9 +221,9 @@ func (b *Bootstrapper) logFinalStatistics() {
 	}
 	
 	if b.stats.ErrorsEncountered > 0 {
-		slog.Log(nil, logLevel, "Bootstrap completed with errors", logFields...)
+		slog.Log(ctx, logLevel, "Bootstrap completed with errors", logFields...)
 	} else {
-		slog.Log(nil, logLevel, "Bootstrap completed successfully", logFields...)
+		slog.Log(ctx, logLevel, "Bootstrap completed successfully", logFields...)
 	}
 }
 
