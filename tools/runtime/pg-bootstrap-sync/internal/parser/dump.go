@@ -76,6 +76,13 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 			continue
 		}
 
+		// Skip psql meta-commands (like \restrict in PostgreSQL 17.6+)
+		// These are client-side commands, not SQL statements
+		// But don't skip the COPY data terminator \.
+		if strings.HasPrefix(line, "\\") && line != "\\." {
+			continue
+		}
+
 		// Handle COPY statements
 		if strings.HasPrefix(line, "COPY ") {
 			// Parse COPY statement: COPY table (col1, col2, ...) FROM stdin;
