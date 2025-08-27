@@ -9,7 +9,9 @@ use (
 	./services/licensing
 	./services/pg-change-stream
 	./services/pg-translicator
+	./tools/development/generate-fake-saas-data
 	./tools/development/generate-license
+	./tools/development/test-version
 	./tools/runtime/env-template
 	./tools/runtime/pg-bootstrap-sync
 )
