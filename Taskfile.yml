@@ -295,6 +295,17 @@ tasks:
           exit 1
         fi
 
+  # Tool tasks
+  tool:generate-license:
+    desc: Generate a license using the generate-license tool
+    cmds:
+      - |
+        if [ -z "{{.CLI_ARGS}}" ]; then
+          go run ./tools/development/generate-license -help
+          exit 1
+        fi
+      - go run ./tools/development/generate-license {{.CLI_ARGS}}
+
   # Version tasks
   version:
     desc: Display version information
