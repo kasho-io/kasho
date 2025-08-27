@@ -131,7 +131,7 @@ func (c *ChangeConverter) convertValue(value string) (*proto.ColumnValue, error)
 	}
 
 	// Try to detect the type of the value and convert accordingly
-	
+
 	// Try integer
 	if intValue, err := strconv.ParseInt(value, 10, 64); err == nil {
 		return &proto.ColumnValue{

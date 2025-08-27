@@ -67,12 +67,12 @@ func runBootstrap(cmd *cobra.Command, args []string) error {
 	if verbose {
 		logLevel = slog.LevelDebug
 	}
-	
+
 	opts := &slog.HandlerOptions{
-		Level: logLevel,
+		Level:     logLevel,
 		AddSource: verbose,
 	}
-	
+
 	handler := slog.NewTextHandler(os.Stderr, opts)
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
@@ -115,11 +115,11 @@ func runBootstrap(cmd *cobra.Command, args []string) error {
 
 	// Create bootstrap configuration
 	config := bootstrap.Config{
-		DumpFile:          dumpFile,
-		KVBufferURL:       kvURL,
-		BatchSize:         batchSize,
-		MaxRowsPerTable:   maxRowsPerTable,
-		ProgressInterval:  progressInterval,
+		DumpFile:         dumpFile,
+		KVBufferURL:      kvURL,
+		BatchSize:        batchSize,
+		MaxRowsPerTable:  maxRowsPerTable,
+		ProgressInterval: progressInterval,
 		DryRun:           dryRun,
 	}
 
@@ -147,9 +147,9 @@ func runBootstrap(cmd *cobra.Command, args []string) error {
 
 	// Log final statistics
 	stats := bootstrapper.GetStatistics()
-	
+
 	duration := stats.EndTime.Sub(stats.StartTime)
-	
+
 	slog.Info("Bootstrap completed",
 		"duration", duration,
 		"statements_read", stats.StatementsRead,
@@ -161,7 +161,7 @@ func runBootstrap(cmd *cobra.Command, args []string) error {
 		"errors_encountered", stats.ErrorsEncountered,
 		"average_rate", fmt.Sprintf("%.1f changes/sec", float64(stats.ChangesStored)/duration.Seconds()),
 	)
-	
+
 	if stats.ErrorsEncountered > 0 {
 		slog.Error("Bootstrap completed with errors", "error_count", stats.ErrorsEncountered)
 		return fmt.Errorf("bootstrap completed with %d errors", stats.ErrorsEncountered)

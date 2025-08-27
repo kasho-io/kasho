@@ -16,20 +16,20 @@ import (
 // scoring mechanism in pkg/kvbuffer, NOT through LSN string comparison.
 //
 // How it works:
-// 1. Bootstrap LSNs (e.g., "0/BOOTSTRAP0000000000000001") are converted to negative scores:
-//    score = -1000000 + sequence (e.g., -999999, -999998, ...)
-// 2. PostgreSQL LSNs (e.g., "0/16000000") are converted to positive scores:
-//    score = pglogrepl.ParseLSN(lsn) (e.g., 16000000.0)
-// 3. Redis sorted sets order by score, so negative < positive always
+//  1. Bootstrap LSNs (e.g., "0/BOOTSTRAP0000000000000001") are converted to negative scores:
+//     score = -1000000 + sequence (e.g., -999999, -999998, ...)
+//  2. PostgreSQL LSNs (e.g., "0/16000000") are converted to positive scores:
+//     score = pglogrepl.ParseLSN(lsn) (e.g., 16000000.0)
+//  3. Redis sorted sets order by score, so negative < positive always
 //
 // This means bootstrap LSNs are always processed first, regardless of their
 // string representation compared to the snapshot LSN. For example:
 // - "0/BOOTSTRAP9999999999999999" → score -1 (processed first)
 // - "0/16000000" → score 16000000.0 (processed after bootstrap)
 type LSNGenerator struct {
-	mu           sync.Mutex
-	sequence     int64
-	currentLSN   string
+	mu         sync.Mutex
+	sequence   int64
+	currentLSN string
 }
 
 // NewLSNGenerator creates a new LSN generator

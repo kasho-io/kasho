@@ -7,7 +7,7 @@ import (
 
 func TestDumpParser_ParseStream(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	// Test data with DDL and DML statements
 	dumpData := `-- Test PostgreSQL dump
 CREATE TABLE users (
@@ -35,30 +35,30 @@ COPY posts (id, title) FROM stdin;
 
 	reader := strings.NewReader(dumpData)
 	result, err := parser.ParseStream(reader)
-	
+
 	if err != nil {
 		t.Fatalf("ParseStream failed: %v", err)
 	}
-	
+
 	// Verify basic counts (3 DDL: CREATE TABLE users, CREATE INDEX, CREATE TABLE posts)
 	if len(result.Statements) != 5 { // 3 DDL + 2 DML
 		t.Errorf("Expected 5 statements, got %d", len(result.Statements))
 	}
-	
+
 	if result.Metadata.DDLCount != 3 {
 		t.Errorf("Expected 3 DDL statements, got %d", result.Metadata.DDLCount)
 	}
-	
+
 	if result.Metadata.DMLCount != 2 {
 		t.Errorf("Expected 2 DML statements, got %d", result.Metadata.DMLCount)
 	}
-	
+
 	// Verify tables found
 	expectedTables := []string{"users", "posts"}
 	if len(result.Metadata.TablesFound) != len(expectedTables) {
 		t.Errorf("Expected %d tables, got %d", len(expectedTables), len(result.Metadata.TablesFound))
 	}
-	
+
 	// Check specific statements
 	for _, stmt := range result.Statements {
 		switch s := stmt.(type) {
@@ -81,7 +81,7 @@ COPY posts (id, title) FROM stdin;
 
 func TestDumpParser_ParseCopyStatement(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	tests := []struct {
 		line     string
 		expected *copyInfo
@@ -96,35 +96,35 @@ func TestDumpParser_ParseCopyStatement(t *testing.T) {
 		{
 			line: "COPY posts (id, title) FROM stdin;",
 			expected: &copyInfo{
-				table:   "posts", 
+				table:   "posts",
 				columns: []string{"id", "title"},
 			},
 		},
 		{
-			line: "SELECT * FROM users;",
+			line:     "SELECT * FROM users;",
 			expected: nil,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		result := parser.parseCopyStatement(tt.line)
-		
+
 		if tt.expected == nil {
 			if result != nil {
 				t.Errorf("Expected nil for line %q, got %+v", tt.line, result)
 			}
 			continue
 		}
-		
+
 		if result == nil {
 			t.Errorf("Expected result for line %q, got nil", tt.line)
 			continue
 		}
-		
+
 		if result.table != tt.expected.table {
 			t.Errorf("Expected table %q, got %q", tt.expected.table, result.table)
 		}
-		
+
 		if len(result.columns) != len(tt.expected.columns) {
 			t.Errorf("Expected %d columns, got %d", len(tt.expected.columns), len(result.columns))
 		}
@@ -133,18 +133,18 @@ func TestDumpParser_ParseCopyStatement(t *testing.T) {
 
 func TestDumpParser_UnescapeCopyValue(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	tests := []struct {
 		input    string
 		expected string
 	}{
-		{"\\N", ""},           // NULL value
-		{"hello", "hello"},    // Regular string
+		{"\\N", ""},                       // NULL value
+		{"hello", "hello"},                // Regular string
 		{"hello\\tworld", "hello\tworld"}, // Tab escape
 		{"line1\\nline2", "line1\nline2"}, // Newline escape
 		{"back\\\\slash", "back\\slash"},  // Backslash escape
 	}
-	
+
 	for _, tt := range tests {
 		result := parser.unescapeCopyValue(tt.input)
 		if result != tt.expected {
@@ -155,7 +155,7 @@ func TestDumpParser_UnescapeCopyValue(t *testing.T) {
 
 func TestDumpParser_ParseValuesList(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	tests := []struct {
 		input    string
 		expected []string
@@ -177,15 +177,15 @@ func TestDumpParser_ParseValuesList(t *testing.T) {
 			expected: []string{"NOW()", "function call"},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		result := parser.parseValuesList(tt.input)
-		
+
 		if len(result) != len(tt.expected) {
 			t.Errorf("parseValuesList(%q) length = %d, expected %d", tt.input, len(result), len(tt.expected))
 			continue
 		}
-		
+
 		for i, val := range result {
 			if val != tt.expected[i] {
 				t.Errorf("parseValuesList(%q) value[%d] = %q, expected %q", tt.input, i, val, tt.expected[i])
@@ -196,7 +196,7 @@ func TestDumpParser_ParseValuesList(t *testing.T) {
 
 func TestDumpParser_CleanValue(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	tests := []struct {
 		input    string
 		expected string
@@ -209,7 +209,7 @@ func TestDumpParser_CleanValue(t *testing.T) {
 		{"'Jane''s Post'", "Jane's Post"},
 		{"  'trimmed'  ", "trimmed"},
 	}
-	
+
 	for _, tt := range tests {
 		result := parser.cleanValue(tt.input)
 		if result != tt.expected {
@@ -220,7 +220,7 @@ func TestDumpParser_CleanValue(t *testing.T) {
 
 func TestDumpParser_ParseStream_WithInserts(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	// Test data with DDL and INSERT statements
 	dumpData := `-- Test PostgreSQL dump with INSERTs
 CREATE TABLE users (
@@ -239,37 +239,37 @@ CREATE TABLE posts (
 
 INSERT INTO posts VALUES (1, 'First Post');
 INSERT INTO posts VALUES (2, 'Second Post');`
-	
+
 	reader := strings.NewReader(dumpData)
 	result, err := parser.ParseStream(reader)
-	
+
 	if err != nil {
 		t.Fatalf("ParseStream failed: %v", err)
 	}
-	
+
 	// Verify basic counts (2 DDL + 4 DML = 6 total statements)
 	if len(result.Statements) != 6 {
 		t.Errorf("Expected 6 statements, got %d", len(result.Statements))
 	}
-	
+
 	if result.Metadata.DDLCount != 2 {
 		t.Errorf("Expected 2 DDL statements, got %d", result.Metadata.DDLCount)
 	}
-	
+
 	if result.Metadata.DMLCount != 4 {
 		t.Errorf("Expected 4 DML statements, got %d", result.Metadata.DMLCount)
 	}
-	
+
 	// Verify tables found
 	expectedTables := []string{"users", "posts"}
 	if len(result.Metadata.TablesFound) != len(expectedTables) {
 		t.Errorf("Expected %d tables, got %d", len(expectedTables), len(result.Metadata.TablesFound))
 	}
-	
+
 	// Count statement types
 	ddlCount := 0
 	dmlCount := 0
-	
+
 	for _, stmt := range result.Statements {
 		switch s := stmt.(type) {
 		case DDLStatement:
@@ -287,11 +287,11 @@ INSERT INTO posts VALUES (2, 'Second Post');`
 			}
 		}
 	}
-	
+
 	if ddlCount != 2 {
 		t.Errorf("Expected 2 DDL statements in result, got %d", ddlCount)
 	}
-	
+
 	if dmlCount != 4 {
 		t.Errorf("Expected 4 DML statements in result, got %d", dmlCount)
 	}
@@ -299,7 +299,7 @@ INSERT INTO posts VALUES (2, 'Second Post');`
 
 func TestDumpParser_ComprehensiveStatementTypes(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	// Test comprehensive pg_dump output based on actual dump file
 	dumpData := `-- PostgreSQL database dump
 SET statement_timeout = 0;
@@ -362,14 +362,14 @@ INSERT INTO public.test_ddl_log (id, lsn) VALUES (1, '0/1A34588');
 
 -- DDL: SELECT setval
 SELECT pg_catalog.setval('public.test_ddl_log_id_seq', 1, true);`
-	
+
 	reader := strings.NewReader(dumpData)
 	result, err := parser.ParseStream(reader)
-	
+
 	if err != nil {
 		t.Fatalf("ParseStream failed: %v", err)
 	}
-	
+
 	// Count different statement types
 	statementTypes := make(map[string]int)
 	for _, stmt := range result.Statements {
@@ -402,27 +402,27 @@ SELECT pg_catalog.setval('public.test_ddl_log_id_seq', 1, true);`
 			statementTypes["DML"]++
 		}
 	}
-	
+
 	// Verify expected counts
 	expectedCounts := map[string]int{
-		"CREATE_FUNCTION":     1,
-		"CREATE_TABLE":        1,
-		"CREATE_SEQUENCE":     1,
-		"ALTER_SEQUENCE":      1,
-		"ALTER_TABLE":         1,
+		"CREATE_FUNCTION":      1,
+		"CREATE_TABLE":         1,
+		"CREATE_SEQUENCE":      1,
+		"ALTER_SEQUENCE":       1,
+		"ALTER_TABLE":          1,
 		"CREATE_EVENT_TRIGGER": 1,
-		"CREATE_TRIGGER":      1,
-		"COMMENT":             1,
-		"SELECT_SETVAL":       1,
-		"DML":                 1,
+		"CREATE_TRIGGER":       1,
+		"COMMENT":              1,
+		"SELECT_SETVAL":        1,
+		"DML":                  1,
 	}
-	
+
 	for stmtType, expectedCount := range expectedCounts {
 		if statementTypes[stmtType] != expectedCount {
 			t.Errorf("Expected %d %s statements, got %d", expectedCount, stmtType, statementTypes[stmtType])
 		}
 	}
-	
+
 	// Verify publication statements were skipped
 	if statementTypes["CREATE_PUBLICATION"] > 0 {
 		t.Error("CREATE PUBLICATION should have been skipped")
@@ -430,12 +430,12 @@ SELECT pg_catalog.setval('public.test_ddl_log_id_seq', 1, true);`
 	if statementTypes["DROP_PUBLICATION"] > 0 {
 		t.Error("DROP PUBLICATION should have been skipped")
 	}
-	
+
 	// Verify total counts
 	if result.Metadata.DDLCount != 9 { // All DDL except publications
 		t.Errorf("Expected 9 DDL statements, got %d", result.Metadata.DDLCount)
 	}
-	
+
 	if result.Metadata.DMLCount != 1 {
 		t.Errorf("Expected 1 DML statement, got %d", result.Metadata.DMLCount)
 	}
@@ -443,7 +443,7 @@ SELECT pg_catalog.setval('public.test_ddl_log_id_seq', 1, true);`
 
 func TestDumpParser_AllStatementTypes(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	// Test data with all supported statement types
 	dumpData := `-- Comprehensive test with all pg_dump statement types
 -- DDL: CREATE TABLE
@@ -492,19 +492,19 @@ TRUNCATE TABLE old_data;
 
 -- DDL: DROP
 DROP TABLE IF EXISTS temp_table;`
-	
+
 	reader := strings.NewReader(dumpData)
 	result, err := parser.ParseStream(reader)
-	
+
 	if err != nil {
 		t.Fatalf("ParseStream failed: %v", err)
 	}
-	
+
 	// Count statement types
 	ddlCount := 0
 	dmlCount := 0
 	var statementTypes []string
-	
+
 	for _, stmt := range result.Statements {
 		switch s := stmt.(type) {
 		case DDLStatement:
@@ -539,16 +539,16 @@ DROP TABLE IF EXISTS temp_table;`
 			}
 		}
 	}
-	
+
 	// Verify counts
 	if result.Metadata.DDLCount != 11 { // All DDL statements including setval
 		t.Errorf("Expected 11 DDL statements, got %d", result.Metadata.DDLCount)
 	}
-	
+
 	if result.Metadata.DMLCount != 3 { // 2 INSERTs + 1 COPY
 		t.Errorf("Expected 3 DML statements, got %d", result.Metadata.DMLCount)
 	}
-	
+
 	// Verify all expected statement types were parsed
 	expectedTypes := map[string]bool{
 		"CREATE_TABLE":    false,
@@ -563,11 +563,11 @@ DROP TABLE IF EXISTS temp_table;`
 		"DROP":            false,
 		"DML":             false,
 	}
-	
+
 	for _, st := range statementTypes {
 		expectedTypes[st] = true
 	}
-	
+
 	for stype, found := range expectedTypes {
 		if !found {
 			t.Errorf("Statement type %s was not parsed", stype)
@@ -577,7 +577,7 @@ DROP TABLE IF EXISTS temp_table;`
 
 func TestDumpParser_UnsupportedStatements(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	testCases := []struct {
 		name        string
 		dumpData    string
@@ -602,17 +602,17 @@ SELECT * FROM test WHERE id = 1;`,
 			expectedErr: "unexpected SELECT statement in pg_dump (not a setval)",
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			reader := strings.NewReader(tc.dumpData)
 			_, err := parser.ParseStream(reader)
-			
+
 			if err == nil {
 				t.Errorf("Expected error for %s, got nil", tc.name)
 				return
 			}
-			
+
 			if !strings.Contains(err.Error(), tc.expectedErr) {
 				t.Errorf("Expected error containing %q, got %v", tc.expectedErr, err)
 			}
@@ -622,7 +622,7 @@ SELECT * FROM test WHERE id = 1;`,
 
 func TestDumpParser_SessionControlStatements(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	// Test that SET and transaction control statements are skipped
 	dumpData := `-- Test with session control statements
 SET statement_timeout = 0;
@@ -635,23 +635,23 @@ CREATE TABLE test (id INT);
 INSERT INTO test VALUES (1);
 
 COMMIT;`
-	
+
 	reader := strings.NewReader(dumpData)
 	result, err := parser.ParseStream(reader)
-	
+
 	if err != nil {
 		t.Fatalf("ParseStream failed: %v", err)
 	}
-	
+
 	// Should only have CREATE TABLE and INSERT, SET/BEGIN/COMMIT/set_config should be skipped
 	if len(result.Statements) != 2 {
 		t.Errorf("Expected 2 statements (CREATE and INSERT), got %d", len(result.Statements))
 	}
-	
+
 	if result.Metadata.DDLCount != 1 {
 		t.Errorf("Expected 1 DDL statement, got %d", result.Metadata.DDLCount)
 	}
-	
+
 	if result.Metadata.DMLCount != 1 {
 		t.Errorf("Expected 1 DML statement, got %d", result.Metadata.DMLCount)
 	}
@@ -659,30 +659,30 @@ COMMIT;`
 
 func TestDumpParser_SetvalSpecialCase(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	// Test that setval SELECT statements are treated as DDL
 	dumpData := `-- Test setval handling
 CREATE SEQUENCE test_seq;
 SELECT pg_catalog.setval('test_seq', 100);
 SELECT pg_catalog.setval('test_seq', 200, true);
 SELECT pg_catalog.setval('test_seq', 300, false);`
-	
+
 	reader := strings.NewReader(dumpData)
 	result, err := parser.ParseStream(reader)
-	
+
 	if err != nil {
 		t.Fatalf("ParseStream failed: %v", err)
 	}
-	
+
 	// All statements should be DDL (CREATE SEQUENCE + 3 setval calls)
 	if result.Metadata.DDLCount != 4 {
 		t.Errorf("Expected 4 DDL statements, got %d", result.Metadata.DDLCount)
 	}
-	
+
 	if result.Metadata.DMLCount != 0 {
 		t.Errorf("Expected 0 DML statements, got %d", result.Metadata.DMLCount)
 	}
-	
+
 	// Verify all statements are DDL
 	for i, stmt := range result.Statements {
 		if _, ok := stmt.(DDLStatement); !ok {
@@ -693,7 +693,7 @@ SELECT pg_catalog.setval('test_seq', 300, false);`
 
 func TestDumpParser_SelectStatements(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	testCases := []struct {
 		name        string
 		dumpData    string
@@ -730,12 +730,12 @@ SELECT * FROM test;`,
 			expectedDDL: 0,
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			reader := strings.NewReader(tc.dumpData)
 			result, err := parser.ParseStream(reader)
-			
+
 			if tc.expectError {
 				if err == nil {
 					t.Errorf("Expected error, got nil")
@@ -754,7 +754,7 @@ SELECT * FROM test;`,
 
 func TestDumpParser_PublicationStatements(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	// Test that publication/subscription statements are skipped
 	dumpData := `-- Test with publication/subscription statements
 CREATE TABLE test (id INT);
@@ -770,23 +770,23 @@ DROP SUBSCRIPTION IF EXISTS old_sub;
 
 -- This should be processed
 INSERT INTO test VALUES (1);`
-	
+
 	reader := strings.NewReader(dumpData)
 	result, err := parser.ParseStream(reader)
-	
+
 	if err != nil {
 		t.Fatalf("ParseStream failed: %v", err)
 	}
-	
+
 	// Should only have CREATE TABLE and INSERT
 	if len(result.Statements) != 2 {
 		t.Errorf("Expected 2 statements, got %d", len(result.Statements))
 	}
-	
+
 	if result.Metadata.DDLCount != 1 {
 		t.Errorf("Expected 1 DDL statement, got %d", result.Metadata.DDLCount)
 	}
-	
+
 	if result.Metadata.DMLCount != 1 {
 		t.Errorf("Expected 1 DML statement, got %d", result.Metadata.DMLCount)
 	}
@@ -794,7 +794,7 @@ INSERT INTO test VALUES (1);`
 
 func TestDumpParser_EventTriggers(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	// Test event trigger statements
 	dumpData := `-- Test event triggers
 CREATE TABLE test (id INT);
@@ -815,27 +815,27 @@ CREATE TRIGGER test_trigger AFTER INSERT ON test
    FOR EACH ROW EXECUTE FUNCTION capture_ddl();
 
 INSERT INTO test VALUES (1);`
-	
+
 	reader := strings.NewReader(dumpData)
 	result, err := parser.ParseStream(reader)
-	
+
 	if err != nil {
 		t.Fatalf("ParseStream failed: %v", err)
 	}
-	
+
 	// Should have CREATE TABLE, CREATE FUNCTION, CREATE EVENT TRIGGER, CREATE TRIGGER, and INSERT
 	if len(result.Statements) != 5 {
 		t.Errorf("Expected 5 statements, got %d", len(result.Statements))
 	}
-	
+
 	if result.Metadata.DDLCount != 4 {
 		t.Errorf("Expected 4 DDL statements, got %d", result.Metadata.DDLCount)
 	}
-	
+
 	if result.Metadata.DMLCount != 1 {
 		t.Errorf("Expected 1 DML statement, got %d", result.Metadata.DMLCount)
 	}
-	
+
 	// Verify we have both trigger types
 	eventTriggerFound := false
 	regularTriggerFound := false
@@ -848,7 +848,7 @@ INSERT INTO test VALUES (1);`
 			}
 		}
 	}
-	
+
 	if !eventTriggerFound {
 		t.Error("Event trigger not found in statements")
 	}
@@ -859,7 +859,7 @@ INSERT INTO test VALUES (1);`
 
 func TestDumpParser_InsertWithoutColumns(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	// Test INSERT statements without explicit column names
 	dumpData := `-- Test INSERT without column names
 CREATE TABLE test (id INT, name TEXT, email TEXT);
@@ -869,19 +869,19 @@ INSERT INTO test (id, name, email) VALUES (1, 'Alice', 'alice@example.com');
 
 -- This INSERT lacks column names (problematic)
 INSERT INTO test VALUES (2, 'Bob', 'bob@example.com');`
-	
+
 	reader := strings.NewReader(dumpData)
 	result, err := parser.ParseStream(reader)
-	
+
 	if err != nil {
 		t.Fatalf("ParseStream failed: %v", err)
 	}
-	
+
 	// Should have 1 DDL and 2 DML
 	if len(result.Statements) != 3 {
 		t.Errorf("Expected 3 statements, got %d", len(result.Statements))
 	}
-	
+
 	// Check the INSERT statements
 	dmlCount := 0
 	for _, stmt := range result.Statements {
@@ -890,24 +890,24 @@ INSERT INTO test VALUES (2, 'Bob', 'bob@example.com');`
 			if dml.Table != "test" {
 				t.Errorf("Expected table 'test', got %s", dml.Table)
 			}
-			
+
 			// First INSERT should have column names
 			if dmlCount == 1 && len(dml.ColumnNames) != 3 {
 				t.Errorf("First INSERT should have 3 column names, got %d", len(dml.ColumnNames))
 			}
-			
+
 			// Second INSERT will have empty column names (this is the issue)
 			if dmlCount == 2 && len(dml.ColumnNames) != 0 {
 				t.Errorf("Second INSERT should have 0 column names, got %d", len(dml.ColumnNames))
 			}
-			
+
 			// Both should have 3 values
 			if len(dml.ColumnValues) != 1 || len(dml.ColumnValues[0]) != 3 {
 				t.Errorf("Expected 1 row with 3 values, got %d rows", len(dml.ColumnValues))
 			}
 		}
 	}
-	
+
 	if dmlCount != 2 {
 		t.Errorf("Expected 2 DML statements, got %d", dmlCount)
 	}
@@ -915,7 +915,7 @@ INSERT INTO test VALUES (2, 'Bob', 'bob@example.com');`
 
 func TestDumpParser_DollarQuotedStrings(t *testing.T) {
 	parser := NewDumpParser()
-	
+
 	// Test multi-line statements with dollar-quoted strings
 	dumpData := `-- Test dollar-quoted strings
 CREATE TABLE test (id INT);
@@ -948,29 +948,29 @@ BEGIN
     RETURN $inner$This is a string with ; semicolon$inner$;
 END;
 $$ LANGUAGE plpgsql;`
-	
+
 	reader := strings.NewReader(dumpData)
 	result, err := parser.ParseStream(reader)
-	
+
 	if err != nil {
 		t.Fatalf("ParseStream failed: %v", err)
 	}
-	
+
 	// Should have 5 DDL statements (CREATE TABLE, 3 functions, CREATE INDEX)
 	if result.Metadata.DDLCount != 5 {
 		t.Errorf("Expected 5 DDL statements, got %d", result.Metadata.DDLCount)
 	}
-	
+
 	if result.Metadata.DMLCount != 0 {
 		t.Errorf("Expected 0 DML statements, got %d", result.Metadata.DMLCount)
 	}
-	
+
 	// Verify the function statements were parsed correctly
 	functionCount := 0
 	for _, stmt := range result.Statements {
 		if ddl, ok := stmt.(DDLStatement); ok {
-			if strings.Contains(strings.ToUpper(ddl.SQL), "CREATE FUNCTION") || 
-			   strings.Contains(strings.ToUpper(ddl.SQL), "CREATE OR REPLACE FUNCTION") {
+			if strings.Contains(strings.ToUpper(ddl.SQL), "CREATE FUNCTION") ||
+				strings.Contains(strings.ToUpper(ddl.SQL), "CREATE OR REPLACE FUNCTION") {
 				functionCount++
 				// Verify the full function body is included
 				if !strings.Contains(ddl.SQL, "BEGIN") || !strings.Contains(ddl.SQL, "END;") {
@@ -979,7 +979,7 @@ $$ LANGUAGE plpgsql;`
 			}
 		}
 	}
-	
+
 	if functionCount != 3 {
 		t.Errorf("Expected 3 function statements, found %d", functionCount)
 	}

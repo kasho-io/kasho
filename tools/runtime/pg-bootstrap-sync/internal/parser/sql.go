@@ -330,7 +330,7 @@ func (p *SQLParser) parseDrop(stmt *pg_query.DropStmt) (*ParsedStatement, error)
 			Type: "DROP_SUBSCRIPTION",
 		}, nil
 	}
-	
+
 	return &ParsedStatement{
 		Type: "DROP",
 		Metadata: map[string]interface{}{
@@ -350,7 +350,7 @@ func (p *SQLParser) parseCopy(stmt *pg_query.CopyStmt) (*ParsedStatement, error)
 	if stmt.Relation.Schemaname != "" {
 		tableName = stmt.Relation.Schemaname + "." + tableName
 	}
-	
+
 	// Extract column names from attlist
 	columns := make([]string, 0)
 	for _, item := range stmt.Attlist {

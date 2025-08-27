@@ -23,9 +23,9 @@ func (d DDLStatement) Type() string {
 
 // DMLStatement represents a Data Manipulation Language statement (typically COPY data)
 type DMLStatement struct {
-	Table        string      // Table name
-	ColumnNames  []string    // Column names from COPY statement
-	ColumnValues [][]string  // Rows of data (each row is []string of values)
+	Table        string     // Table name
+	ColumnNames  []string   // Column names from COPY statement
+	ColumnValues [][]string // Rows of data (each row is []string of values)
 }
 
 func (d DMLStatement) Type() string {
@@ -40,12 +40,12 @@ type ParseResult struct {
 
 // ParseMetadata contains metadata about the parsing process
 type ParseMetadata struct {
-	SourceFile    string    // Path to the source dump file
-	ParsedAt      time.Time // When parsing completed
-	StatementCount int      // Total number of statements parsed
-	DDLCount      int       // Number of DDL statements
-	DMLCount      int       // Number of DML statements
-	TablesFound   []string  // List of table names encountered
+	SourceFile     string    // Path to the source dump file
+	ParsedAt       time.Time // When parsing completed
+	StatementCount int       // Total number of statements parsed
+	DDLCount       int       // Number of DDL statements
+	DMLCount       int       // Number of DML statements
+	TablesFound    []string  // List of table names encountered
 }
 
 // Parser defines the interface for parsing pg_dump files
@@ -66,8 +66,8 @@ const (
 
 // DumpInfo contains information about the dump file
 type DumpInfo struct {
-	Format          DumpFormat
+	Format            DumpFormat
 	PostgreSQLVersion string
-	DumpedAt        time.Time
-	DatabaseName    string
+	DumpedAt          time.Time
+	DatabaseName      string
 }

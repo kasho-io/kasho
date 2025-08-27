@@ -49,7 +49,7 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 	}
 
 	scanner := bufio.NewScanner(r)
-	
+
 	result := &ParseResult{
 		Statements: make([]Statement, 0),
 		Metadata: ParseMetadata{
@@ -70,7 +70,7 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		
+
 		// Skip comments and empty lines
 		if strings.HasPrefix(line, "--") || strings.TrimSpace(line) == "" {
 			continue
@@ -96,12 +96,12 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 					skipCopyData = true
 					continue
 				}
-				
+
 				inCopyData = true
 				copyTable = copyInfo.table
 				copyColumns = copyInfo.columns
 				copyRows = make([][]string, 0)
-				
+
 				// Add table to found tables if not already present
 				if !contains(result.Metadata.TablesFound, copyTable) {
 					result.Metadata.TablesFound = append(result.Metadata.TablesFound, copyTable)
@@ -187,7 +187,7 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 		// Check if statement is complete (ends with semicolon and not inside dollar quote)
 		if !inDollarQuote && strings.HasSuffix(strings.TrimSpace(line), ";") {
 			sql := strings.TrimSpace(currentStatement.String())
-			
+
 			// Use proper SQL parser for all statements
 			if err := p.parseWithSQLParser(sql, result); err != nil {
 				// Fatal error for unsupported statements as requested
@@ -224,16 +224,16 @@ func (p *DumpParser) parseCopyStatement(line string) *copyInfo {
 		if len(matches) != 3 {
 			return nil
 		}
-		
+
 		table := matches[1]
 		columnsStr := matches[2]
-		
+
 		// Parse column names
 		columns := make([]string, 0)
 		for _, col := range strings.Split(columnsStr, ",") {
 			columns = append(columns, strings.TrimSpace(col))
 		}
-		
+
 		return &copyInfo{
 			table:   table,
 			columns: columns,
@@ -255,7 +255,7 @@ func (p *DumpParser) parseCopyStatement(line string) *copyInfo {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -264,25 +264,25 @@ func (p *DumpParser) unescapeCopyValue(value string) string {
 	if value == "\\N" {
 		return "" // NULL value becomes empty string
 	}
-	
+
 	// Unescape common PostgreSQL COPY escape sequences
 	value = strings.ReplaceAll(value, "\\t", "\t")
 	value = strings.ReplaceAll(value, "\\n", "\n")
 	value = strings.ReplaceAll(value, "\\r", "\r")
 	value = strings.ReplaceAll(value, "\\\\", "\\")
-	
+
 	return value
 }
 
 // parseWithSQLParser uses the proper SQL parser to parse statements
 func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 	sqlParser := NewSQLParser()
-	
+
 	parsed, err := sqlParser.ParseSQL(sql)
 	if err != nil {
 		return err
 	}
-	
+
 	for _, stmt := range parsed.Statements {
 		switch stmt.Type {
 		// DML statements
@@ -297,7 +297,7 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 						continue
 					}
 				}
-				
+
 				// Handle INSERT statements - extract values
 				insertInfo := p.parseInsertValues(sql)
 				if insertInfo != nil {
@@ -308,7 +308,7 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 					}
 					result.Statements = append(result.Statements, dmlStmt)
 					result.Metadata.DMLCount++
-					
+
 					// Add table to found tables if not already present
 					if !contains(result.Metadata.TablesFound, stmt.TableName) {
 						result.Metadata.TablesFound = append(result.Metadata.TablesFound, stmt.TableName)
@@ -318,16 +318,16 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 				// UPDATE and DELETE are not expected in pg_dump but handle them as DML
 				return fmt.Errorf("unexpected DML statement type %s in pg_dump", stmt.Type)
 			}
-			
+
 		// DDL statements - all valid DDL that can appear in pg_dump
 		case "CREATE_TABLE", "CREATE_INDEX", "ALTER_TABLE", "CREATE_SEQUENCE", "ALTER_SEQUENCE",
-		     "CREATE_FUNCTION", "CREATE_TRIGGER", "CREATE_EVENT_TRIGGER", "DROP", "TRUNCATE", "COMMENT", "GRANT":
+			"CREATE_FUNCTION", "CREATE_TRIGGER", "CREATE_EVENT_TRIGGER", "DROP", "TRUNCATE", "COMMENT", "GRANT":
 			// Check if this is a kasho_* internal object that should be skipped
 			if p.isKashoInternalObject(stmt, sql) {
 				log.Printf("Skipping Kasho internal object: %s", p.getObjectDescription(stmt, sql))
 				continue
 			}
-			
+
 			// Handle DDL statements
 			ddlStmt := DDLStatement{
 				SQL:      sql,
@@ -337,12 +337,12 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 			}
 			result.Statements = append(result.Statements, ddlStmt)
 			result.Metadata.DDLCount++
-			
+
 			// Add table to found tables if not already present
 			if stmt.TableName != "" && !contains(result.Metadata.TablesFound, stmt.TableName) {
 				result.Metadata.TablesFound = append(result.Metadata.TablesFound, stmt.TableName)
 			}
-			
+
 		// Special handling for SELECT statements
 		case "SELECT":
 			// Check if this is a setval() call for sequences
@@ -368,21 +368,21 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 				// Other SELECT statements should not appear in pg_dump
 				return fmt.Errorf("unexpected SELECT statement in pg_dump (not a setval): %s", sql)
 			}
-			
+
 		// SET and TRANSACTION statements - skip these as they're session control
 		case "SET", "TRANSACTION":
 			// These are session control statements, skip them
 			continue
-			
+
 		// Publication/Subscription statements - skip these as they're for replication setup only
 		case "CREATE_PUBLICATION", "ALTER_PUBLICATION", "DROP_PUBLICATION",
-		     "CREATE_SUBSCRIPTION", "ALTER_SUBSCRIPTION", "DROP_SUBSCRIPTION":
+			"CREATE_SUBSCRIPTION", "ALTER_SUBSCRIPTION", "DROP_SUBSCRIPTION":
 			// Skip publication/subscription statements
 			continue
-			
+
 		// Unknown statement type
 		case "UNKNOWN":
-			
+
 			// Get the actual node type from metadata for better error message
 			nodeType := "unknown"
 			if stmt.Metadata != nil {
@@ -391,13 +391,13 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 				}
 			}
 			return fmt.Errorf("unsupported statement type in pg_dump: %s (node type: %s), SQL: %s", stmt.Type, nodeType, sql)
-			
+
 		default:
 			// Any other statement type is an error
 			return fmt.Errorf("unsupported statement type in pg_dump: %s, SQL: %s", stmt.Type, sql)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -405,19 +405,19 @@ func (p *DumpParser) parseWithSQLParser(sql string, result *ParseResult) error {
 // This is a focused method that only handles the VALUES part, not the full SQL
 func (p *DumpParser) parseInsertValues(sql string) *insertValues {
 	upper := strings.ToUpper(sql)
-	
+
 	// Find where VALUES starts
 	valuesIndex := strings.Index(upper, "VALUES")
 	if valuesIndex == -1 {
 		return nil
 	}
-	
+
 	// Extract values section after VALUES keyword
 	valuesSection := strings.TrimSpace(sql[valuesIndex+6:]) // 6 = len("VALUES")
 	if !strings.HasPrefix(valuesSection, "(") {
 		return nil
 	}
-	
+
 	// Find matching closing parenthesis
 	depth := 0
 	var valuesEnd int
@@ -432,17 +432,17 @@ func (p *DumpParser) parseInsertValues(sql string) *insertValues {
 			}
 		}
 	}
-	
+
 	if valuesEnd == 0 {
 		return nil
 	}
-	
+
 	// Extract values string (without outer parentheses)
 	valuesStr := valuesSection[1:valuesEnd]
-	
+
 	// Parse values - split by comma, but respect quotes and parentheses
 	values := p.parseValuesList(valuesStr)
-	
+
 	return &insertValues{
 		values: values,
 	}
@@ -460,17 +460,17 @@ func (p *DumpParser) parseValuesList(valuesStr string) []string {
 	inQuotes := false
 	quoteChar := byte(0)
 	depth := 0
-	
+
 	for i := 0; i < len(valuesStr); i++ {
 		char := valuesStr[i]
-		
+
 		switch {
 		case !inQuotes && (char == '\'' || char == '"'):
 			// Start of quoted string
 			inQuotes = true
 			quoteChar = char
 			current.WriteByte(char)
-			
+
 		case inQuotes && char == quoteChar:
 			// End of quoted string (check for escaped quotes)
 			if i+1 < len(valuesStr) && valuesStr[i+1] == quoteChar {
@@ -484,55 +484,55 @@ func (p *DumpParser) parseValuesList(valuesStr string) []string {
 				quoteChar = 0
 				current.WriteByte(char)
 			}
-			
+
 		case !inQuotes && char == '(':
 			depth++
 			current.WriteByte(char)
-			
+
 		case !inQuotes && char == ')':
 			depth--
 			current.WriteByte(char)
-			
+
 		case !inQuotes && depth == 0 && char == ',':
 			// End of current value
 			value := strings.TrimSpace(current.String())
 			values = append(values, p.cleanValue(value))
 			current.Reset()
-			
+
 		default:
 			current.WriteByte(char)
 		}
 	}
-	
+
 	// Add the last value
 	if current.Len() > 0 {
 		value := strings.TrimSpace(current.String())
 		values = append(values, p.cleanValue(value))
 	}
-	
+
 	return values
 }
 
 // cleanValue removes quotes and handles NULL values
 func (p *DumpParser) cleanValue(value string) string {
 	value = strings.TrimSpace(value)
-	
+
 	// Handle NULL
 	if strings.ToUpper(value) == "NULL" {
 		return ""
 	}
-	
+
 	// Remove quotes if present
 	if len(value) >= 2 {
 		if (strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")) ||
-		   (strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"")) {
+			(strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"")) {
 			value = value[1 : len(value)-1]
 			// Unescape basic SQL escapes
 			value = strings.ReplaceAll(value, "''", "'")
 			value = strings.ReplaceAll(value, "\"\"", "\"")
 		}
 	}
-	
+
 	return value
 }
 
@@ -578,15 +578,15 @@ func (p *DumpParser) isKashoInternalObject(stmt ParsedStatement, sql string) boo
 			return true
 		}
 	}
-	
+
 	// For functions, triggers, and event triggers, we need to check the SQL
 	upperSQL := strings.ToUpper(sql)
-	
+
 	switch stmt.Type {
 	case "CREATE_FUNCTION":
 		// Check for kasho_* function names
 		if strings.Contains(upperSQL, "FUNCTION KASHO_") ||
-		   strings.Contains(upperSQL, "FUNCTION PUBLIC.KASHO_") {
+			strings.Contains(upperSQL, "FUNCTION PUBLIC.KASHO_") {
 			return true
 		}
 	case "CREATE_TRIGGER":
@@ -602,11 +602,11 @@ func (p *DumpParser) isKashoInternalObject(stmt ParsedStatement, sql string) boo
 	case "ALTER_TABLE", "DROP", "COMMENT", "GRANT":
 		// Check if operating on kasho_* objects
 		if strings.Contains(upperSQL, " KASHO_") ||
-		   strings.Contains(upperSQL, ".KASHO_") {
+			strings.Contains(upperSQL, ".KASHO_") {
 			return true
 		}
 	}
-	
+
 	return false
 }
 

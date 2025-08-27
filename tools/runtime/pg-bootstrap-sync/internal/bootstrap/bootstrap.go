@@ -23,27 +23,27 @@ type Bootstrapper struct {
 
 // Config contains configuration for the bootstrap process
 type Config struct {
-	DumpFile          string
-	KVBufferURL       string
-	BatchSize         int
-	MaxRowsPerTable   int
-	ProgressInterval  int // Log progress every N changes
-	ResumeFromLSN     string
+	DumpFile         string
+	KVBufferURL      string
+	BatchSize        int
+	MaxRowsPerTable  int
+	ProgressInterval int // Log progress every N changes
+	ResumeFromLSN    string
 	DryRun           bool
 }
 
 // Statistics tracks bootstrap progress
 type Statistics struct {
-	StartTime        time.Time
-	EndTime          time.Time
-	StatementsRead   int
-	ChangesGenerated int
-	ChangesStored    int
-	DDLCount         int
-	DMLCount         int
-	TablesProcessed  []string
-	LastLSN          string
-	BytesProcessed   int64
+	StartTime         time.Time
+	EndTime           time.Time
+	StatementsRead    int
+	ChangesGenerated  int
+	ChangesStored     int
+	DDLCount          int
+	DMLCount          int
+	TablesProcessed   []string
+	LastLSN           string
+	BytesProcessed    int64
 	ErrorsEncountered int
 }
 
@@ -196,12 +196,12 @@ func (b *Bootstrapper) storeChanges(ctx context.Context, changes []*types.Change
 // logFinalStatistics logs final bootstrap statistics
 func (b *Bootstrapper) logFinalStatistics(ctx context.Context) {
 	duration := b.stats.EndTime.Sub(b.stats.StartTime)
-	
+
 	logLevel := slog.LevelInfo
 	if b.stats.ErrorsEncountered > 0 {
 		logLevel = slog.LevelWarn
 	}
-	
+
 	logFields := []interface{}{
 		"duration", duration,
 		"statements_read", b.stats.StatementsRead,
@@ -214,12 +214,12 @@ func (b *Bootstrapper) logFinalStatistics(ctx context.Context) {
 		"last_lsn", b.stats.LastLSN,
 		"errors_encountered", b.stats.ErrorsEncountered,
 	}
-	
+
 	if b.stats.ChangesStored > 0 && duration.Seconds() > 0 {
 		rate := float64(b.stats.ChangesStored) / duration.Seconds()
 		logFields = append(logFields, "average_rate", fmt.Sprintf("%.1f changes/sec", rate))
 	}
-	
+
 	if b.stats.ErrorsEncountered > 0 {
 		slog.Log(ctx, logLevel, "Bootstrap completed with errors", logFields...)
 	} else {
@@ -239,6 +239,3 @@ func (b *Bootstrapper) Close() error {
 	}
 	return nil
 }
-
-
-

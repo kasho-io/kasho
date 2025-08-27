@@ -10,36 +10,36 @@ import (
 
 func TestChangeConverter_ConvertDDLStatement(t *testing.T) {
 	converter := NewChangeConverter()
-	
+
 	ddlStmt := parser.DDLStatement{
 		SQL:      "CREATE TABLE users (id SERIAL PRIMARY KEY, name VARCHAR(100));",
 		Table:    "users",
 		Database: "testdb",
 	}
-	
+
 	change, err := converter.convertDDLStatement(ddlStmt)
 	if err != nil {
 		t.Fatalf("convertDDLStatement failed: %v", err)
 	}
-	
+
 	// Verify change structure
 	if change.Type() != "ddl" {
 		t.Errorf("Expected type 'ddl', got %q", change.Type())
 	}
-	
+
 	if change.LSN != "0/BOOTSTRAP0000000000000001" {
 		t.Errorf("Expected LSN '0/BOOTSTRAP0000000000000001', got %q", change.LSN)
 	}
-	
+
 	ddlData, ok := change.Data.(*types.DDLData)
 	if !ok {
 		t.Fatal("Change data is not DDLData")
 	}
-	
+
 	if ddlData.DDL != ddlStmt.SQL {
 		t.Errorf("Expected DDL %q, got %q", ddlStmt.SQL, ddlData.DDL)
 	}
-	
+
 	if ddlData.Username != "bootstrap" {
 		t.Errorf("Expected username 'bootstrap', got %q", ddlData.Username)
 	}
@@ -47,7 +47,7 @@ func TestChangeConverter_ConvertDDLStatement(t *testing.T) {
 
 func TestChangeConverter_ConvertDMLStatement(t *testing.T) {
 	converter := NewChangeConverter()
-	
+
 	dmlStmt := parser.DMLStatement{
 		Table:       "users",
 		ColumnNames: []string{"id", "name", "email"},
@@ -56,48 +56,48 @@ func TestChangeConverter_ConvertDMLStatement(t *testing.T) {
 			{"2", "Jane Smith", "jane@example.com"},
 		},
 	}
-	
+
 	changes, err := converter.convertDMLStatement(dmlStmt)
 	if err != nil {
 		t.Fatalf("convertDMLStatement failed: %v", err)
 	}
-	
+
 	// Should generate one change per row
 	if len(changes) != 2 {
 		t.Errorf("Expected 2 changes, got %d", len(changes))
 	}
-	
+
 	// Verify first change
 	change1 := changes[0]
 	if change1.Type() != "dml" {
 		t.Errorf("Expected type 'dml', got %q", change1.Type())
 	}
-	
+
 	if change1.LSN != "0/BOOTSTRAP0000000000000001" {
 		t.Errorf("Expected LSN '0/BOOTSTRAP0000000000000001', got %q", change1.LSN)
 	}
-	
+
 	dmlData1, ok := change1.Data.(*types.DMLData)
 	if !ok {
 		t.Fatal("Change data is not DMLData")
 	}
-	
+
 	if dmlData1.Table != "users" {
 		t.Errorf("Expected table 'users', got %q", dmlData1.Table)
 	}
-	
+
 	if dmlData1.Kind != "insert" {
 		t.Errorf("Expected kind 'insert', got %q", dmlData1.Kind)
 	}
-	
+
 	if len(dmlData1.ColumnNames) != 3 {
 		t.Errorf("Expected 3 column names, got %d", len(dmlData1.ColumnNames))
 	}
-	
+
 	if len(dmlData1.ColumnValues) != 3 {
 		t.Errorf("Expected 3 column values, got %d", len(dmlData1.ColumnValues))
 	}
-	
+
 	// Verify second change has incremented LSN
 	change2 := changes[1]
 	if change2.LSN != "0/BOOTSTRAP0000000000000002" {
@@ -107,13 +107,13 @@ func TestChangeConverter_ConvertDMLStatement(t *testing.T) {
 
 func TestChangeConverter_ConvertValue(t *testing.T) {
 	converter := NewChangeConverter()
-	
+
 	tests := []struct {
 		input    string
 		expected *proto.ColumnValue
 	}{
 		{
-			input: "",
+			input:    "",
 			expected: &proto.ColumnValue{}, // NULL value
 		},
 		{
@@ -141,14 +141,14 @@ func TestChangeConverter_ConvertValue(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		result, err := converter.convertValue(tt.input)
 		if err != nil {
 			t.Errorf("convertValue(%q) failed: %v", tt.input, err)
 			continue
 		}
-		
+
 		// Compare the actual values based on type
 		switch expectedVal := tt.expected.Value.(type) {
 		case nil:
@@ -177,7 +177,7 @@ func TestChangeConverter_ConvertValue(t *testing.T) {
 
 func TestChangeConverter_ConvertStatements(t *testing.T) {
 	converter := NewChangeConverter()
-	
+
 	statements := []parser.Statement{
 		parser.DDLStatement{
 			SQL:   "CREATE TABLE users (id INT);",
@@ -189,36 +189,36 @@ func TestChangeConverter_ConvertStatements(t *testing.T) {
 			ColumnValues: [][]string{{"1"}, {"2"}},
 		},
 	}
-	
+
 	changes, err := converter.ConvertStatements(statements)
 	if err != nil {
 		t.Fatalf("ConvertStatements failed: %v", err)
 	}
-	
+
 	// Should have 1 DDL + 2 DML = 3 total changes
 	if len(changes) != 3 {
 		t.Errorf("Expected 3 changes, got %d", len(changes))
 	}
-	
+
 	// First change should be DDL
 	if changes[0].Type() != "ddl" {
 		t.Errorf("First change should be DDL, got %q", changes[0].Type())
 	}
-	
+
 	// Remaining changes should be DML
 	for i := 1; i < len(changes); i++ {
 		if changes[i].Type() != "dml" {
 			t.Errorf("Change %d should be DML, got %q", i, changes[i].Type())
 		}
 	}
-	
+
 	// Verify LSN sequence
 	expectedLSNs := []string{
 		"0/BOOTSTRAP0000000000000001",
-		"0/BOOTSTRAP0000000000000002", 
+		"0/BOOTSTRAP0000000000000002",
 		"0/BOOTSTRAP0000000000000003",
 	}
-	
+
 	for i, expected := range expectedLSNs {
 		if changes[i].LSN != expected {
 			t.Errorf("Change %d: expected LSN %q, got %q", i, expected, changes[i].LSN)
