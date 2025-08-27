@@ -1,5 +1,8 @@
 # Claude Code Preferences
 
+## Project Overview
+@README.md
+
 ## GitHub/Git Workflow Preferences
 - **PR Merging**: Always use `--rebase` instead of `--squash` when merging pull requests
 - **Branch Cleanup**: After merging PRs, automatically clean up local branches with `git branch -d <branch-name>`
@@ -12,8 +15,8 @@
 - Use idiomatic patterns for the languages and frameworks we are using
 
 ## Testing
-- The project has comprehensive test coverage - acknowledge existing tests rather than creating generic test plans
-- Test files are located in `*_test.go` files following Go conventions
+- The services in the project have comprehensive test coverage - acknowledge existing tests rather than creating generic test plans
+- Service test files are located in `*_test.go` files following Go conventions
 
 ## Documentation
 - As the codebase evolves, review the documentation in apps/docs to ensure that none of it is out of date, and if it is out of date, update it.
