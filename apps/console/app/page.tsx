@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useState } from "react";
 import { ObfuscatedEmail } from "../components/ObfuscatedEmail";
 
 export default function Home() {
@@ -9,36 +7,10 @@ export default function Home() {
   const demoPort = process.env.APP_DEMO_PORT ?? "3001";
   const demoUrl = isDev ? `http://localhost:${demoPort}` : "https://demo.kasho.io";
 
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    // Check initial theme preference
-    const checkTheme = () => {
-      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setIsDarkMode(isDark);
-    };
-
-    checkTheme();
-
-    // Listen for theme changes
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    mediaQuery.addEventListener("change", checkTheme);
-
-    return () => mediaQuery.removeEventListener("change", checkTheme);
-  }, []);
-
   return (
-    <div className="h-screen flex flex-col items-center justify-start px-4 overflow-hidden relative bg-base-100">
-      <div className="mt-16 w-full flex flex-col items-center">
-        <Image
-          src={isDarkMode ? "/kasho-wordmark-dark.png" : "/kasho-wordmark-light.png"}
-          alt="Kasho Wordmark"
-          width={2400}
-          height={1200}
-          className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl h-auto"
-          priority
-        />
-        <div className="mt-4 sm:mt-6 flex flex-col items-center w-full">
+    <div className="min-h-screen flex flex-col items-center px-4 bg-base-100 pt-32">
+      <div className="w-full max-w-4xl flex flex-col items-center">
+        <div className="flex flex-col items-center w-full">
           <h2 className="text-base-content text-lg sm:text-xl md:text-2xl font-bold font-mono text-center max-w-md sm:max-w-lg">
             Anonymized, live replicas on demand for development, testing and staging.
           </h2>

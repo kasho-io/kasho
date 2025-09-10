@@ -14,10 +14,10 @@
     "prettier:check": "npx prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "dependencies": {
+    "@workos-inc/authkit-nextjs": "^2.6.0",
     "daisyui": "^5.0.37",
     "next": "^15.3.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
-  },
-  "devDependencies": {}
+  }
 }
