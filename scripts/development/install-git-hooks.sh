@@ -17,7 +17,7 @@ mkdir -p "$HOOKS_DIR"
 cat > "$HOOKS_DIR/pre-commit" << 'EOF'
 #!/bin/bash
 
-# Pre-commit hook to run prettier on specific apps that have staged changes
+# Pre-commit hook to run prettier and lint checks on specific apps that have staged changes
 
 # Get all staged files in apps/ directory
 staged_app_files=$(git diff --cached --name-only | grep "^apps/")
@@ -67,6 +67,25 @@ if [ -n "$staged_app_files" ]; then
         done
         
         echo "✅ All prettier formatting completed successfully"
+        
+        # Run lint checks on each changed app
+        for app in $changed_apps; do
+            if [ -d "apps/$app" ] && [ -f "apps/$app/package.json" ]; then
+                # Check if the app has a lint script
+                if grep -q '"lint":' "apps/$app/package.json"; then
+                    echo "🔍 Running lint checks on $app app..."
+                    if npm run lint --workspace=apps/$app; then
+                        echo "✅ Lint checks passed for $app"
+                    else
+                        echo "❌ Lint checks failed for $app"
+                        echo "   Fix the issues above and try again"
+                        exit 1
+                    fi
+                fi
+            fi
+        done
+        
+        echo "✅ All checks completed successfully"
     else
         echo "⚠️  Task command not found, skipping prettier formatting"
         echo "   Install task: https://taskfile.dev/installation/"
@@ -84,7 +103,7 @@ chmod +x "$HOOKS_DIR/pre-commit"
 echo "✅ Git hooks installed successfully!"
 echo ""
 echo "The following hooks have been installed:"
-echo "  - pre-commit: Runs prettier on specific apps when files in those apps are changed"
+echo "  - pre-commit: Runs prettier and lint checks on specific apps when files in those apps are changed"
 echo ""
 echo "To run this script on other machines:"
 echo "  ./scripts/development/install-git-hooks.sh"
