@@ -1,5 +1,4 @@
-import { withAuth, getSignInUrl, getSignUpUrl, signOut } from "@workos-inc/authkit-nextjs";
-import { redirect } from "next/navigation";
+import { withAuth, getSignInUrl, signOut } from "@workos-inc/authkit-nextjs";
 
 export default async function AuthTestPage() {
   const { user } = await withAuth();
