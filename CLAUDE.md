@@ -13,6 +13,10 @@
 - Check for existing libraries/frameworks before introducing new ones
 - Run lint and typecheck commands after making changes (if available)
 - Use idiomatic patterns for the languages and frameworks we are using
+- **IMPORTANT**: Always run Prettier before committing changes to apps/* directories:
+  - For console app: `cd apps/console && npm run prettier:write`
+  - For demo app: `cd apps/demo && npm run prettier:write`
+  - For docs app: `cd apps/docs && npm run prettier:write`
 
 ## Testing
 - The services in the project have comprehensive test coverage - acknowledge existing tests rather than creating generic test plans
