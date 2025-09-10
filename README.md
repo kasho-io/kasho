@@ -92,13 +92,14 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 
 ### Apps
 
-#### Homepage (`apps/homepage/`)
+#### Console (`apps/console/`)
 
-- Public-facing landing page for Kasho.
-- Shows the Kasho wordmark and a brief description.
+- Administrative console for Kasho customers.
+- Includes authentication, billing, and user management (coming soon).
+- Currently shows the Kasho wordmark and landing page.
 - To run locally:
   ```bash
-  task dev:app:homepage
+  task dev:app:console
   ```
   (Runs on [http://localhost:3000](http://localhost:3000))
 
