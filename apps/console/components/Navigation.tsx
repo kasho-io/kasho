@@ -9,13 +9,7 @@ export default async function Navigation() {
     <nav className="navbar bg-base-100 shadow-sm">
       <div className="flex-1">
         <Link href="/" className="btn btn-ghost px-2">
-          <Image 
-            src="/kasho-wordmark-light.png" 
-            alt="Kasho" 
-            width={100} 
-            height={40} 
-            className="dark:invert" 
-          />
+          <Image src="/kasho-wordmark-light.png" alt="Kasho" width={100} height={40} className="dark:invert" />
         </Link>
       </div>
       <div className="flex-none">

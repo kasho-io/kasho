@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 export default async function AuthTestPage() {
   const { user } = await withAuth();
-  
+
   const signInUrl = await getSignInUrl();
 
   async function handleSignOut() {
