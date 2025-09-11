@@ -20,7 +20,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState(initialData);
-  const [originalData] = useState(initialData);
+  const [originalData, setOriginalData] = useState(initialData);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [previewUrl, setPreviewUrl] = useState(initialData.profilePictureUrl);
@@ -108,6 +108,8 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
       }
 
       setMessage({ type: "success", text: "Profile updated successfully" });
+      // Update the original data to reflect the saved state
+      setOriginalData(formData);
       router.refresh();
     } catch (error) {
       setMessage({ type: "error", text: "Failed to update profile" });
