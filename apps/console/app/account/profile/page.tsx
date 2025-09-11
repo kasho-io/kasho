@@ -19,6 +19,10 @@ export default async function ProfilePage() {
     profilePictureUrl: metadata.profile_picture_url || "",
   };
 
+  // Debug log to see what data we're getting
+  console.log("User metadata:", metadata);
+  console.log("Profile data:", profileData);
+
   return (
     <div className="min-h-screen bg-base-200">
       <div className="container mx-auto px-4 py-8">
