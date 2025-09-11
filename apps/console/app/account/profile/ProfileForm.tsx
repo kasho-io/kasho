@@ -7,6 +7,7 @@ import Image from "next/image";
 interface ProfileData {
   id: string;
   email: string;
+  emailVerified: boolean;
   firstName: string;
   lastName: string;
   profilePictureUrl: string;
@@ -219,6 +220,21 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
             <div className="form-control w-full mb-6">
               <label className="label">
                 <span className="label-text font-medium">Email Address</span>
+                {!initialData.emailVerified && <span className="badge badge-warning badge-sm ml-2">Unverified</span>}
+                {initialData.emailVerified && (
+                  <span className="badge badge-success badge-sm ml-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-3 w-3 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Verified
+                  </span>
+                )}
               </label>
               <input
                 type="email"
@@ -231,7 +247,11 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
               />
               <label className="label">
                 <span className="label-text-alt text-base-content/60">
-                  You&apos;ll need to verify your new email address if you change it
+                  {!initialData.emailVerified
+                    ? "Please verify your email address to ensure account security"
+                    : formData.email !== originalData.email
+                      ? "You'll need to verify your new email address after saving"
+                      : "Your email address is verified"}
                 </span>
               </label>
             </div>
