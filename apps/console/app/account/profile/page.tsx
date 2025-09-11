@@ -10,18 +10,19 @@ export default async function ProfilePage() {
   }
 
   // Extract metadata fields if they exist
-  const metadata = (user as { metadata?: Record<string, string> }).metadata || {};
+  const userWithMetadata = user as {
+    metadata?: Record<string, string>;
+    emailVerified?: boolean;
+  };
+  const metadata = userWithMetadata.metadata || {};
   const profileData = {
     id: user.id,
     email: user.email || "",
+    emailVerified: userWithMetadata.emailVerified ?? true,
     firstName: metadata.first_name || "",
     lastName: metadata.last_name || "",
     profilePictureUrl: metadata.profile_picture_url || "",
   };
-
-  // Debug log to see what data we're getting
-  console.log("User metadata:", metadata);
-  console.log("Profile data:", profileData);
 
   return (
     <div className="min-h-screen bg-base-200">
