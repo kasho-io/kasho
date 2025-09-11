@@ -110,59 +110,282 @@ Initial recommendation: **Page-based auth** for flexibility
 - Redirect to WorkOS logout URL
 - Return user to homepage after logout
 
-### Phase 3: User Interface Components
+### Phase 3: User Profile Management
 
-#### 3.1 Navigation Updates
+#### 3.1 Overview
 
-Since there is no existing navigation, we'll build one from scratch using DaisyUI components and WorkOS AuthKit for authentication.
+Implement comprehensive user profile management features allowing users to update their personal information, including email addresses, profile pictures, and custom metadata. Since WorkOS doesn't provide pre-built UI components for profile management, we'll build custom forms that interact with the WorkOS API directly.
 
-**Navigation Component Structure:**
-- Create a `Navigation.tsx` component that will:
-  - Display at the top of all pages
-  - Show "Sign In" button for unauthenticated users
-  - Show user dropdown menu for authenticated users with:
-    - User email/name display
-    - Account settings link (future feature)
-    - Sign Out option
+#### 3.2 Technical Architecture
 
-**Authentication Integration:**
-Using WorkOS AuthKit for Next.js:
-- Install `@workos-inc/authkit-nextjs`
-- Set up AuthKitProvider in the layout
-- Configure middleware for session management
-- Create callback and login routes
+##### 3.2.1 Dependencies
+- `@workos-inc/node` - WorkOS Node SDK for server-side API calls
+- `@workos-inc/authkit-nextjs` - Already installed for authentication
+- `@vercel/blob` - Vercel Blob Storage for profile picture uploads
+- Next.js API routes for secure server-side operations
+- DaisyUI components for consistent UI
 
-**Component Hierarchy:**
-```
-layout.tsx (with AuthKitProvider)
-  └── Navigation.tsx (uses useAuth hook)
-       ├── Sign In button (unauthenticated)
-       └── User dropdown (authenticated)
-            ├── User info display
-            └── Sign Out link
+##### 3.2.2 API Integration Pattern
+```typescript
+// Server-side only operations
+WorkOS Client → API Route → WorkOS API → Update Session → UI Update
 ```
 
-**Styling Approach:**
-- Use DaisyUI's navbar and dropdown components
-- Maintain consistent theming with existing dark/light mode support
-- Responsive design for mobile/desktop
+##### 3.2.3 Data Storage Strategy
+- **Profile Pictures**: 
+  - Files stored in Vercel Blob Storage
+  - URLs saved in WorkOS user metadata
+  - Served through Vercel's global CDN
+  - Works in both local development and production (requires BLOB_READ_WRITE_TOKEN)
+- **User Preferences**: Store as JSON in metadata
+- **Email Updates**: Direct field update via WorkOS API
+- **Metadata Limits**: 10 key-value pairs, 40 char keys, structured data as JSON strings
 
-**Key Implementation Details:**
-- Navigation will be a client component using the `useAuth` hook
-- Sign In redirects to WorkOS hosted auth page
-- Sign Out clears session and redirects to homepage
-- User info fetched from WorkOS session
+##### 3.2.4 Vercel Blob Storage Configuration
+- **Local Development**: Requires Vercel project and BLOB_READ_WRITE_TOKEN
+- **Production**: Automatically configured in Vercel deployments
+- **Storage**: Files uploaded to Vercel's servers, not stored locally
+- **CDN**: Automatic edge caching for fast global delivery
+- **Costs**: Pay-per-use pricing (1GB free tier for storage and bandwidth)
 
-#### 3.2 User Dashboard (`/app/dashboard`)
-Create authenticated user area:
-- User profile information
-- Account settings
-- Organization management (if applicable)
+#### 3.3 Implementation Components
 
-#### 3.3 Protected Content Areas
-- `/app/account/*` - User account management
-- `/app/settings/*` - Application settings
-- `/app/admin/*` - Admin panel (role-based)
+##### 3.3.1 WorkOS Client Setup (`/lib/workos-client.ts`)
+```typescript
+import { WorkOS } from '@workos-inc/node';
+
+export const workosClient = new WorkOS(process.env.WORKOS_API_KEY);
+```
+
+##### 3.3.2 Profile Management Page (`/app/account/profile/page.tsx`)
+**Features:**
+- Display current user information
+- Edit form for email address
+- Profile picture upload/URL input
+- Custom fields for additional metadata
+- Save/Cancel actions with optimistic updates
+
+**UI Components:**
+- DaisyUI card for profile section
+- Form inputs with validation
+- Avatar preview component
+- Loading states and error handling
+- Success notifications
+
+##### 3.3.3 API Routes
+
+**Update User Profile (`/app/api/user/update/route.ts`)**
+- POST endpoint for profile updates
+- Validates session before allowing updates
+- Calls WorkOS Update User API
+- Returns updated user data
+- Handles partial updates
+
+**Upload Profile Picture (`/app/api/user/upload-avatar/route.ts`)**
+- POST endpoint for image uploads
+- Validates file type and size (max 4.5MB per Vercel Blob limits)
+- Uploads to Vercel Blob Storage using `@vercel/blob`
+- Returns permanent CDN URL
+- Updates user metadata with picture URL
+- Example implementation:
+  ```typescript
+  import { put } from '@vercel/blob';
+  
+  const blob = await put(filename, file, {
+    access: 'public',
+  });
+  // Returns URL like: https://[...].public.blob.vercel-storage.com/[...]
+  ```
+
+##### 3.3.4 Type Definitions (`/types/user.ts`)
+```typescript
+interface UserProfile {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  profilePictureUrl?: string;
+  metadata?: Record<string, any>;
+}
+
+interface UpdateUserRequest {
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  metadata?: Record<string, any>;
+}
+```
+
+#### 3.4 User Flow
+
+##### 3.4.1 Viewing Profile
+1. User navigates to `/account/profile`
+2. Page fetches current user data from session
+3. Displays current information in read-only format
+4. Shows "Edit" button to enable form
+
+##### 3.4.2 Editing Profile
+1. User clicks "Edit" button
+2. Form becomes editable with current values pre-filled
+3. User modifies desired fields
+4. Client-side validation provides immediate feedback
+5. User clicks "Save" or "Cancel"
+
+##### 3.4.3 Saving Changes
+1. Form submission triggers API call to `/api/user/update`
+2. API route validates session and input
+3. Calls WorkOS Update User API with partial update
+4. On success: Updates local session, shows success message
+5. On failure: Shows error message, preserves form state
+
+##### 3.4.4 Profile Picture Update
+1. User clicks "Change Picture" button
+2. File input limited to image types (jpg, png, gif, webp)
+3. File sent to `/api/user/upload-avatar`
+4. API route uploads to Vercel Blob Storage
+5. Blob Storage returns permanent CDN URL
+6. Preview shown using the CDN URL
+7. URL saved in WorkOS metadata as `profile_picture_url`
+8. Old image optionally deleted from Blob Storage
+
+#### 3.5 WorkOS API Integration Details
+
+##### 3.5.1 Update User Endpoint
+- **Method**: PATCH (partial update pattern)
+- **Endpoint**: `/users/{userId}`
+- **Capabilities**:
+  - Update email (with re-verification if needed)
+  - Update metadata (partial, preserves existing)
+  - Update external_id for system integration
+
+##### 3.5.2 Metadata Structure
+```json
+{
+  "metadata": {
+    "profile_picture_url": "https://...",
+    "first_name": "John",
+    "last_name": "Doe",
+    "preferences": "{\"theme\":\"dark\",\"notifications\":true}",
+    "bio": "Software engineer",
+    "location": "San Francisco, CA"
+  }
+}
+```
+
+##### 3.5.3 Session Synchronization
+- After successful update, refresh the session
+- Use `refreshUser` from AuthKit to get latest data
+- Update UI components that display user info
+
+#### 3.6 Security Considerations
+
+##### 3.6.1 Authentication
+- All profile routes require authenticated session
+- Use `withAuth` for server components
+- Validate session in API routes before processing
+
+##### 3.6.2 Input Validation
+- Sanitize all user inputs
+- Validate email format
+- Check file types and sizes for uploads
+- Prevent XSS in metadata fields
+
+##### 3.6.3 Rate Limiting
+- Implement rate limiting on update endpoints
+- Prevent rapid successive updates
+- Consider using middleware for rate limiting
+
+#### 3.7 UI/UX Guidelines
+
+##### 3.7.1 Form Design
+- Use DaisyUI form components
+- Clear labels and help text
+- Inline validation messages
+- Disabled state while saving
+- Clear success/error feedback
+
+##### 3.7.2 Responsive Design
+- Mobile-first approach
+- Stack form fields on small screens
+- Appropriate touch targets
+- Consider drawer pattern for mobile
+
+##### 3.7.3 Accessibility
+- Proper ARIA labels
+- Keyboard navigation support
+- Screen reader friendly
+- Focus management
+
+#### 3.8 Error Handling
+
+##### 3.8.1 Client-Side
+- Form validation before submission
+- Network error recovery
+- Optimistic updates with rollback
+- Clear error messages
+
+##### 3.8.2 Server-Side
+- Try-catch blocks in API routes
+- Proper HTTP status codes
+- Detailed error logging
+- User-friendly error messages
+
+#### 3.9 Testing Approach
+
+##### 3.9.1 Unit Tests
+- Form validation logic
+- API route handlers
+- Utility functions
+
+##### 3.9.2 Integration Tests
+- Full update flow
+- Session synchronization
+- Error scenarios
+
+##### 3.9.3 E2E Tests
+- Complete user journey
+- Profile picture upload
+- Email change flow
+
+#### 3.10 Future Enhancements
+
+##### 3.10.1 Phase 3.5 (Optional)
+- Email verification for email changes
+- Two-factor authentication setup
+- Password change (if using password auth)
+- Account deletion
+
+##### 3.10.2 Phase 3.6 (Optional)
+- Social account linking
+- Multiple profile pictures/gallery
+- Rich text bio editor
+- Privacy settings
+
+#### 3.11 Navigation Component Updates
+
+The navigation component (implemented in Phase 2) needs the following updates for Phase 3:
+
+**Current Implementation:**
+- User avatar with initial
+- Dropdown menu with email display
+- Sign out functionality
+- Responsive design with DaisyUI components
+
+**Phase 3 Updates Required:**
+1. **Add "Profile" menu item** - Link to `/account/profile` in the dropdown
+2. **Update avatar to show profile picture** - Display user's uploaded image instead of initial when `profile_picture_url` exists in metadata
+3. **Menu structure:**
+   ```
+   Dropdown Menu:
+   - [User Email] (header)
+   - Profile (link to /account/profile)
+   - ─────────── (divider)
+   - Sign Out
+   ```
+
+**Future enhancements (Phase 4+):**
+- Add "Settings" link when settings page is created
+- Add organization switcher if multi-org support is added
 
 ### Phase 4: Session Management
 
