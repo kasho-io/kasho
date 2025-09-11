@@ -5,6 +5,9 @@ import Link from "next/link";
 export default async function Navigation() {
   const { user } = await withAuth();
 
+  // Extract profile picture from metadata if it exists
+  const profilePictureUrl = (user as { metadata?: { profile_picture_url?: string } })?.metadata?.profile_picture_url;
+
   return (
     <nav className="navbar bg-base-100 shadow-sm">
       <div className="flex-1">
@@ -15,9 +18,13 @@ export default async function Navigation() {
       <div className="flex-none">
         {user ? (
           <div className="dropdown dropdown-end">
-            <div tabIndex={0} className="avatar avatar-placeholder cursor-pointer">
+            <div tabIndex={0} className={`avatar ${!profilePictureUrl ? "avatar-placeholder" : ""} cursor-pointer`}>
               <div className="bg-primary text-primary-content w-10 rounded-full">
-                <span>{user.email?.charAt(0).toUpperCase() || "U"}</span>
+                {profilePictureUrl ? (
+                  <Image src={profilePictureUrl} alt="Profile" width={40} height={40} className="rounded-full" />
+                ) : (
+                  <span>{user.email?.charAt(0).toUpperCase() || "U"}</span>
+                )}
               </div>
             </div>
             <ul
@@ -27,6 +34,10 @@ export default async function Navigation() {
               <li className="menu-title">
                 <span>{user.email}</span>
               </li>
+              <li>
+                <Link href="/account/profile">Profile</Link>
+              </li>
+              <li className="divider"></li>
               <li>
                 <Link href="/logout">Sign Out</Link>
               </li>
