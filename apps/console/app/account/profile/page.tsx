@@ -17,8 +17,6 @@ export default async function ProfilePage() {
     firstName: metadata.first_name || "",
     lastName: metadata.last_name || "",
     profilePictureUrl: metadata.profile_picture_url || "",
-    bio: metadata.bio || "",
-    location: metadata.location || "",
   };
 
   return (

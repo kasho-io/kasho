@@ -10,8 +10,6 @@ interface ProfileData {
   firstName: string;
   lastName: string;
   profilePictureUrl: string;
-  bio: string;
-  location: string;
 }
 
 interface ProfileFormProps {
@@ -95,8 +93,6 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
             first_name: formData.firstName,
             last_name: formData.lastName,
             profile_picture_url: formData.profilePictureUrl,
-            bio: formData.bio,
-            location: formData.location,
           },
         }),
       });
@@ -268,43 +264,6 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                   placeholder="Doe"
                 />
               </div>
-            </div>
-
-            {/* Location */}
-            <div className="form-control w-full mb-6">
-              <label className="label">
-                <span className="label-text font-medium">Location</span>
-              </label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-                className="input input-bordered w-full"
-                placeholder="San Francisco, CA"
-              />
-              <label className="label">
-                <span className="label-text-alt text-base-content/60">Your city and state/country</span>
-              </label>
-            </div>
-
-            {/* Bio */}
-            <div className="form-control w-full mb-8">
-              <label className="label">
-                <span className="label-text font-medium">Bio</span>
-              </label>
-              <textarea
-                name="bio"
-                value={formData.bio}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-                className="textarea textarea-bordered w-full h-32 resize-none"
-                placeholder="Tell us a bit about yourself..."
-              />
-              <label className="label">
-                <span className="label-text-alt text-base-content/60">{formData.bio.length}/500 characters</span>
-              </label>
             </div>
 
             {/* Action Buttons */}
