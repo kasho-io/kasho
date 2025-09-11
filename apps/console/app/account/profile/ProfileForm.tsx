@@ -20,10 +20,16 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState(initialData);
-  const [isEditing, setIsEditing] = useState(false);
+  const [originalData] = useState(initialData);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [previewUrl, setPreviewUrl] = useState(initialData.profilePictureUrl);
+
+  // Check if there are any changes
+  const hasChanges =
+    formData.firstName !== originalData.firstName ||
+    formData.lastName !== originalData.lastName ||
+    formData.profilePictureUrl !== originalData.profilePictureUrl;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -102,7 +108,6 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
       }
 
       setMessage({ type: "success", text: "Profile updated successfully" });
-      setIsEditing(false);
       router.refresh();
     } catch (error) {
       setMessage({ type: "error", text: "Failed to update profile" });
@@ -110,13 +115,6 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleCancel = () => {
-    setFormData(initialData);
-    setPreviewUrl(initialData.profilePictureUrl);
-    setIsEditing(false);
-    setMessage(null);
   };
 
   return (
@@ -173,39 +171,37 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                     )}
                   </div>
                 </div>
-                {isEditing && (
-                  <div className="space-y-2">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="btn btn-outline btn-sm"
+                <div className="space-y-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn btn-outline btn-sm"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                      Upload New Picture
-                    </button>
-                    <p className="text-xs text-base-content/60">JPG, PNG, GIF or WebP. Max 4.5MB.</p>
-                  </div>
-                )}
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Change Picture
+                  </button>
+                  <p className="text-xs text-base-content/60">JPG, PNG, GIF or WebP. Max 4.5MB.</p>
+                </div>
               </div>
             </div>
 
@@ -244,7 +240,6 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  disabled={!isEditing}
                   className="input input-bordered w-full"
                   placeholder="John"
                 />
@@ -259,7 +254,6 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  disabled={!isEditing}
                   className="input input-bordered w-full"
                   placeholder="Doe"
                 />
@@ -268,53 +262,28 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
 
             {/* Action Buttons */}
             <div className="divider my-8"></div>
-            <div className="flex justify-end gap-3">
-              {!isEditing ? (
-                <button type="button" onClick={() => setIsEditing(true)} className="btn btn-primary">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                  Edit Profile
-                </button>
-              ) : (
-                <>
-                  <button type="button" onClick={handleCancel} disabled={isSaving} className="btn btn-ghost">
-                    Cancel
-                  </button>
-                  <button type="submit" disabled={isSaving} className="btn btn-primary">
-                    {isSaving ? (
-                      <>
-                        <span className="loading loading-spinner loading-sm"></span>
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 mr-2"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Save Changes
-                      </>
-                    )}
-                  </button>
-                </>
-              )}
+            <div className="flex justify-end">
+              <button type="submit" disabled={!hasChanges || isSaving} className="btn btn-primary">
+                {isSaving ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Save Changes
+                  </>
+                )}
+              </button>
             </div>
           </form>
         </div>
