@@ -13,13 +13,25 @@ export async function POST(request: NextRequest) {
 
     // Parse the request body
     const body = await request.json();
-    const { metadata } = body;
+    const { email, metadata } = body;
 
-    // Update user metadata via WorkOS API
-    const updatedUser = await workosClient.userManagement.updateUser({
+    // Build update payload
+    const updatePayload: Record<string, string | Record<string, string>> = {
       userId: user.id,
-      metadata: metadata,
-    });
+    };
+
+    // Add email if it changed
+    if (email && email !== user.email) {
+      updatePayload.email = email;
+    }
+
+    // Add metadata if provided
+    if (metadata) {
+      updatePayload.metadata = metadata;
+    }
+
+    // Update user via WorkOS API
+    const updatedUser = await workosClient.userManagement.updateUser(updatePayload);
 
     return NextResponse.json({
       success: true,

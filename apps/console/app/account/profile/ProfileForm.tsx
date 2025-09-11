@@ -27,6 +27,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
 
   // Check if there are any changes
   const hasChanges =
+    formData.email !== originalData.email ||
     formData.firstName !== originalData.firstName ||
     formData.lastName !== originalData.lastName ||
     formData.profilePictureUrl !== originalData.profilePictureUrl;
@@ -95,6 +96,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          email: formData.email,
           metadata: {
             first_name: formData.firstName,
             last_name: formData.lastName,
@@ -213,20 +215,23 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
               <p className="text-sm text-base-content/60">Update your personal details and profile information.</p>
             </div>
 
-            {/* Email (read-only) */}
+            {/* Email */}
             <div className="form-control w-full mb-6">
               <label className="label">
                 <span className="label-text font-medium">Email Address</span>
               </label>
               <input
                 type="email"
+                name="email"
                 value={formData.email}
-                disabled
-                className="input input-bordered w-full bg-base-200 cursor-not-allowed"
+                onChange={handleInputChange}
+                className="input input-bordered w-full"
+                placeholder="your@email.com"
+                required
               />
               <label className="label">
                 <span className="label-text-alt text-base-content/60">
-                  Contact support to change your email address
+                  You&apos;ll need to verify your new email address if you change it
                 </span>
               </label>
             </div>
