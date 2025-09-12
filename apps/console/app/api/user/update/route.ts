@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth-wrapper";
 import { workosClient } from "@/lib/workos-client";
+import { refreshSession } from "@workos-inc/authkit-nextjs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,8 +34,9 @@ export async function POST(request: NextRequest) {
       userId: user.id,
     };
 
-    // Add email if it changed
-    if (email && email !== user.email) {
+    // Always include email if provided
+    // Don't compare with session user.email as it may be stale after previous updates
+    if (email) {
       updatePayload.email = email;
     }
 
@@ -45,6 +47,15 @@ export async function POST(request: NextRequest) {
 
     // Update user via WorkOS API - expects an object with userId and other fields
     const updatedUser = await workosClient.userManagement.updateUser(updatePayload);
+
+    // Refresh the session to get the updated user data
+    // This ensures the cached session is updated with the new email
+    try {
+      await refreshSession();
+    } catch (refreshError) {
+      console.error("Failed to refresh session:", refreshError);
+      // Continue even if refresh fails - the update was successful
+    }
 
     return NextResponse.json({
       success: true,
