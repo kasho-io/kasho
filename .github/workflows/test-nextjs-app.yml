@@ -36,6 +36,12 @@ jobs:
 
       - name: Run tests
         run: task test:app:${{ inputs.app-name }}
+        env:
+          MOCK_AUTH: "true"
+          WORKOS_CLIENT_ID: "test_client_id"
+          WORKOS_CLIENT_SECRET: "test_secret"
+          WORKOS_REDIRECT_URI: "http://localhost:3000/callback"
+          WORKOS_COOKIE_PASSWORD: "test_cookie_password_at_least_32_characters_long"
 
       - name: Build application
         run: task apps:build:${{ inputs.app-name }}
