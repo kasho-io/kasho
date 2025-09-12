@@ -56,10 +56,20 @@ jobs:
           # Detect which apps have changes
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             # For PRs, check what changed
-            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '^apps/' || true | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            echo "Detecting changes for PR from origin/${{ github.base_ref }}...HEAD"
+            CHANGED_FILES=$((git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '^apps/' || true) | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
           else
             # For pushes, check the last commit
-            CHANGED_FILES=$(git diff --name-only HEAD~1...HEAD | grep '^apps/' || true | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            echo "Detecting changes for push in HEAD~1...HEAD"
+            CHANGED_FILES=$((git diff --name-only HEAD~1...HEAD | grep '^apps/' || true) | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          fi
+          
+          # Debug output
+          echo "Raw changed files:"
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            git diff --name-only origin/${{ github.base_ref }}...HEAD | head -20
+          else
+            git diff --name-only HEAD~1...HEAD | head -20
           fi
           
           if [ -z "$CHANGED_FILES" ] || [ "$CHANGED_FILES" == "[]" ]; then
@@ -101,10 +111,14 @@ jobs:
   # Test all Next.js apps dynamically
   test-apps:
     needs: detect-changes
-    if: needs.detect-changes.outputs.changed-apps != '[]' || github.event.inputs.force_all_tests == 'true'
+    # Always run tests on PRs, or when apps change, or when forced
+    if: |
+      github.event_name == 'pull_request' ||
+      needs.detect-changes.outputs.changed-apps != '[]' || 
+      github.event.inputs.force_all_tests == 'true'
     strategy:
       matrix:
-        app: ${{ github.event.inputs.force_all_tests == 'true' && fromJson(needs.detect-changes.outputs.all-apps) || fromJson(needs.detect-changes.outputs.changed-apps) }}
+        app: ${{ (github.event_name == 'pull_request' || github.event.inputs.force_all_tests == 'true') && fromJson(needs.detect-changes.outputs.all-apps) || fromJson(needs.detect-changes.outputs.changed-apps) }}
     uses: ./.github/workflows/test-nextjs-app.yml
     with:
       app-directory: apps/${{ matrix.app }}
