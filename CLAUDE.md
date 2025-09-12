@@ -22,6 +22,10 @@
 ## Testing
 - The services in the project have comprehensive test coverage - acknowledge existing tests rather than creating generic test plans
 - Service test files are located in `*_test.go` files following Go conventions
+- **Console App Testing**: ALWAYS use `MOCK_AUTH=true npm test` when running tests in apps/console
+  - The console app requires WorkOS authentication which must be mocked for tests
+  - Never run `npm test` without `MOCK_AUTH=true` in the console app
+  - Example: `MOCK_AUTH=true npm test -- --grep "profile"`
 
 ## Documentation
 - As the codebase evolves, review the documentation in apps/docs to ensure that none of it is out of date, and if it is out of date, update it.
