@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
@@ -27,6 +27,9 @@
     "zod": "^4.1.8"
   },
   "devDependencies": {
-    "@playwright/test": "^1.55.0"
+    "@eslint/eslintrc": "^3.3.1",
+    "@playwright/test": "^1.55.0",
+    "eslint": "^9.35.0",
+    "eslint-config-next": "^15.5.3"
   }
 }
