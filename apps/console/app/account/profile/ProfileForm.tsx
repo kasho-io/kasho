@@ -35,9 +35,15 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
     const { name, value } = e.target;
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
-      // If email is changed, mark it as unverified in the local state
-      if (name === "email" && value !== originalData.email) {
-        updated.emailVerified = false;
+      // Handle email verification state based on whether email matches original
+      if (name === "email") {
+        if (value !== originalData.email) {
+          // Email changed from original - mark as unverified
+          updated.emailVerified = false;
+        } else {
+          // Email reverted to original - restore original verification state
+          updated.emailVerified = originalData.emailVerified;
+        }
       }
       return updated;
     });
@@ -81,12 +87,20 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
       }
 
       const { url } = await response.json();
+      // Only update the form data, not the original data
+      // This ensures the "Save Changes" button becomes enabled
       setFormData((prev) => ({ ...prev, profilePictureUrl: url }));
       setPreviewUrl(url);
-      setMessage({ type: "success", text: "Image uploaded successfully" });
+      setMessage({ type: "success", text: "Image uploaded successfully. Click 'Save Changes' to save your profile." });
     } catch (error) {
+      // On upload failure, revert preview to current saved image
+      setPreviewUrl(originalData.profilePictureUrl);
       setMessage({ type: "error", text: "Failed to upload image" });
       console.error("Upload error:", error);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -140,8 +154,12 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
       // Don't refresh - WorkOS session cache doesn't update immediately
       // The form now has the correct data from the API response
     } catch (error) {
-      setMessage({ type: "error", text: "Failed to update profile" });
+      // On save failure, keep the form data as-is but show error
+      // This preserves unsaved changes including uploaded avatar
+      setMessage({ type: "error", text: "Failed to update profile. Your changes have not been saved." });
       console.error("Update error:", error);
+      // Note: We intentionally don't revert formData here to preserve user's work
+      // The hasChanges flag will remain true, allowing retry
     } finally {
       setIsSaving(false);
     }
