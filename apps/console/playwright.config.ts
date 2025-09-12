@@ -1,9 +1,4 @@
 import { defineConfig, devices } from "@playwright/test";
-import * as dotenv from "dotenv";
-import * as path from "path";
-
-// Load test environment variables
-dotenv.config({ path: path.resolve(__dirname, ".env.test") });
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -35,11 +30,11 @@ export default defineConfig({
     timeout: 120 * 1000,
     env: {
       ...process.env,
-      MOCK_AUTH: process.env.MOCK_AUTH || "true",
-      WORKOS_CLIENT_ID: process.env.WORKOS_CLIENT_ID || "test_client_id",
-      WORKOS_CLIENT_SECRET: process.env.WORKOS_CLIENT_SECRET || "test_secret",
-      WORKOS_REDIRECT_URI: process.env.WORKOS_REDIRECT_URI || "http://localhost:3000/callback",
-      WORKOS_COOKIE_PASSWORD: process.env.WORKOS_COOKIE_PASSWORD || "test_cookie_password_at_least_32_characters_long",
+      MOCK_AUTH: "true",
+      WORKOS_CLIENT_ID: "test_client_id",
+      WORKOS_CLIENT_SECRET: "test_secret",
+      WORKOS_REDIRECT_URI: "http://localhost:3000/callback",
+      WORKOS_COOKIE_PASSWORD: "test_cookie_password_at_least_32_characters_long",
     },
   },
 });
