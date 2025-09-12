@@ -16,13 +16,24 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 The console app uses Playwright for end-to-end testing. Tests require authentication to be mocked to avoid needing real WorkOS credentials.
 
+### Test Scripts
+
+- `test:ci` - Runs linting, type checking, and formatting checks (for CI/CD)
+- `test:e2e` - Runs Playwright end-to-end tests (requires `MOCK_AUTH=true`)
+- `test` - Alias for running Playwright tests
+- `test:headed` - Runs tests with visible browser
+- `test:ui` - Runs tests in interactive UI mode
+
 ### Running Tests
 
-**IMPORTANT: Always use MOCK_AUTH=true when running tests**
+**IMPORTANT: Always use MOCK_AUTH=true when running Playwright tests**
 
 ```bash
-# Run all tests with mocked authentication
-MOCK_AUTH=true npm test
+# Run CI checks (linting, type checking, formatting)
+npm run test:ci
+
+# Run end-to-end tests with mocked authentication
+MOCK_AUTH=true npm run test:e2e
 
 # Run specific tests
 MOCK_AUTH=true npm test -- --grep "profile"
