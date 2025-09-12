@@ -24,16 +24,10 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "npm run dev",
+    command:
+      "MOCK_AUTH=true WORKOS_CLIENT_ID=test_client_id WORKOS_CLIENT_SECRET=test_secret WORKOS_REDIRECT_URI=http://localhost:3000/callback WORKOS_COOKIE_PASSWORD=test_cookie_password_at_least_32_characters_long npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
-    env: {
-      MOCK_AUTH: "true",
-      WORKOS_CLIENT_ID: "test_client_id",
-      WORKOS_CLIENT_SECRET: "test_secret",
-      WORKOS_REDIRECT_URI: "http://localhost:3000/callback",
-      WORKOS_COOKIE_PASSWORD: "test_cookie_password_at_least_32_characters_long",
-    },
   },
 });
