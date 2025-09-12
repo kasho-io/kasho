@@ -41,14 +41,14 @@ export default async function Navigation() {
               </li>
               <li className="divider"></li>
               <li>
-                <Link href="/logout">Sign Out</Link>
+                <a href="/logout">Sign Out</a>
               </li>
             </ul>
           </div>
         ) : (
-          <Link href="/login" className="btn btn-primary btn-sm">
+          <a href="/login" className="btn btn-primary btn-sm">
             Sign In
-          </Link>
+          </a>
         )}
       </div>
     </nav>
