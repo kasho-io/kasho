@@ -148,7 +148,8 @@ tasks:
     desc: Run tests for a specific app
     cmds:
       - echo "🧪 Testing {{index .MATCH 0}} app..."
-      - npm run test --workspace=apps/{{index .MATCH 0}}
+      - npm run test:ci --workspace=apps/{{index .MATCH 0}}
+      - MOCK_AUTH=true npm run test:e2e --workspace=apps/{{index .MATCH 0}}
 
   dev:
     desc: Start development environment (alias for dev:start)
