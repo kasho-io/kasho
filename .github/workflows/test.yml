@@ -24,7 +24,7 @@ jobs:
     outputs:
       go-services: ${{ steps.changes.outputs.go-services }}
       demo-app: ${{ steps.changes.outputs.demo-app }}
-      homepage-app: ${{ steps.changes.outputs.homepage-app }}
+      console-app: ${{ steps.changes.outputs.console-app }}
       docs-app: ${{ steps.changes.outputs.docs-app }}
       proto: ${{ steps.changes.outputs.proto }}
     steps:
@@ -43,8 +43,8 @@ jobs:
               - 'go.work.sum'
             demo-app:
               - 'apps/demo/**'
-            homepage-app:
-              - 'apps/homepage/**'
+            console-app:
+              - 'apps/console/**'
             docs-app:
               - 'apps/docs/**'
             proto:
@@ -84,14 +84,14 @@ jobs:
       app-directory: apps/demo
       app-name: demo
 
-  # Test homepage Next.js app
-  test-homepage-app:
+  # Test console Next.js app
+  test-console-app:
     needs: detect-changes
-    if: needs.detect-changes.outputs.homepage-app == 'true' || github.event.inputs.force_all_tests == 'true'
+    if: needs.detect-changes.outputs.console-app == 'true' || github.event.inputs.force_all_tests == 'true'
     uses: ./.github/workflows/test-nextjs-app.yml
     with:
-      app-directory: apps/homepage
-      app-name: homepage
+      app-directory: apps/console
+      app-name: console
 
   # Test docs Next.js app
   test-docs-app:
@@ -133,7 +133,7 @@ jobs:
   # Summary job that all other workflows depend on
   test-summary:
     runs-on: ubuntu-latest
-    needs: [detect-changes, test-go-services, test-demo-app, test-homepage-app, test-docs-app, test-proto]
+    needs: [detect-changes, test-go-services, test-demo-app, test-console-app, test-docs-app, test-proto]
     if: always()
     steps:
       - name: Check test results
@@ -147,8 +147,8 @@ jobs:
             echo "Demo app tests failed"
             exit 1
           fi
-          if [[ "${{ needs.test-homepage-app.result }}" == "failure" ]]; then
-            echo "Homepage app tests failed"
+          if [[ "${{ needs.test-console-app.result }}" == "failure" ]]; then
+            echo "Console app tests failed"
             exit 1
           fi
           if [[ "${{ needs.test-docs-app.result }}" == "failure" ]]; then
