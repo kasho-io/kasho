@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import ProfileForm from "./ProfileForm";
 import { workosClient } from "@/lib/workos-client";
 import { WorkOSUser } from "@/lib/validation-schemas";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export default async function ProfilePage() {
   const { user } = await withAuth();
@@ -49,7 +50,9 @@ export default async function ProfilePage() {
             <h1 className="text-3xl font-bold text-base-content mb-2">Account Settings</h1>
             <p className="text-base-content/70">Manage your personal information and preferences</p>
           </div>
-          <ProfileForm initialData={profileData} />
+          <ErrorBoundary>
+            <ProfileForm initialData={profileData} />
+          </ErrorBoundary>
         </div>
       </div>
     </div>

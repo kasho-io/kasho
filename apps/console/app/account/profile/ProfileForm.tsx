@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 
 interface ProfileData {
@@ -18,11 +18,20 @@ interface ProfileFormProps {
 
 export default function ProfileForm({ initialData }: ProfileFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messageRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState(initialData);
   const [originalData, setOriginalData] = useState(initialData);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [previewUrl, setPreviewUrl] = useState(initialData.profilePictureUrl);
+
+  // Focus management for dynamic messages
+  useEffect(() => {
+    if (message && messageRef.current) {
+      // Announce to screen readers and focus for keyboard users
+      messageRef.current.focus();
+    }
+  }, [message]);
 
   // Check if there are any changes
   const hasChanges =
@@ -192,7 +201,13 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
       )}
 
       {message && (
-        <div className={`alert ${message.type === "success" ? "alert-success" : "alert-error"}`}>
+        <div
+          ref={messageRef}
+          className={`alert ${message.type === "success" ? "alert-success" : "alert-error"}`}
+          role="alert"
+          aria-live="polite"
+          tabIndex={-1}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-6 w-6 shrink-0 stroke-current"
@@ -250,11 +265,15 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                     accept="image/*"
                     onChange={handleFileChange}
                     className="hidden"
+                    aria-label="Upload profile picture"
+                    id="profile-picture-upload"
                   />
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     className="btn btn-outline btn-sm"
+                    aria-label="Change profile picture"
+                    aria-describedby="profile-picture-help"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -272,7 +291,9 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                     </svg>
                     Change Picture
                   </button>
-                  <p className="text-xs text-base-content/60">JPG, PNG, GIF or WebP. Max 4.5MB.</p>
+                  <p id="profile-picture-help" className="text-xs text-base-content/60">
+                    JPG, PNG, GIF or WebP. Max 4.5MB.
+                  </p>
                 </div>
               </div>
             </div>
@@ -287,7 +308,25 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
             <div className="form-control w-full mb-6">
               <label className="label">
                 <span className="label-text font-medium">Email Address</span>
-                {!formData.emailVerified && <span className="badge badge-warning badge-sm ml-2">Unverified</span>}
+                {!formData.emailVerified && (
+                  <span className="badge badge-warning badge-sm ml-2" role="status" aria-label="Email not verified">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-3 w-3 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                    Unverified
+                  </span>
+                )}
               </label>
               <input
                 type="email"
@@ -297,9 +336,12 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                 className="input input-bordered w-full"
                 placeholder="your@email.com"
                 required
+                aria-label="Email address"
+                aria-describedby="email-help"
+                aria-invalid={!formData.emailVerified ? "true" : "false"}
               />
               <label className="label">
-                <span className="label-text-alt text-base-content/60">
+                <span id="email-help" className="label-text-alt text-base-content/60">
                   {!formData.emailVerified
                     ? "You will need to verify your email the next time you sign in."
                     : formData.email !== originalData.email
@@ -322,6 +364,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                   onChange={handleInputChange}
                   className="input input-bordered w-full"
                   placeholder="John"
+                  aria-label="First name"
                 />
               </div>
 
@@ -336,6 +379,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                   onChange={handleInputChange}
                   className="input input-bordered w-full"
                   placeholder="Doe"
+                  aria-label="Last name"
                 />
               </div>
             </div>
