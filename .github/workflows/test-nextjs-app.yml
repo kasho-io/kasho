@@ -57,6 +57,12 @@ jobs:
         run: task apps:build:${{ inputs.app-name }}
         env:
           NODE_ENV: production
+          MOCK_AUTH: true
+          WORKOS_CLIENT_ID: test_client_id
+          WORKOS_API_KEY: sk_test_12345
+          WORKOS_CLIENT_SECRET: test_secret
+          NEXT_PUBLIC_WORKOS_REDIRECT_URI: http://localhost:3000/callback
+          WORKOS_COOKIE_PASSWORD: test_cookie_password_at_least_32_characters_long
 
       - name: Check build output
         run: |
