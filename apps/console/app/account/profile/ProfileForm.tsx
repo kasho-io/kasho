@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 interface ProfileData {
@@ -18,11 +17,9 @@ interface ProfileFormProps {
 }
 
 export default function ProfileForm({ initialData }: ProfileFormProps) {
-  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState(initialData);
   const [originalData, setOriginalData] = useState(initialData);
-  const [emailVerified, setEmailVerified] = useState(initialData.emailVerified);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [previewUrl, setPreviewUrl] = useState(initialData.profilePictureUrl);
@@ -36,7 +33,14 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      // If email is changed, mark it as unverified in the local state
+      if (name === "email" && value !== originalData.email) {
+        updated.emailVerified = false;
+      }
+      return updated;
+    });
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,14 +115,30 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
         throw new Error("Failed to update profile");
       }
 
+      const result = await response.json();
+      const updatedUser = result.user;
+
+      // Update both formData and originalData with the server response
+      // IMPORTANT: WorkOS stores custom fields in metadata, not as direct properties
+      // The firstName/lastName direct properties are immutable and set during user creation
+      // We must use metadata for user-editable fields
+      const updatedData = {
+        id: updatedUser.id || formData.id,
+        email: updatedUser.email || formData.email,
+        emailVerified: updatedUser.emailVerified ?? formData.emailVerified,
+        // Use metadata values if they exist, otherwise keep form values
+        // WorkOS doesn't update firstName/lastName direct properties
+        firstName: updatedUser.metadata?.first_name || formData.firstName,
+        lastName: updatedUser.metadata?.last_name || formData.lastName,
+        profilePictureUrl: updatedUser.metadata?.profile_picture_url || formData.profilePictureUrl,
+      };
+
+      setFormData(updatedData);
+      setOriginalData(updatedData);
       setMessage({ type: "success", text: "Profile updated successfully" });
-      // Update the original data to reflect the saved state
-      setOriginalData(formData);
-      // If email changed, mark as unverified
-      if (formData.email !== originalData.email) {
-        setEmailVerified(false);
-      }
-      router.refresh();
+
+      // Don't refresh - WorkOS session cache doesn't update immediately
+      // The form now has the correct data from the API response
     } catch (error) {
       setMessage({ type: "error", text: "Failed to update profile" });
       console.error("Update error:", error);
@@ -129,7 +149,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
 
   return (
     <div className="space-y-6">
-      {!emailVerified && (
+      {!formData.emailVerified && (
         <div className="alert alert-warning">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -249,7 +269,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
             <div className="form-control w-full mb-6">
               <label className="label">
                 <span className="label-text font-medium">Email Address</span>
-                {!emailVerified && <span className="badge badge-warning badge-sm ml-2">Unverified</span>}
+                {!formData.emailVerified && <span className="badge badge-warning badge-sm ml-2">Unverified</span>}
               </label>
               <input
                 type="email"
@@ -258,12 +278,11 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                 onChange={handleInputChange}
                 className="input input-bordered w-full"
                 placeholder="your@email.com"
-                disabled={!emailVerified}
                 required
               />
               <label className="label">
                 <span className="label-text-alt text-base-content/60">
-                  {!emailVerified
+                  {!formData.emailVerified
                     ? "You will need to verify your email the next time you sign in."
                     : formData.email !== originalData.email
                       ? "You'll need to verify your new email address after saving"

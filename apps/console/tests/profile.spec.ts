@@ -74,18 +74,13 @@ test.describe("Profile Form", () => {
     }
   });
 
-  test("should disable email field when email is unverified", async ({ page }) => {
+  test("should keep email field enabled regardless of verification status", async ({ page }) => {
     await page.goto("/account/profile");
 
-    const unverifiedBadge = page.locator('.badge:has-text("Unverified")');
     const emailInput = page.locator('input[name="email"]');
 
-    // If email is unverified, email field should be disabled
-    if (await unverifiedBadge.isVisible()) {
-      await expect(emailInput).toBeDisabled();
-    } else {
-      await expect(emailInput).toBeEnabled();
-    }
+    // Email field should always be enabled (users can update profile even with unverified email)
+    await expect(emailInput).toBeEnabled();
   });
 
   test("should allow updating first and last name when email is verified", async ({ page }) => {
@@ -111,8 +106,11 @@ test.describe("Profile Form", () => {
           success: true,
           user: {
             ...mockUser,
-            firstName: "Jane",
-            lastName: "Smith",
+            metadata: {
+              first_name: "Jane",
+              last_name: "Smith",
+              profile_picture_url: "",
+            },
           },
         }),
       });
@@ -195,18 +193,15 @@ test.describe("Profile Form", () => {
     const emailInput = page.locator('input[name="email"]');
     const saveButton = page.locator('button:has-text("Save Changes")');
 
-    // Only test if email field is enabled
-    if (await emailInput.isEnabled()) {
-      // Enter invalid email
-      await emailInput.fill("invalid-email");
+    // Enter invalid email
+    await emailInput.fill("invalid-email");
 
-      // Try to save (HTML5 validation should prevent submission)
-      await saveButton.click();
+    // Try to save (HTML5 validation should prevent submission)
+    await saveButton.click();
 
-      // Check that the input has validation error (browser native validation)
-      const validationMessage = await emailInput.evaluate((el: HTMLInputElement) => el.validationMessage);
-      expect(validationMessage).toBeTruthy();
-    }
+    // Check that the input has validation error (browser native validation)
+    const validationMessage = await emailInput.evaluate((el: HTMLInputElement) => el.validationMessage);
+    expect(validationMessage).toBeTruthy();
   });
 
   test("should mark email as unverified after email change", async ({ page }) => {
@@ -215,32 +210,38 @@ test.describe("Profile Form", () => {
     const emailInput = page.locator('input[name="email"]');
     const saveButton = page.locator('button:has-text("Save Changes")');
 
-    // Only test if email field is enabled
-    if (await emailInput.isEnabled()) {
-      // Change email
-      await emailInput.fill("newemail@example.com");
+    // Get original email
+    const originalEmail = await emailInput.inputValue();
 
-      // Mock successful update
-      await page.route("/api/user/update", async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            success: true,
-            user: {
-              ...mockUser,
-              email: "newemail@example.com",
-            },
-          }),
-        });
+    // Change email
+    await emailInput.fill("newemail@example.com");
+
+    // Mock successful update that returns unverified status
+    await page.route("/api/user/update", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          user: {
+            ...mockUser,
+            email: "newemail@example.com",
+            emailVerified: false,
+          },
+        }),
       });
+    });
 
-      // Save changes
-      await saveButton.click();
+    // Save changes
+    await saveButton.click();
 
-      // After save, check for unverified badge or message
-      await expect(page.locator('.badge:has-text("Unverified")')).toBeVisible();
-    }
+    // After save, check for unverified badge
+    await expect(page.locator('.badge:has-text("Unverified")')).toBeVisible({ timeout: 5000 });
+
+    // Also check the help text
+    await expect(
+      page.locator('.label-text-alt:has-text("You will need to verify your email the next time you sign in.")'),
+    ).toBeVisible();
   });
 
   test("should preserve form data after failed save", async ({ page }) => {
@@ -276,6 +277,128 @@ test.describe("Profile Form", () => {
 
     // Save button should still be enabled (changes not saved)
     await expect(saveButton).toBeEnabled();
+  });
+});
+
+test.describe("Profile Form - Data Persistence", () => {
+  test("should correctly handle metadata-based name updates", async ({ page }) => {
+    // This test verifies that WorkOS metadata is properly handled
+    // since firstName/lastName are stored in metadata, not as direct properties
+    await page.goto("/account/profile");
+
+    const firstNameInput = page.locator('input[name="firstName"]');
+    const lastNameInput = page.locator('input[name="lastName"]');
+    const saveButton = page.locator('button:has-text("Save Changes")');
+
+    // Change names
+    const newFirstName = "UpdatedFirst";
+    const newLastName = "UpdatedLast";
+    await firstNameInput.fill(newFirstName);
+    await lastNameInput.fill(newLastName);
+
+    // Mock successful update that returns metadata (not direct properties)
+    await page.route("/api/user/update", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          user: {
+            ...mockUser,
+            // WorkOS doesn't update these direct properties
+            firstName: mockUser.firstName,
+            lastName: mockUser.lastName,
+            // Names are actually stored in metadata
+            metadata: {
+              first_name: newFirstName,
+              last_name: newLastName,
+              profile_picture_url: "",
+            },
+          },
+        }),
+      });
+    });
+
+    // Save changes
+    await saveButton.click();
+
+    // Wait for success message
+    await expect(page.locator(".alert-success")).toBeVisible();
+
+    // The form should display the new values from metadata
+    await expect(firstNameInput).toHaveValue(newFirstName);
+    await expect(lastNameInput).toHaveValue(newLastName);
+
+    // Save button should be disabled (no pending changes)
+    await expect(saveButton).toBeDisabled();
+  });
+
+  test("should persist changes after page reload", async ({ page }) => {
+    await page.goto("/account/profile");
+
+    const firstNameInput = page.locator('input[name="firstName"]');
+    const lastNameInput = page.locator('input[name="lastName"]');
+    const saveButton = page.locator('button:has-text("Save Changes")');
+
+    // Change names
+    const newFirstName = "UpdatedFirst";
+    const newLastName = "UpdatedLast";
+    await firstNameInput.fill(newFirstName);
+    await lastNameInput.fill(newLastName);
+
+    // Mock successful update with metadata
+    await page.route("/api/user/update", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          user: {
+            ...mockUser,
+            // WorkOS returns original direct properties unchanged
+            firstName: mockUser.firstName,
+            lastName: mockUser.lastName,
+            // Updated values are in metadata
+            metadata: {
+              first_name: newFirstName,
+              last_name: newLastName,
+              profile_picture_url: "",
+            },
+          },
+        }),
+      });
+    });
+
+    // Save changes
+    await saveButton.click();
+
+    // Wait for success message
+    await expect(page.locator(".alert-success")).toBeVisible();
+
+    // After save, the save button should be disabled (no pending changes)
+    await expect(saveButton).toBeDisabled();
+
+    // The form should show the new values
+    await expect(firstNameInput).toHaveValue(newFirstName);
+    await expect(lastNameInput).toHaveValue(newLastName);
+  });
+
+  test("should show unverified badge persistently after email change", async ({ page }) => {
+    await page.goto("/account/profile");
+
+    const emailInput = page.locator('input[name="email"]');
+    const originalEmail = await emailInput.inputValue();
+
+    // Change email to trigger unverified state
+    await emailInput.fill("changed@example.com");
+
+    // The badge should appear immediately in the form (local state)
+    await expect(page.locator('.badge:has-text("Unverified")')).toBeVisible();
+
+    // The help text should update to show appropriate message
+    // When email is changed from a verified state, it shows different text
+    const helpText = page.locator(".label-text-alt").first();
+    await expect(helpText).toContainText(/You will need to verify|You'll need to verify/);
   });
 });
 

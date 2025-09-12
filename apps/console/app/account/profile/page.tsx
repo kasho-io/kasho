@@ -9,19 +9,20 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  // Extract metadata fields if they exist
-  const userWithMetadata = user as {
-    metadata?: Record<string, string>;
-    emailVerified?: boolean;
-  };
-  const metadata = userWithMetadata.metadata || {};
+  // Extract user data - WorkOS returns firstName/lastName as direct properties
+  // but we store them in metadata for updates
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userWithFields = user as any; // Type assertion since WorkOS types may vary
+  const metadata = userWithFields.metadata || {};
+
   const profileData = {
-    id: user.id,
-    email: user.email || "",
-    emailVerified: userWithMetadata.emailVerified ?? true,
-    firstName: metadata.first_name || "",
-    lastName: metadata.last_name || "",
-    profilePictureUrl: metadata.profile_picture_url || "",
+    id: userWithFields.id,
+    email: userWithFields.email || "",
+    emailVerified: userWithFields.emailVerified ?? true,
+    // Check both direct properties and metadata
+    firstName: userWithFields.firstName || metadata.first_name || "",
+    lastName: userWithFields.lastName || metadata.last_name || "",
+    profilePictureUrl: userWithFields.profilePictureUrl || metadata.profile_picture_url || "",
   };
 
   return (
