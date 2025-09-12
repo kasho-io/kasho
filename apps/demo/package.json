@@ -6,7 +6,7 @@
     "dev": "next dev --port ${APP_DEMO_PORT:-3001} --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "echo \"No tests yet\" && exit 0",
     "prettier": "npx prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "prettier:check": "npx prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
@@ -23,7 +23,10 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
     "@types/react": "19.1.8",
+    "eslint": "^9.35.0",
+    "eslint-config-next": "^15.5.3",
     "typescript": "5.8.3"
   }
 }
