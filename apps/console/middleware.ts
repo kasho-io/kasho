@@ -4,6 +4,10 @@ export default authkitMiddleware();
 
 // Match all routes except static files
 export const config = {
+  unstable_allowDynamic: [
+    // Allow WorkOS AuthKit to use dynamic code evaluation in Edge Runtime
+    "**/node_modules/@workos-inc/**",
+  ],
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
