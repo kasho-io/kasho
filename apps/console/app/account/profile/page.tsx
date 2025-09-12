@@ -2,6 +2,7 @@ import { withAuth } from "@/lib/auth-wrapper";
 import { redirect } from "next/navigation";
 import ProfileForm from "./ProfileForm";
 import { workosClient } from "@/lib/workos-client";
+import { WorkOSUser } from "@/lib/validation-schemas";
 
 export default async function ProfilePage() {
   const { user } = await withAuth();
@@ -26,8 +27,7 @@ export default async function ProfilePage() {
 
   // Extract user data - WorkOS returns firstName/lastName as direct properties
   // but we store them in metadata for updates
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userWithFields = freshUserData as any; // Type assertion since WorkOS types may vary
+  const userWithFields = freshUserData as WorkOSUser;
   const metadata = userWithFields.metadata || {};
 
   const profileData = {
@@ -36,9 +36,9 @@ export default async function ProfilePage() {
     emailVerified: userWithFields.emailVerified ?? true,
     // Prioritize metadata over direct properties since WorkOS stores updates in metadata
     // Direct firstName/lastName are immutable and set only during user creation
-    firstName: metadata.first_name || userWithFields.firstName || "",
-    lastName: metadata.last_name || userWithFields.lastName || "",
-    profilePictureUrl: metadata.profile_picture_url || userWithFields.profilePictureUrl || "",
+    firstName: (metadata.first_name as string) || userWithFields.firstName || "",
+    lastName: (metadata.last_name as string) || userWithFields.lastName || "",
+    profilePictureUrl: (metadata.profile_picture_url as string) || userWithFields.profilePictureUrl || "",
   };
 
   return (
