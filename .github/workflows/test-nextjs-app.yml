@@ -44,7 +44,7 @@ jobs:
           echo "MOCK_AUTH: $MOCK_AUTH"
           echo "WORKOS_CLIENT_ID: $WORKOS_CLIENT_ID"
           echo "WORKOS_CLIENT_SECRET: $WORKOS_CLIENT_SECRET" 
-          echo "WORKOS_REDIRECT_URI: $WORKOS_REDIRECT_URI"
+          echo "NEXT_PUBLIC_WORKOS_REDIRECT_URI: $NEXT_PUBLIC_WORKOS_REDIRECT_URI"
           echo "WORKOS_COOKIE_PASSWORD length: ${#WORKOS_COOKIE_PASSWORD}"
           echo "NODE_ENV: $NODE_ENV"
           echo "=================================="
@@ -52,7 +52,7 @@ jobs:
           MOCK_AUTH: true
           WORKOS_CLIENT_ID: test_client_id
           WORKOS_CLIENT_SECRET: test_secret
-          WORKOS_REDIRECT_URI: http://localhost:3000/callback
+          NEXT_PUBLIC_WORKOS_REDIRECT_URI: http://localhost:3000/callback
           WORKOS_COOKIE_PASSWORD: test_cookie_password_at_least_32_characters_long
 
       - name: Run tests
@@ -66,7 +66,7 @@ jobs:
           MOCK_AUTH: true
           WORKOS_CLIENT_ID: test_client_id
           WORKOS_CLIENT_SECRET: test_secret
-          WORKOS_REDIRECT_URI: http://localhost:3000/callback
+          NEXT_PUBLIC_WORKOS_REDIRECT_URI: http://localhost:3000/callback
           WORKOS_COOKIE_PASSWORD: test_cookie_password_at_least_32_characters_long
 
       - name: Build application
