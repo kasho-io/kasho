@@ -22,6 +22,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState(initialData);
   const [originalData, setOriginalData] = useState(initialData);
+  const [emailVerified, setEmailVerified] = useState(initialData.emailVerified);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [previewUrl, setPreviewUrl] = useState(initialData.profilePictureUrl);
@@ -113,6 +114,10 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
       setMessage({ type: "success", text: "Profile updated successfully" });
       // Update the original data to reflect the saved state
       setOriginalData(formData);
+      // If email changed, mark as unverified
+      if (formData.email !== originalData.email) {
+        setEmailVerified(false);
+      }
       router.refresh();
     } catch (error) {
       setMessage({ type: "error", text: "Failed to update profile" });
@@ -124,6 +129,30 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
 
   return (
     <div className="space-y-6">
+      {!emailVerified && (
+        <div className="alert alert-warning">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 shrink-0 stroke-current"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <div>
+            <h3 className="font-bold">Email Verification Required</h3>
+            <div className="text-sm">
+              Your email address needs to be verified. Please sign out and sign in again to receive a verification code.
+            </div>
+          </div>
+        </div>
+      )}
+
       {message && (
         <div className={`alert ${message.type === "success" ? "alert-success" : "alert-error"}`}>
           <svg
@@ -220,21 +249,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
             <div className="form-control w-full mb-6">
               <label className="label">
                 <span className="label-text font-medium">Email Address</span>
-                {!initialData.emailVerified && <span className="badge badge-warning badge-sm ml-2">Unverified</span>}
-                {initialData.emailVerified && (
-                  <span className="badge badge-success badge-sm ml-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-3 w-3 mr-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Verified
-                  </span>
-                )}
+                {!emailVerified && <span className="badge badge-warning badge-sm ml-2">Unverified</span>}
               </label>
               <input
                 type="email"
@@ -243,15 +258,16 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                 onChange={handleInputChange}
                 className="input input-bordered w-full"
                 placeholder="your@email.com"
+                disabled={!emailVerified}
                 required
               />
               <label className="label">
                 <span className="label-text-alt text-base-content/60">
-                  {!initialData.emailVerified
-                    ? "Please verify your email address to ensure account security"
+                  {!emailVerified
+                    ? "You will need to verify your email the next time you sign in."
                     : formData.email !== originalData.email
                       ? "You'll need to verify your new email address after saving"
-                      : "Your email address is verified"}
+                      : ""}
                 </span>
               </label>
             </div>

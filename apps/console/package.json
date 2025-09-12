@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "echo \"No tests yet\" && exit 0",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
     "test:ci": "npm run prettier:check && npm run lint && npm run type-check && npm run test",
     "type-check": "npx tsc --noEmit",
     "prettier": "npx prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
@@ -15,11 +17,14 @@
   },
   "dependencies": {
     "@vercel/blob": "^1.1.1",
-    "@workos-inc/authkit-nextjs": "^2.6.0",
+    "@workos-inc/authkit-nextjs": "^2.7.0",
     "@workos-inc/node": "^7.69.2",
     "daisyui": "^5.0.37",
     "next": "^15.3.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
   }
 }
