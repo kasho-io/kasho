@@ -34,10 +34,9 @@ jobs:
       - name: Install dependencies
         run: task apps:deps:install:${{ inputs.app-name }}
 
-      - name: Install Playwright Browsers
+      - name: Install Playwright
         if: inputs.app-name == 'console'
-        run: npx playwright install --with-deps chromium
-        working-directory: ${{ inputs.app-directory }}
+        run: npx playwright install chromium
 
       - name: Run tests
         run: |
