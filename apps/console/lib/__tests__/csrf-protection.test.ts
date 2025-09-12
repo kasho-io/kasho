@@ -30,13 +30,24 @@ describe("csrf-protection", () => {
   const originalEnv = process.env.NODE_ENV;
 
   afterEach(() => {
-    process.env.NODE_ENV = originalEnv;
+    // Use Object.defineProperty to restore the original value
+    Object.defineProperty(process.env, "NODE_ENV", {
+      value: originalEnv,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
   });
 
   describe("validateRequestOrigin", () => {
     describe("development environment", () => {
       beforeEach(() => {
-        process.env.NODE_ENV = "development";
+        Object.defineProperty(process.env, "NODE_ENV", {
+          value: "development",
+          writable: true,
+          enumerable: true,
+          configurable: true,
+        });
       });
 
       it("should accept localhost origins in development", () => {
@@ -99,7 +110,12 @@ describe("csrf-protection", () => {
 
     describe("production environment", () => {
       beforeEach(() => {
-        process.env.NODE_ENV = "production";
+        Object.defineProperty(process.env, "NODE_ENV", {
+          value: "production",
+          writable: true,
+          enumerable: true,
+          configurable: true,
+        });
       });
 
       it("should validate origin matches host", () => {
@@ -217,7 +233,12 @@ describe("csrf-protection", () => {
 
   describe("isRequestValid", () => {
     beforeEach(() => {
-      process.env.NODE_ENV = "development";
+      Object.defineProperty(process.env, "NODE_ENV", {
+        value: "development",
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
     });
 
     it("should validate request with valid origin and method", () => {
