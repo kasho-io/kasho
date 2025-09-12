@@ -33,23 +33,11 @@ export default defineConfig({
         ...process.env,
         MOCK_AUTH: "true",
         WORKOS_CLIENT_ID: "test_client_id",
+        WORKOS_API_KEY: "sk_test_12345",
         WORKOS_CLIENT_SECRET: "test_secret",
         NEXT_PUBLIC_WORKOS_REDIRECT_URI: "http://localhost:3000/callback",
         WORKOS_COOKIE_PASSWORD: "test_cookie_password_at_least_32_characters_long",
       };
-
-      // Debug logging for CI
-      if (process.env.CI) {
-        console.log("=== Playwright webServer env debug ===");
-        console.log("MOCK_AUTH:", env.MOCK_AUTH);
-        console.log("WORKOS_CLIENT_ID:", env.WORKOS_CLIENT_ID);
-        console.log("WORKOS_CLIENT_SECRET:", env.WORKOS_CLIENT_SECRET);
-        console.log("NEXT_PUBLIC_WORKOS_REDIRECT_URI:", env.NEXT_PUBLIC_WORKOS_REDIRECT_URI);
-        console.log("WORKOS_COOKIE_PASSWORD length:", env.WORKOS_COOKIE_PASSWORD?.length);
-        console.log("process.env.MOCK_AUTH:", process.env.MOCK_AUTH);
-        console.log("process.env.WORKOS_CLIENT_ID:", process.env.WORKOS_CLIENT_ID);
-        console.log("=====================================");
-      }
 
       return env;
     })(),
