@@ -23,12 +23,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       go-services: ${{ steps.changes.outputs.go-services }}
-      demo-app: ${{ steps.changes.outputs.demo-app }}
-      console-app: ${{ steps.changes.outputs.console-app }}
-      docs-app: ${{ steps.changes.outputs.docs-app }}
       proto: ${{ steps.changes.outputs.proto }}
+      changed-apps: ${{ steps.detect-apps.outputs.changed-apps }}
+      all-apps: ${{ steps.detect-apps.outputs.all-apps }}
     steps:
       - uses: actions/checkout@v4
+      
+      # Detect Go services and proto changes
       - uses: dorny/paths-filter@v2
         id: changes
         with:
@@ -41,14 +42,34 @@ jobs:
               - 'proto/**'
               - 'go.work'
               - 'go.work.sum'
-            demo-app:
-              - 'apps/demo/**'
-            console-app:
-              - 'apps/console/**'
-            docs-app:
-              - 'apps/docs/**'
             proto:
               - 'proto/**'
+      
+      # Dynamically detect all apps and which ones changed
+      - name: Detect apps
+        id: detect-apps
+        run: |
+          # Get all apps
+          ALL_APPS=$(find apps -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "all-apps=$ALL_APPS" >> $GITHUB_OUTPUT
+          
+          # Detect which apps have changes
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # For PRs, check what changed
+            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '^apps/' || true | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          else
+            # For pushes, check the last commit
+            CHANGED_FILES=$(git diff --name-only HEAD~1...HEAD | grep '^apps/' || true | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          fi
+          
+          if [ -z "$CHANGED_FILES" ] || [ "$CHANGED_FILES" == "[]" ]; then
+            echo "changed-apps=[]" >> $GITHUB_OUTPUT
+          else
+            echo "changed-apps=$CHANGED_FILES" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "All apps: $ALL_APPS"
+          echo "Changed apps: $CHANGED_FILES"
       
       - name: Save change detection results for publish workflow
         if: github.ref == 'refs/heads/main'
@@ -57,7 +78,9 @@ jobs:
           {
             "docker_changes": "${{ steps.changes.outputs.go-services == 'true' || steps.changes.outputs.proto == 'true' }}",
             "go_services": "${{ steps.changes.outputs.go-services }}",
-            "proto": "${{ steps.changes.outputs.proto }}"
+            "proto": "${{ steps.changes.outputs.proto }}",
+            "changed_apps": ${{ steps.detect-apps.outputs.changed-apps }},
+            "all_apps": ${{ steps.detect-apps.outputs.all-apps }}
           }
           EOF
           
@@ -75,32 +98,17 @@ jobs:
     if: needs.detect-changes.outputs.go-services == 'true' || github.event.inputs.force_all_tests == 'true'
     uses: ./.github/workflows/test-go-services.yml
 
-  # Test demo Next.js app
-  test-demo-app:
+  # Test all Next.js apps dynamically
+  test-apps:
     needs: detect-changes
-    if: needs.detect-changes.outputs.demo-app == 'true' || github.event.inputs.force_all_tests == 'true'
+    if: needs.detect-changes.outputs.changed-apps != '[]' || github.event.inputs.force_all_tests == 'true'
+    strategy:
+      matrix:
+        app: ${{ github.event.inputs.force_all_tests == 'true' && fromJson(needs.detect-changes.outputs.all-apps) || fromJson(needs.detect-changes.outputs.changed-apps) }}
     uses: ./.github/workflows/test-nextjs-app.yml
     with:
-      app-directory: apps/demo
-      app-name: demo
-
-  # Test console Next.js app
-  test-console-app:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.console-app == 'true' || github.event.inputs.force_all_tests == 'true'
-    uses: ./.github/workflows/test-nextjs-app.yml
-    with:
-      app-directory: apps/console
-      app-name: console
-
-  # Test docs Next.js app
-  test-docs-app:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.docs-app == 'true' || github.event.inputs.force_all_tests == 'true'
-    uses: ./.github/workflows/test-nextjs-app.yml
-    with:
-      app-directory: apps/docs
-      app-name: docs
+      app-directory: apps/${{ matrix.app }}
+      app-name: ${{ matrix.app }}
 
   # Validate protobuf definitions
   test-proto:
@@ -133,7 +141,7 @@ jobs:
   # Summary job that all other workflows depend on
   test-summary:
     runs-on: ubuntu-latest
-    needs: [detect-changes, test-go-services, test-demo-app, test-console-app, test-docs-app, test-proto]
+    needs: [detect-changes, test-go-services, test-apps, test-proto]
     if: always()
     steps:
       - name: Check test results
@@ -143,16 +151,8 @@ jobs:
             echo "Go services tests failed"
             exit 1
           fi
-          if [[ "${{ needs.test-demo-app.result }}" == "failure" ]]; then
-            echo "Demo app tests failed"
-            exit 1
-          fi
-          if [[ "${{ needs.test-console-app.result }}" == "failure" ]]; then
-            echo "Console app tests failed"
-            exit 1
-          fi
-          if [[ "${{ needs.test-docs-app.result }}" == "failure" ]]; then
-            echo "Docs app tests failed"
+          if [[ "${{ needs.test-apps.result }}" == "failure" ]]; then
+            echo "App tests failed"
             exit 1
           fi
           if [[ "${{ needs.test-proto.result }}" == "failure" ]]; then
