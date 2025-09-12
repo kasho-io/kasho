@@ -1,12 +1,14 @@
 import { withAuth } from "@workos-inc/authkit-nextjs";
 import Image from "next/image";
 import Link from "next/link";
+import { WorkOSUser } from "@/lib/validation-schemas";
 
 export default async function Navigation() {
   const { user } = await withAuth();
 
   // Extract profile picture from metadata if it exists
-  const profilePictureUrl = (user as { metadata?: { profile_picture_url?: string } })?.metadata?.profile_picture_url;
+  const workosUser = user as WorkOSUser;
+  const profilePictureUrl = workosUser?.metadata?.profile_picture_url as string | undefined;
 
   return (
     <nav className="navbar bg-base-100 shadow-sm">

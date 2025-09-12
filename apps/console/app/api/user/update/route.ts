@@ -2,9 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth-wrapper";
 import { workosClient } from "@/lib/workos-client";
 import { refreshSession } from "@workos-inc/authkit-nextjs";
+import { customMetadataSchema } from "@/lib/validation-schemas";
+import { z } from "zod";
+import { isRequestValid } from "@/lib/csrf-protection";
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate CSRF protection
+    const requestValidation = isRequestValid(request, {
+      allowedMethods: ["POST"],
+    });
+
+    if (!requestValidation.valid) {
+      return NextResponse.json({ error: requestValidation.error }, { status: 403 });
+    }
+
     // Get the authenticated user
     const { user } = await withAuth();
 
@@ -14,7 +26,20 @@ export async function POST(request: NextRequest) {
 
     // Parse the request body
     const body = await request.json();
-    const { email, metadata } = body;
+
+    // Create a validation schema for the request body
+    const requestSchema = z.object({
+      email: z.string().email("Invalid email format").max(255).optional(),
+      metadata: customMetadataSchema.optional(),
+    });
+
+    // Validate request body
+    const validation = requestSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
+    }
+
+    const { email, metadata } = validation.data;
 
     // In test mode, just return success without calling WorkOS
     if (process.env.NODE_ENV === "test" || process.env.MOCK_AUTH === "true") {
@@ -29,8 +54,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Build update payload for WorkOS API
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updatePayload: any = {
+    // Using the actual WorkOS SDK type
+    const updatePayload: Parameters<typeof workosClient.userManagement.updateUser>[0] = {
       userId: user.id,
     };
 
@@ -41,8 +66,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Always include metadata if provided
+    // Convert undefined values to null for WorkOS API compatibility
     if (metadata) {
-      updatePayload.metadata = metadata;
+      const workosMetadata: Record<string, string | null> = {};
+      for (const [key, value] of Object.entries(metadata)) {
+        workosMetadata[key] = value ?? null;
+      }
+      updatePayload.metadata = workosMetadata;
     }
 
     // Update user via WorkOS API - expects an object with userId and other fields
