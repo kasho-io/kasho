@@ -1,4 +1,4 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 // Mock user data for testing
 const mockUser = {
@@ -8,14 +8,8 @@ const mockUser = {
   profilePictureUrl: "",
 };
 
-// Note: mockAuth function removed as it's not currently used
-// When needed, implement WorkOS auth mocking here
-
 test.describe("Profile Form", () => {
-  test.beforeEach(async ({ page: _page }) => {
-    // Set up any required state before each test
-    // This might include mocking API responses
-  });
+  // Note: beforeEach removed as it's not currently used
 
   test("should display profile form with correct fields", async ({ page }) => {
     await page.goto("/account/profile");
@@ -202,9 +196,6 @@ test.describe("Profile Form", () => {
     const emailInput = page.locator('input[name="email"]');
     const saveButton = page.locator('button:has-text("Save Changes")');
 
-    // Get original email
-    const _originalEmail = await emailInput.inputValue();
-
     // Change email
     await emailInput.fill("newemail@example.com");
 
@@ -379,7 +370,6 @@ test.describe("Profile Form - Data Persistence", () => {
     await page.goto("/account/profile");
 
     const emailInput = page.locator('input[name="email"]');
-    const _originalEmail = await emailInput.inputValue();
 
     // Change email to trigger unverified state
     await emailInput.fill("changed@example.com");
@@ -445,7 +435,6 @@ test.describe("Profile Form - Edge Cases", () => {
     });
 
     // Make a change to enable the save button
-    const _originalValue = await firstNameInput.inputValue();
     await firstNameInput.fill("NewTestName");
 
     // Save button should now be enabled
