@@ -20,7 +20,8 @@ const mockUser = {
  */
 export async function withAuth() {
   // In test mode, return mock user
-  if (process.env.NODE_ENV === "test" || process.env.MOCK_AUTH === "true") {
+  // Check MOCK_AUTH first since it's explicitly set for tests
+  if (process.env.MOCK_AUTH === "true" || process.env.NODE_ENV === "test") {
     return {
       user: mockUser,
       sessionId: "test-session-123",

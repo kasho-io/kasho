@@ -27,21 +27,24 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Build update payload - must include userId as first parameter
-    const updateData: Record<string, string | Record<string, string>> = {};
+    // Build update payload for WorkOS API
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updatePayload: any = {
+      userId: user.id,
+    };
 
     // Add email if it changed
     if (email && email !== user.email) {
-      updateData.email = email;
+      updatePayload.email = email;
     }
 
     // Always include metadata if provided
     if (metadata) {
-      updateData.metadata = metadata;
+      updatePayload.metadata = metadata;
     }
 
-    // Update user via WorkOS API - userId is the first parameter
-    const updatedUser = await workosClient.userManagement.updateUser(user.id, updateData);
+    // Update user via WorkOS API - expects an object with userId and other fields
+    const updatedUser = await workosClient.userManagement.updateUser(updatePayload);
 
     return NextResponse.json({
       success: true,
