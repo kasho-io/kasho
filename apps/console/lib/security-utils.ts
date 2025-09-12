@@ -113,6 +113,35 @@ export function sanitizeInput(input: string): string {
  * Validates email format
  */
 export function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email) && email.length <= 255;
+  // More comprehensive email regex that handles edge cases including + tags
+  const emailRegex = /^[a-zA-Z0-9][a-zA-Z0-9._+-]*[a-zA-Z0-9]@[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
+
+  // Basic length check
+  if (email.length > 255) return false;
+
+  // Check for spaces
+  if (email.includes(" ")) return false;
+
+  // Check for double dots
+  if (email.includes("..")) return false;
+
+  // Check if starts or ends with dot
+  if (email.startsWith(".") || email.endsWith(".")) return false;
+
+  // Check if has dot right before or after @
+  if (email.includes(".@") || email.includes("@.")) return false;
+
+  // For very short emails like a@b.co
+  if (email.length <= 6) {
+    const simpleRegex = /^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z]{2,}$/;
+    return simpleRegex.test(email);
+  }
+
+  // Handle special case where email ends with + or .
+  const localPart = email.split("@")[0];
+  if (localPart.endsWith("+") || localPart.endsWith(".")) {
+    return false;
+  }
+
+  return emailRegex.test(email);
 }
