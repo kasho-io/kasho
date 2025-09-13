@@ -12,21 +12,21 @@ The workflows are designed to run in this order:
    - Triggers: 
      - After Test Suite passes on main → publishes as `:develop`
      - On version tag push (v*) → publishes as `:v1.0.0` and `:latest`
-   - Publishes to GitHub Container Registry (ghcr.io)
+   - Publishes to Docker Hub
    
 3. **Deploy Demo** (`deploy-demo.yml`)
    - Triggers: After Publish Container Images completes on main
-   - Pulls pre-built `:develop` images from ghcr.io
+   - Pulls pre-built `:develop` images from Docker Hub
    - Deploys to DigitalOcean droplet
    - Note: Currently uses `:develop` tag (pre-release phase)
 
 ## Container Images
 
-- **Base Image**: `ghcr.io/jeffrey/kasho-base:latest`
+- **Base Image**: `kashoio/kasho-base:latest`
   - Contains Go dependencies and build tools
   - Rebuilt only when dependencies change
 
-- **Production Image**: `ghcr.io/jeffrey/kasho:TAG`
+- **Production Image**: `kashoio/kasho:TAG`
   - Tags:
     - `:develop` - Latest from main branch
     - `:v1.0.0` - Semantic version releases

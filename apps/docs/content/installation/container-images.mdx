@@ -1,6 +1,6 @@
 # Container Images
 
-Kasho is distributed as Docker container images hosted on GitHub Container Registry (ghcr.io).
+Kasho is distributed as Docker container images hosted on Docker Hub.
 
 ## Available Images
 
@@ -8,7 +8,7 @@ Kasho is distributed as Docker container images hosted on GitHub Container Regis
 The main Kasho image contains all components needed for deployment:
 
 ```
-ghcr.io/kasho-io/kasho:latest
+kashoio/kasho:latest
 ```
 
 ### Image Tags
@@ -20,14 +20,11 @@ ghcr.io/kasho-io/kasho:latest
 
 ## Authentication
 
-GitHub Container Registry requires authentication to pull images:
+Docker Hub images are publicly available and don't require authentication to pull. However, if you're hitting rate limits, you can optionally login:
 
 ```bash
-# Login with your GitHub username
-docker login ghcr.io -u YOUR_GITHUB_USERNAME
-
-# You'll be prompted for a password - use a personal access token
-# with 'read:packages' scope (create at github.com/settings/tokens)
+# Optional: Login to Docker Hub for higher rate limits
+docker login -u YOUR_DOCKERHUB_USERNAME
 ```
 
 ## Pulling Images
@@ -36,13 +33,13 @@ Once authenticated, you can pull images:
 
 ```bash
 # Pull the latest stable release
-docker pull ghcr.io/kasho-io/kasho:latest
+docker pull kashoio/kasho:latest
 
 # Pull a specific version
-docker pull ghcr.io/kasho-io/kasho:v0.2.0
+docker pull kashoio/kasho:v0.2.0
 
 # Pull the development version
-docker pull ghcr.io/kasho-io/kasho:develop
+docker pull kashoio/kasho:develop
 ```
 
 ## Using in Docker Compose
@@ -52,25 +49,26 @@ Update your `docker-compose.yml` to use the full image path:
 ```yaml
 services:
   pg-change-stream:
-    image: ghcr.io/kasho-io/kasho:latest
+    image: kashoio/kasho:latest
     command: ./pg-change-stream
     # ... rest of configuration
 
   pg-translicator:
-    image: ghcr.io/kasho-io/kasho:latest
+    image: kashoio/kasho:latest
     command: ./pg-translicator
     # ... rest of configuration
 ```
 
 ## Using in Kubernetes
 
-For Kubernetes deployments, you'll need to create an image pull secret:
+For Kubernetes deployments with private registries or to avoid rate limits, you can optionally create an image pull secret:
 
 ```bash
-kubectl create secret docker-registry ghcr \
-  --docker-server=ghcr.io \
-  --docker-username=YOUR_GITHUB_USERNAME \
-  --docker-password=YOUR_GITHUB_TOKEN \
+# Optional: Create secret for Docker Hub (not required for public images)
+kubectl create secret docker-registry dockerhub \
+  --docker-server=docker.io \
+  --docker-username=YOUR_DOCKERHUB_USERNAME \
+  --docker-password=YOUR_DOCKERHUB_TOKEN \
   --docker-email=YOUR_EMAIL
 ```
 
@@ -84,11 +82,12 @@ metadata:
 spec:
   template:
     spec:
-      imagePullSecrets:
-      - name: ghcr
+      # imagePullSecrets is optional for public images
+      # imagePullSecrets:
+      # - name: dockerhub
       containers:
       - name: pg-change-stream
-        image: ghcr.io/kasho-io/kasho:latest
+        image: kashoio/kasho:latest
         command: ["./pg-change-stream"]
 ```
 
@@ -101,4 +100,4 @@ spec:
 ## Finding Available Versions
 
 You can view all available versions and tags at:
-https://github.com/jeffrey/kasho/pkgs/container/kasho
+https://hub.docker.com/r/kashoio/kasho
