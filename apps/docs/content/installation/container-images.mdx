@@ -18,18 +18,9 @@ kashoio/kasho:latest
 - **`:develop`** - Latest development build from the main branch (_not recommended_)
 - **`:sha-abc123`** - Specific commit builds (for debugging, _not recommended_)
 
-## Authentication
-
-Docker Hub images are publicly available and don't require authentication to pull. However, if you're hitting rate limits, you can optionally login:
-
-```bash
-# Optional: Login to Docker Hub for higher rate limits
-docker login -u YOUR_DOCKERHUB_USERNAME
-```
-
 ## Pulling Images
 
-Once authenticated, you can pull images:
+Simply pull the images directly from Docker Hub:
 
 ```bash
 # Pull the latest stable release
@@ -61,18 +52,7 @@ services:
 
 ## Using in Kubernetes
 
-For Kubernetes deployments with private registries or to avoid rate limits, you can optionally create an image pull secret:
-
-```bash
-# Optional: Create secret for Docker Hub (not required for public images)
-kubectl create secret docker-registry dockerhub \
-  --docker-server=docker.io \
-  --docker-username=YOUR_DOCKERHUB_USERNAME \
-  --docker-password=YOUR_DOCKERHUB_TOKEN \
-  --docker-email=YOUR_EMAIL
-```
-
-Then reference it in your deployments:
+Deploy directly in your Kubernetes manifests:
 
 ```yaml
 apiVersion: apps/v1
@@ -82,9 +62,6 @@ metadata:
 spec:
   template:
     spec:
-      # imagePullSecrets is optional for public images
-      # imagePullSecrets:
-      # - name: dockerhub
       containers:
       - name: pg-change-stream
         image: kashoio/kasho:latest
