@@ -21,18 +21,17 @@ Kasho consists of three required containers that work together:
 
 ### Container Images
 
-All Kasho components are packaged in a single Docker image available from GitHub Container Registry:
-- Image: `ghcr.io/kasho-io/kasho:latest` (or specific version like `v0.2.0`)
+All Kasho components are packaged in a single Docker image available from Docker Hub:
+- Image: `kashoio/kasho:latest` (or specific version like `v0.2.0`)
 - Commands: `./pg-change-stream` and `./pg-translicator`
 
 <Callout type="info">
-  **Authentication Required**
+  **No Authentication Required**
   
-  GitHub Container Registry requires authentication. Run:
+  Docker Hub images are publicly available. You can pull them directly:
   ```bash
-  docker login ghcr.io -u YOUR_GITHUB_USERNAME
+  docker pull kashoio/kasho:latest
   ```
-  Use a personal access token with `read:packages` scope as the password.
 </Callout>
 
 ## Prerequisites
@@ -54,7 +53,6 @@ Before you begin, ensure you have:
 - Databases configured with `wal_level = logical`
 - A Redis instance (or Redis-compatible service)
 - Container orchestration system (Kubernetes, ECS, Docker, etc.)
-- GitHub account with access to pull from GitHub Container Registry
 - Valid Kasho license file
 
 ## Docker Compose Example
@@ -88,7 +86,7 @@ services:
       - redis-data:/data
 
   pg-change-stream:
-    image: ghcr.io/kasho-io/kasho:latest
+    image: kashoio/kasho:latest
     command: ./pg-change-stream
     environment:
       KV_URL: redis://redis:6379
@@ -102,7 +100,7 @@ services:
       - redis
 
   pg-translicator:
-    image: ghcr.io/kasho-io/kasho:latest
+    image: kashoio/kasho:latest
     command: ./pg-translicator
     environment:
       CHANGE_STREAM_SERVICE_ADDR: pg-change-stream:50051

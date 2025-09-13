@@ -81,11 +81,11 @@ jobs:
               export PATH="$HOME/.local/bin:$PATH"
             fi
             
-            # Log in to GitHub Container Registry
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Log in to Docker Hub
+            echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
             
             # Pull the develop image
-            docker pull ghcr.io/${{ github.repository }}:develop
+            docker pull kashoio/kasho:develop
             
             cd environments/demo
             
@@ -214,7 +214,7 @@ jobs:
               -e CHANGE_STREAM_SERVICE="pg-change-stream:50051" \
               -e REPLICATION_SLOT_NAME="kasho_slot" \
               -e WAIT_FOR_BOOTSTRAP="true" \
-              ghcr.io/${{ github.repository }}:develop \
+              kashoio/kasho:develop \
               /app/scripts/bootstrap-kasho.sh
             
             echo "✅ Bootstrap process completed successfully"
