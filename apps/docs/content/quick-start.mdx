@@ -169,13 +169,19 @@ See the [Transform Configuration](/configuration/transforms) guide for all avail
 
 ### Step 4: Environment Variables
 
-Create a `.env` file with your database connections and service configuration:
+Create a `.env` file with your database connections and service configuration.
+
+<Callout type="warning">
+  **Important**: Replace the example database URLs below with your actual PostgreSQL connection strings. The services will not start successfully without valid database connections.
+</Callout>
 
 ```bash
 # Source database (read-only access needed)
+# Replace with your actual source database connection string
 PRIMARY_DATABASE_URL=postgresql://kasho:password@source-host:5432/source_db?sslmode=disable
 
-# Target database (write access needed)
+# Target database (write access needed)  
+# Replace with your actual target database connection string
 REPLICA_DATABASE_URL=postgresql://kasho:password@target-host:5432/target_db?sslmode=disable
 
 # Redis connection for pg-change-stream
