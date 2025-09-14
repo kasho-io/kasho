@@ -26,6 +26,7 @@ jobs:
       should-build: ${{ steps.check.outputs.should-build }}
     steps:
       - name: Download change detection artifact
+        id: download
         uses: actions/download-artifact@v4
         with:
           name: change-detection
@@ -36,8 +37,17 @@ jobs:
       - name: Check if Docker build is needed
         id: check
         run: |
+          echo "📊 Debug: Artifact download result: ${{ steps.download.outcome }}"
+          echo "📊 Debug: Checking for change-detection.json file..."
+          ls -la change-detection.json 2>/dev/null || echo "File not found"
+          
           if [ -f change-detection.json ]; then
+            echo "📊 Debug: Found change-detection.json, contents:"
+            cat change-detection.json
+            
             docker_changes=$(jq -r '.docker_changes' change-detection.json)
+            echo "📊 Debug: docker_changes value: '$docker_changes'"
+            
             if [ "$docker_changes" = "true" ]; then
               echo "should-build=true" >> $GITHUB_OUTPUT
               echo "✅ Docker-related changes detected, proceeding with build"
