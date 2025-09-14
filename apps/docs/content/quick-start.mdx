@@ -42,10 +42,26 @@ All Kasho components are packaged in a single Docker image available from Docker
 
 Before you begin, ensure you have:
 - PostgreSQL 15+ databases (source and target)
-- Databases configured with `wal_level = logical`
+- Databases configured with `wal_level = logical` (see below)
 - A Redis instance (or Redis-compatible service)
 - Container orchestration system (Kubernetes, ECS, Docker, etc.)
 - Valid Kasho license file
+
+<Callout type="warning">
+  **PostgreSQL WAL Level Configuration**
+  
+  Check your current WAL level:
+  ```sql
+  SHOW wal_level;
+  ```
+  
+  If it's not `logical`, update your `postgresql.conf`:
+  ```
+  wal_level = logical
+  ```
+  
+  **Important**: After changing this setting, you must restart PostgreSQL for it to take effect.
+</Callout>
 
 ## Docker Compose Example
 
