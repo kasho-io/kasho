@@ -16,8 +16,8 @@ env:
 
 jobs:
   check-changes:
-    # Only run for workflow_run trigger (not for tag pushes)
-    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' }}
+    # Run for workflow_run trigger and tag pushes
+    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -37,6 +37,14 @@ jobs:
       - name: Check if Docker build is needed
         id: check
         run: |
+          # For tag pushes, always build
+          if [[ "${{ github.event_name }}" == "push" && "${{ startsWith(github.ref, 'refs/tags/') }}" == "true" ]]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "🏷️ Tag push detected, proceeding with build"
+            exit 0
+          fi
+          
+          # For workflow_run events, check the artifact
           echo "📊 Debug: Artifact download result: ${{ steps.download.outcome }}"
           echo "📊 Debug: Checking for change-detection.json file..."
           ls -la change-detection.json 2>/dev/null || echo "File not found"
@@ -62,13 +70,8 @@ jobs:
           fi
 
   build-and-push:
-    # Only depend on check-changes for workflow_run events
     needs: [check-changes]
-    if: |
-      ${{ always() && (
-        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
-        (github.event_name == 'workflow_run' && needs.check-changes.result == 'success' && needs.check-changes.outputs.should-build == 'true')
-      ) }}
+    if: ${{ needs.check-changes.result == 'success' && needs.check-changes.outputs.should-build == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
