@@ -2,6 +2,13 @@
 
 pg-translicator requires a `transforms.yml` file mounted at `/app/config/transforms.yml`. This file defines table and column transformations.
 
+## Key Features
+
+1. **Deterministic Transformations**: The same input always produces the same output, ensuring data consistency
+2. **Type-Safe**: Transforms are validated against column data types
+3. **Selective Processing**: Only specified tables/columns are transformed
+4. **Referential Integrity**: Consistent transformations preserve relationships
+
 ## transforms.yml File Format
 
 The `transforms.yml` file controls how data is transformed during replication. It uses YAML format with the following structure:
@@ -344,13 +351,6 @@ test_password:
   cleartext: 'test123'
   cost: 4  # Lower cost for faster testing
 ```
-
-## Key Features
-
-1. **Deterministic Transformations**: The same input always produces the same output, ensuring data consistency
-2. **Type-Safe**: Transforms are validated against column data types
-3. **Selective Processing**: Only specified tables/columns are transformed
-4. **Referential Integrity**: Consistent transformations preserve relationships
 
 ## Configuration Guidelines
 
