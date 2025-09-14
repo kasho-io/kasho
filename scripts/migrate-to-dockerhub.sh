@@ -19,23 +19,37 @@ echo "Step 2: Logging into Docker Hub..."
 echo "Username: kashoio"
 docker login -u kashoio
 
-# Migrate v0.2.0
+# Migrate 0.2.0
 echo ""
-echo "Step 3: Migrating v0.2.0..."
-echo "Pulling v0.2.0 from GHCR..."
-docker pull ghcr.io/kasho-io/kasho:v0.2.0
+echo "Step 3: Migrating 0.2.0..."
+echo "Pulling 0.2.0 from GHCR (without 'v' prefix)..."
+docker pull ghcr.io/kasho-io/kasho:0.2.0
 
-echo "Tagging for Docker Hub..."
-docker tag ghcr.io/kasho-io/kasho:v0.2.0 kashoio/kasho:v0.2.0
-docker tag ghcr.io/kasho-io/kasho:v0.2.0 kashoio/kasho:latest
+echo "Tagging for Docker Hub (both with and without 'v' prefix)..."
+docker tag ghcr.io/kasho-io/kasho:0.2.0 kashoio/kasho:0.2.0
+docker tag ghcr.io/kasho-io/kasho:0.2.0 kashoio/kasho:v0.2.0
+docker tag ghcr.io/kasho-io/kasho:0.2.0 kashoio/kasho:latest
 
-echo "Pushing v0.2.0 and latest to Docker Hub..."
+echo "Pushing 0.2.0, v0.2.0 and latest to Docker Hub..."
+docker push kashoio/kasho:0.2.0
 docker push kashoio/kasho:v0.2.0
 docker push kashoio/kasho:latest
 
+# Migrate base image
+echo ""
+echo "Step 4: Migrating base image..."
+echo "Pulling base:latest from GHCR..."
+docker pull ghcr.io/kasho-io/kasho-base:latest
+
+echo "Tagging base image for Docker Hub..."
+docker tag ghcr.io/kasho-io/kasho-base:latest kashoio/kasho-base:latest
+
+echo "Pushing base:latest to Docker Hub..."
+docker push kashoio/kasho-base:latest
+
 # Migrate develop
 echo ""
-echo "Step 4: Migrating develop..."
+echo "Step 5: Migrating develop..."
 echo "Pulling develop from GHCR..."
 docker pull ghcr.io/kasho-io/kasho:develop
 
@@ -51,6 +65,8 @@ echo "✅ Migration complete!"
 echo "========================================="
 echo ""
 echo "Images now available on Docker Hub:"
+echo "  - kashoio/kasho:0.2.0"
 echo "  - kashoio/kasho:v0.2.0"
 echo "  - kashoio/kasho:latest"
 echo "  - kashoio/kasho:develop"
+echo "  - kashoio/kasho-base:latest"
