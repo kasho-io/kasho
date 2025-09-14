@@ -1,3 +1,5 @@
+import { Callout } from 'nextra/components'
+
 # Bootstrap Process
 
 The bootstrap process loads existing data from your source database into Kasho while ensuring zero data loss during the transition.
@@ -57,13 +59,11 @@ docker exec -it <pg-change-stream-container> \
   env WAIT_FOR_BOOTSTRAP=true ./bootstrap-kasho.sh
 ```
 
-<div className="alert alert-info mb-4">
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-  <div>
-    <div className="font-semibold">Finding Your Container Name</div>
-    <div>Use `docker ps` to find your pg-change-stream container name. It will typically be something like `kasho-pg-change-stream-1` or similar based on your deployment method.</div>
-  </div>
-</div>
+<Callout type="info">
+  **Finding Your Container Name**
+  
+  Use `docker ps` to find your pg-change-stream container name. It will typically be something like `kasho-pg-change-stream-1` or similar based on your deployment method.
+</Callout>
 
 The script will:
 1. Create a temporary replication slot for consistent snapshot
