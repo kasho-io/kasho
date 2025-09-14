@@ -84,9 +84,16 @@ jobs:
       - name: Save change detection results for publish workflow
         if: github.ref == 'refs/heads/main'
         run: |
+          # Properly evaluate docker_changes as a boolean
+          if [[ "${{ steps.changes.outputs.go-services }}" == "true" ]] || [[ "${{ steps.changes.outputs.proto }}" == "true" ]]; then
+            DOCKER_CHANGES="true"
+          else  
+            DOCKER_CHANGES="false"
+          fi
+          
           cat > change-detection.json << EOF
           {
-            "docker_changes": "${{ steps.changes.outputs.go-services == 'true' || steps.changes.outputs.proto == 'true' }}",
+            "docker_changes": "$DOCKER_CHANGES",
             "go_services": "${{ steps.changes.outputs.go-services }}",
             "proto": "${{ steps.changes.outputs.proto }}",
             "changed_apps": ${{ steps.detect-apps.outputs.changed-apps }},
