@@ -83,9 +83,11 @@ jobs:
           tags: |
             # For workflow_run from main branch, tag as 'develop'
             type=raw,value=develop,enable=${{ github.event_name == 'workflow_run' }}
-            # For version tags, tag as the version and latest
+            # For version tags, tag both with and without 'v' prefix
             type=semver,pattern={{version}}
+            type=semver,pattern=v{{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern=v{{major}}.{{minor}}
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
             # Also tag with the commit SHA for traceability
             type=sha,format=short
