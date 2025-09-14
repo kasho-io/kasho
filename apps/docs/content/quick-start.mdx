@@ -68,6 +68,12 @@ cd kasho-example
 
 Create a `docker-compose.yml` file:
 
+<Callout type="info">
+  **Port Conflicts**
+  
+  If you have other services running locally, you may need to change the exposed ports. For example, change `"6379:6379"` to `"6380:6379"` if Redis is already running. The second number is the container's internal port and should not be changed.
+</Callout>
+
 ```yaml
 services:
   redis:
@@ -77,9 +83,19 @@ services:
     volumes:
       - redis-data:/data
 
+  licensing:
+    image: kashoio/kasho:latest
+    command: /app/bin/licensing
+    ports:
+      - "50052:50052"
+    environment:
+      GRPC_PORT: 50052
+    volumes:
+      - ./config:/app/config:ro  # Contains license.jwt
+
   pg-change-stream:
     image: kashoio/kasho:latest
-    command: ./pg-change-stream
+    command: /app/bin/pg-change-stream
     environment:
       KV_URL: redis://redis:6379
       PRIMARY_DATABASE_URL: ${PRIMARY_DATABASE_URL}
@@ -90,17 +106,20 @@ services:
       - "50051:50051"
     depends_on:
       - redis
+      - licensing
 
   pg-translicator:
     image: kashoio/kasho:latest
-    command: ./pg-translicator
+    command: /app/bin/pg-translicator
     environment:
       CHANGE_STREAM_SERVICE_ADDR: pg-change-stream:50051
       REPLICA_DATABASE_URL: ${REPLICA_DATABASE_URL}
+      LICENSING_SERVICE_ADDR: ${LICENSING_SERVICE_ADDR}
     volumes:
       - ./config:/app/config:ro  # Contains transforms.yml and license.jwt
     depends_on:
       - pg-change-stream
+      - licensing
 
 volumes:
   redis-data:
@@ -149,8 +168,8 @@ KV_URL=redis://redis:6379
 # Change stream service for pg-translicator
 CHANGE_STREAM_SERVICE_ADDR=pg-change-stream:50051
 
-# License service address (optional)
-LICENSING_SERVICE_ADDR=license-service:8090
+# License service address
+LICENSING_SERVICE_ADDR=licensing:50052
 ```
 
 <div className="alert alert-info mb-4">
@@ -175,6 +194,7 @@ docker-compose ps
 
 You should see:
 - `redis` - Running
+- `licensing` - Running on port 50052
 - `pg-change-stream` - Running on port 50051
 - `pg-translicator` - Running
 
