@@ -7,11 +7,12 @@ This guide will help you understand Kasho's architecture and get it running in y
 
 ## Production Deployment Overview
 
-Kasho consists of three required containers that work together:
+Kasho consists of four required containers that work together:
 
 1. **Redis** - Used for distributed state management and caching
-2. **pg-change-stream** - Captures changes from your source PostgreSQL database
-3. **pg-translicator** - Applies transformations and writes to your target database
+2. **licensing** - Validates and manages Kasho licenses
+3. **pg-change-stream** - Captures changes from your source PostgreSQL database
+4. **pg-translicator** - Applies transformations and writes to your target database
 
 <Callout type="info">
   **Production Environments**
@@ -22,7 +23,7 @@ Kasho consists of three required containers that work together:
 ### Container Images
 
 All Kasho components are packaged in a single Docker image available from Docker Hub:
-- Image: `kashoio/kasho:latest` (or specific version like `v0.2.0`)
+- Image: `kashoio/kasho:latest` (or specific version like `v0.3.0`)
 - Commands: `./pg-change-stream` and `./pg-translicator`
 
 
@@ -251,7 +252,7 @@ If you have existing data in your source database, you'll need to run the bootst
 
 ```bash
 # Run bootstrap process (will prompt for confirmation)
-docker exec -it kasho-example-pg-change-stream-1 ./bootstrap-kasho.sh
+docker exec -it kasho-example-pg-change-stream-1 /app/scripts/bootstrap-kasho.sh
 ```
 
 <Callout type="info">
