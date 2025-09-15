@@ -39,6 +39,9 @@ export default async function Navigation() {
               <li>
                 <Link href="/account/profile">Profile</Link>
               </li>
+              <li>
+                <Link href="/account/organization">Organization</Link>
+              </li>
               <li className="divider"></li>
               <li>
                 <a href="/logout">Sign Out</a>

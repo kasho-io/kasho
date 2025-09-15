@@ -15,15 +15,12 @@ export default async function ProfilePage() {
   // Fetch fresh user data directly from WorkOS API to avoid cached session issues
   let freshUserData = user;
 
-  // Only fetch fresh data in production mode with real WorkOS auth
-  if (process.env.NODE_ENV !== "test" && process.env.MOCK_AUTH !== "true") {
-    try {
-      const freshUser = await workosClient.userManagement.getUser(user.id);
-      freshUserData = freshUser;
-    } catch (error) {
-      console.error("Failed to fetch fresh user data:", error);
-      // Fall back to cached session data
-    }
+  try {
+    const freshUser = await workosClient.userManagement.getUser(user.id);
+    freshUserData = freshUser;
+  } catch (error) {
+    console.error("Failed to fetch fresh user data:", error);
+    // Fall back to cached session data
   }
 
   // Extract user data - WorkOS returns firstName/lastName as direct properties
