@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server";
-import { withAuth } from "@/lib/auth-wrapper";
-import { workosClient } from "@/lib/workos-client";
+import { services } from "@/lib/services";
 
 export async function GET() {
   try {
-    const session = await withAuth();
+    const session = await services.workos.withAuth();
 
     if (!session?.user || !session.organizationId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get widget token from WorkOS
-    const token = await workosClient.widgets.getToken({
+    const token = await services.workos.getWidgetToken({
       userId: session.user.id,
       organizationId: session.organizationId,
       scopes: ["widgets:users-table:manage"],

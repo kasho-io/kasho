@@ -1,20 +1,19 @@
 import { NextResponse } from "next/server";
-import { withAuth } from "@/lib/auth-wrapper";
-import { workosClient } from "@/lib/workos-client";
+import { services } from "@/lib/services";
 import { GeneratePortalLinkIntent } from "@workos-inc/node";
 
 export async function POST() {
   try {
-    const session = await withAuth();
+    const session = await services.workos.withAuth();
 
     if (!session?.user || !session.organizationId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Generate an Admin Portal link for the organization
-    const { link } = await workosClient.portal.generateLink({
+    const { link } = await services.workos.generatePortalLink({
       organization: session.organizationId,
-      intent: GeneratePortalLinkIntent.SSO,
+      intent: GeneratePortalLinkIntent.SSO.toString(),
       returnUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/account/organization`,
     });
 

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuth } from "@/lib/auth-wrapper";
-import { workosClient } from "@/lib/workos-client";
-import { refreshSession } from "@workos-inc/authkit-nextjs";
+import { services } from "@/lib/services";
 import { customMetadataSchema } from "@/lib/validation-schemas";
 import { z } from "zod";
 import { isRequestValid } from "@/lib/csrf-protection";
@@ -18,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the authenticated user
-    const { user } = await withAuth();
+    const { user } = await services.workos.withAuth();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -41,22 +39,11 @@ export async function POST(request: NextRequest) {
 
     const { email, metadata } = validation.data;
 
-    // In test mode, just return success without calling WorkOS
-    if (process.env.NODE_ENV === "test" || process.env.MOCK_AUTH === "true") {
-      return NextResponse.json({
-        success: true,
-        user: {
-          ...user,
-          email: email || user.email,
-          metadata: metadata || user.metadata,
-        },
-      });
-    }
-
     // Build update payload for WorkOS API
-    // Using the actual WorkOS SDK type
-    const updatePayload: Parameters<typeof workosClient.userManagement.updateUser>[0] = {
+    const updatePayload = {
       userId: user.id,
+      email: undefined as string | undefined,
+      metadata: undefined as Record<string, unknown> | undefined,
     };
 
     // Always include email if provided
@@ -76,12 +63,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user via WorkOS API - expects an object with userId and other fields
-    const updatedUser = await workosClient.userManagement.updateUser(updatePayload);
+    const updatedUser = await services.workos.updateUser(updatePayload);
 
     // Refresh the session to get the updated user data
     // This ensures the cached session is updated with the new email
     try {
-      await refreshSession();
+      await services.workos.refreshSession();
     } catch (refreshError) {
       console.error("Failed to refresh session:", refreshError);
       // Continue even if refresh fails - the update was successful

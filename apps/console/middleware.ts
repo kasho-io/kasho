@@ -1,6 +1,12 @@
 import { authkitMiddleware } from "@workos-inc/authkit-nextjs";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export default authkitMiddleware();
+// Middleware checks NODE_ENV for test bypassing
+const middleware =
+  process.env.NODE_ENV === "test" ? (_request: NextRequest) => NextResponse.next() : authkitMiddleware();
+
+export default middleware;
 
 // Match all routes except static files
 export const config = {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuth } from "@/lib/auth-wrapper";
-import { put } from "@vercel/blob";
+import { services } from "@/lib/services";
 import { isValidImageMagicBytes, sanitizeFileExtension } from "@/lib/security-utils";
 import { fileUploadSchema } from "@/lib/validation-schemas";
 import { isRequestValid } from "@/lib/csrf-protection";
@@ -17,18 +16,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the authenticated user
-    const { user } = await withAuth();
+    const { user } = await services.workos.withAuth();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // In test mode, just return a mock URL
-    if (process.env.NODE_ENV === "test" || process.env.MOCK_AUTH === "true") {
-      return NextResponse.json({
-        success: true,
-        url: "https://example.com/mock-avatar.jpg",
-      });
     }
 
     // Get the file from the request
@@ -77,7 +68,7 @@ export async function POST(request: NextRequest) {
     const validatedBlob = new Blob([buffer], { type: file.type });
 
     // Upload to Vercel Blob Storage
-    const blob = await put(filename, validatedBlob, {
+    const blob = await services.vercelBlob.upload(filename, validatedBlob, {
       access: "public",
       addRandomSuffix: false,
       contentType: file.type,

@@ -1,12 +1,11 @@
-import { withAuth } from "@/lib/auth-wrapper";
+import { services } from "@/lib/services";
 import { redirect } from "next/navigation";
 import ProfileForm from "./ProfileForm";
-import { workosClient } from "@/lib/workos-client";
 import { WorkOSUser } from "@/lib/validation-schemas";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 export default async function ProfilePage() {
-  const { user } = await withAuth();
+  const { user } = await services.workos.withAuth();
 
   if (!user) {
     redirect("/login");
@@ -16,7 +15,7 @@ export default async function ProfilePage() {
   let freshUserData = user;
 
   try {
-    const freshUser = await workosClient.userManagement.getUser(user.id);
+    const freshUser = await services.workos.getUser(user.id);
     freshUserData = freshUser;
   } catch (error) {
     console.error("Failed to fetch fresh user data:", error);

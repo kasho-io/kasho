@@ -1,10 +1,9 @@
-import { withAuth } from "@/lib/auth-wrapper";
+import { services } from "@/lib/services";
 import { redirect } from "next/navigation";
 import { OrganizationManagement } from "./OrganizationManagement";
-import { workosClient } from "@/lib/workos-client";
 
 export default async function OrganizationPage() {
-  const session = await withAuth();
+  const session = await services.workos.withAuth();
 
   if (!session?.user) {
     redirect("/login");
@@ -16,7 +15,7 @@ export default async function OrganizationPage() {
   // Fetch widget token for organization management
   if (organizationId) {
     try {
-      authToken = await workosClient.widgets.getToken({
+      authToken = await services.workos.getWidgetToken({
         userId: session.user.id,
         organizationId: organizationId,
         scopes: ["widgets:users-table:manage"],
