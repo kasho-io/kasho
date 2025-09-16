@@ -394,9 +394,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                     Saving...
                   </>
                 ) : (
-                  <>
-                    Save Changes
-                  </>
+                  <>Save Changes</>
                 )}
               </button>
             </div>

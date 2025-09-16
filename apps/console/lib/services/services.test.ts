@@ -21,7 +21,7 @@ const mockSession = {
   sessionId: "test-session-123",
   organizationId: "test-org-123",
   role: "admin",
-  permissions: null,
+  permissions: ["organization:manage"],
   impersonator: null,
 };
 

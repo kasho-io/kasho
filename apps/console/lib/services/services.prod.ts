@@ -4,7 +4,7 @@ import { withAuth, refreshSession } from "@workos-inc/authkit-nextjs";
 import type { WorkOSService, VercelBlobService, WorkOSSession, WorkOSUser } from "./types";
 
 // Match the WidgetScope type from @workos-inc/node internal types
-type WidgetScope = 'widgets:users-table:manage' | 'widgets:sso:manage' | 'widgets:domain-verification:manage';
+type WidgetScope = "widgets:users-table:manage" | "widgets:sso:manage" | "widgets:domain-verification:manage";
 
 export class ProductionWorkOSService implements WorkOSService {
   private workos: WorkOS;

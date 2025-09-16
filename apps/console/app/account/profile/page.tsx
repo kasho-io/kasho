@@ -5,7 +5,8 @@ import { WorkOSUser } from "@/lib/validation-schemas";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 export default async function ProfilePage() {
-  const { user } = await services.workos.withAuth();
+  const session = await services.workos.withAuth();
+  const user = session?.user;
 
   if (!user) {
     redirect("/login");

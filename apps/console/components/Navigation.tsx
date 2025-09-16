@@ -4,15 +4,21 @@ import Link from "next/link";
 import { WorkOSUser } from "@/lib/validation-schemas";
 
 export default async function Navigation() {
-  const session = await services.workos.withAuth();
-  const { user } = session;
+  let user = null;
+  let canManageOrganization = false;
+
+  try {
+    const session = await services.workos.withAuth();
+    user = session?.user;
+    // Check if user has organization management permission
+    canManageOrganization = session?.permissions?.includes("organization:manage") || false;
+  } catch {
+    // User is not authenticated - that's ok, we'll show Sign In button
+  }
 
   // Extract profile picture from metadata if it exists
   const workosUser = user as WorkOSUser;
   const profilePictureUrl = workosUser?.metadata?.profile_picture_url as string | undefined;
-
-  // Check if user has organization management permission
-  const canManageOrganization = session.permissions?.includes('organization:manage') || false;
 
   return (
     <nav className="navbar bg-base-100 shadow-sm">

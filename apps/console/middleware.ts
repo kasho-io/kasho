@@ -1,8 +1,18 @@
 import { authkitMiddleware } from "@workos-inc/authkit-nextjs";
+import { NextRequest, NextResponse } from "next/server";
 
-// Middleware always runs normally
-// MOCK_AUTH is handled in the services layer
-export default authkitMiddleware();
+// Create middleware function that checks MOCK_AUTH at runtime
+const middleware = (request: NextRequest) => {
+  // Check if we're in mock mode at runtime
+  if (process.env.MOCK_AUTH === "true") {
+    return NextResponse.next();
+  }
+
+  // Otherwise use the real auth middleware
+  return authkitMiddleware()(request, {} as never);
+};
+
+export default middleware;
 
 // Match all routes except static files
 export const config = {

@@ -15,15 +15,15 @@ export function OrganizationManagement({
   authToken,
   organizationId,
   currentOrganizationName,
-  userPermissions = []
+  userPermissions = [],
 }: OrganizationManagementProps) {
   const [activeTab, setActiveTab] = useState<"members" | "settings">("members");
   const [organizationName, setOrganizationName] = useState(currentOrganizationName || "");
   const [isUpdating, setIsUpdating] = useState(false);
-  const [updateMessage, setUpdateMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [updateMessage, setUpdateMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Check if user has permission to manage organization
-  const canManageOrganization = userPermissions.includes('organization:manage');
+  const canManageOrganization = userPermissions.includes("organization:manage");
 
   return (
     <WorkOSWidgetProvider>
@@ -80,30 +80,30 @@ export function OrganizationManagement({
                         setUpdateMessage(null);
 
                         try {
-                          const response = await fetch('/api/organization/update', {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
+                          const response = await fetch("/api/organization/update", {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ name: organizationName }),
                           });
 
                           if (response.ok) {
                             setUpdateMessage({
-                              type: 'success',
-                              text: 'Organization name updated successfully!'
+                              type: "success",
+                              text: "Organization name updated successfully!",
                             });
                             // Optionally reload to update the organization switcher
                             setTimeout(() => window.location.reload(), 1500);
                           } else {
                             const error = await response.json();
                             setUpdateMessage({
-                              type: 'error',
-                              text: error.error || 'Failed to update organization name'
+                              type: "error",
+                              text: error.error || "Failed to update organization name",
                             });
                           }
                         } catch (error) {
                           setUpdateMessage({
-                            type: 'error',
-                            text: 'An error occurred while updating the organization name'
+                            type: "error",
+                            text: "An error occurred while updating the organization name",
                           });
                         } finally {
                           setIsUpdating(false);
@@ -126,7 +126,9 @@ export function OrganizationManagement({
                       </div>
 
                       {updateMessage && (
-                        <div className={`alert ${updateMessage.type === 'success' ? 'alert-success' : 'alert-error'} mt-4`}>
+                        <div
+                          className={`alert ${updateMessage.type === "success" ? "alert-success" : "alert-error"} mt-4`}
+                        >
                           <span>{updateMessage.text}</span>
                         </div>
                       )}
@@ -135,9 +137,11 @@ export function OrganizationManagement({
                         <button
                           type="submit"
                           className="btn btn-primary"
-                          disabled={isUpdating || !organizationName.trim() || organizationName === currentOrganizationName}
+                          disabled={
+                            isUpdating || !organizationName.trim() || organizationName === currentOrganizationName
+                          }
                         >
-                          {isUpdating ? 'Saving...' : 'Save Changes'}
+                          {isUpdating ? "Saving..." : "Save Changes"}
                         </button>
                       </div>
                     </form>

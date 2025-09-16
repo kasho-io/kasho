@@ -13,7 +13,7 @@ export default async function OrganizationPage() {
   }
 
   // Check if user has permission to manage organization
-  const canManageOrganization = session.permissions?.includes('organization:manage') || false;
+  const canManageOrganization = session.permissions?.includes("organization:manage") || false;
 
   if (!canManageOrganization) {
     redirect("/account/profile");
@@ -52,20 +52,20 @@ export default async function OrganizationPage() {
             Manage your organization, invite team members, and configure roles.
           </p>
 
-        <div className="space-y-6">
-          <div className="card bg-base-100 shadow-xl">
-            <div className="card-body">
-              <OrganizationManagement
-                authToken={authToken}
-                organizationId={organizationId}
-                currentOrganizationName={organizationName}
-                userPermissions={userPermissions}
-              />
+          <div className="space-y-6">
+            <div className="card bg-base-100 shadow-xl">
+              <div className="card-body">
+                <OrganizationManagement
+                  authToken={authToken}
+                  organizationId={organizationId}
+                  currentOrganizationName={organizationName}
+                  userPermissions={userPermissions}
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
   );
 }
