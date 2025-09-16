@@ -1,20 +1,22 @@
 "use client";
 
 import { WorkOsWidgets } from "@workos-inc/widgets";
-import "@workos-inc/widgets/styles.css";
+import { useState } from "react";
 
 interface WorkOSWidgetProviderProps {
   children: React.ReactNode;
 }
 
 export function WorkOSWidgetProvider({ children }: WorkOSWidgetProviderProps) {
+  const [appearance, setAppearance] = useState<"dark" | "light">("light");
+
   return (
     <WorkOsWidgets
       theme={{
-        appearance: "inherit",
-        accentColor: "blue",
-        radius: "medium",
-        fontFamily: "inherit",
+        appearance,
+        accentColor: "violet", // Closer to DaisyUI's primary color
+        radius: "large", // DaisyUI uses more rounded corners
+        fontFamily: "inherit", // Use the app's font (Inter)
       }}
     >
       {children}

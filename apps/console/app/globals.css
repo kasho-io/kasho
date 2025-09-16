@@ -6,6 +6,9 @@
 @import '@radix-ui/themes/layout.css';
 @import '@workos-inc/widgets/base.css';
 
+/* Import custom WorkOS widget styles */
+@import './workos-widgets.css';
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -22,69 +25,4 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
-}
-
-@layer components {
-  /* Override WorkOS button styles to match DaisyUI */
-  .woswidgets-button {
-    @apply btn btn-primary;
-    font-family: inherit;
-  }
-
-  .woswidgets-button:hover {
-    opacity: 0.9;
-  }
-
-  .woswidgets-button:disabled {
-    @apply btn-disabled;
-  }
-
-  /* Input fields to match DaisyUI */
-  .woswidgets-input,
-  .woswidgets-select {
-    @apply input input-bordered w-full;
-    font-family: inherit;
-  }
-
-  /* Tables to match DaisyUI */
-  .woswidgets-table {
-    @apply table table-zebra;
-  }
-
-  /* Cards and containers */
-  .woswidgets-card {
-    @apply card bg-base-100 shadow-xl;
-  }
-
-  /* Badges */
-  .woswidgets-badge {
-    @apply badge;
-  }
-
-  /* Loading states */
-  .woswidgets-spinner {
-    @apply loading loading-spinner;
-  }
-
-  /* Organization Switcher specific overrides */
-  .woswidgets-organization-switcher {
-    @apply dropdown dropdown-end;
-  }
-
-  .woswidgets-organization-switcher-trigger {
-    @apply btn btn-ghost normal-case;
-  }
-
-  /* User Management Widget overrides */
-  .woswidgets-invite-button {
-    @apply btn btn-primary btn-sm;
-  }
-
-  .woswidgets-role-select {
-    @apply select select-bordered select-sm;
-  }
-
-  .woswidgets-remove-user-button {
-    @apply btn btn-error btn-outline btn-xs;
-  }
 }

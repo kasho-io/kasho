@@ -1,0 +1,161 @@
+/* WorkOS Widget Styling - DaisyUI Theme Integration */
+
+/* WorkOS Widget root container - transparent to inherit from parent */
+
+/* Main widget containers - style like DaisyUI cards */
+.woswidgets-widget {
+  @apply p-6 rounded-lg bg-base-100;
+}
+
+/* Buttons - match DaisyUI button styles */
+.woswidgets-button {
+  @apply btn btn-sm;
+}
+
+.woswidgets-button--primary {
+  @apply btn-primary;
+}
+
+.woswidgets-button:hover {
+  @apply opacity-90;
+}
+
+.woswidgets-button:disabled {
+  @apply btn-disabled;
+}
+
+/* Input fields - match DaisyUI input styles */
+.woswidgets-text-field {
+  @apply input bg-base-100 text-base-content;
+}
+
+.woswidgets-text-field-slot {
+  @apply text-base-content;
+}
+
+/* Select dropdowns - match DaisyUI select styles */
+.woswidgets-select,
+.woswidgets-root .OrganizationSwitcherTrigger {
+  @apply select bg-base-100 text-base-content;
+}
+
+/* Avatars - DaisyUI avatar needs specific structure */
+.woswidgets-avatar {
+  @apply avatar w-10 h-10 rounded-full flex items-center justify-center;
+}
+
+.woswidgets-avatar img {
+  @apply rounded-full;
+}
+
+.woswidgets-avatar svg {
+  @apply w-full h-full rounded-full bg-base-300;
+}
+
+/* Tables */
+.woswidgets-widget table {
+  @apply table table-zebra;
+}
+
+/* Style email addresses - normal weight and dimmer color */
+.woswidgets-widget .rt-Text.rt-r-size-1 {
+  @apply font-normal text-base-content opacity-70;
+}
+
+/* Badge styling */
+.woswidgets-badge {
+  @apply badge badge-soft badge-info badge-sm;
+}
+
+/* Organization switcher specific */
+.woswidgets-organization-switcher {
+  @apply dropdown dropdown-end;
+}
+
+.woswidgets-organization-switcher-trigger {
+  @apply btn btn-ghost;
+}
+
+/* Tabs styling */
+.woswidgets-widget [role="tablist"] {
+  @apply tabs tabs-box;
+}
+
+.woswidgets-widget [role="tab"] {
+  @apply tab;
+}
+
+.woswidgets-widget [role="tab"][aria-selected="true"] {
+  @apply tab-active;
+}
+
+/* Three-dot menu button */
+.woswidgets-widget button[aria-label*="menu"],
+.woswidgets-widget button[aria-label*="More"] {
+  @apply btn btn-ghost btn-sm btn-square;
+}
+
+/* Avatar placeholder styles - ensure SVG has proper background */
+.woswidgets-avatar:not(:has(img)) {
+  @apply bg-base-300 flex items-center justify-center;
+}
+
+.woswidgets-avatar svg {
+  @apply text-base-content;
+  width: 24px !important;
+  height: 24px !important;
+}
+
+/* Hide the extra SVG caret in select dropdowns */
+.woswidgets-select svg.rt-SelectIcon,
+.OrganizationSwitcherTrigger svg {
+  display: none;
+}
+
+/* Dropdown menu content styling - style like DaisyUI menu */
+.woswidgets-dropdown,
+.woswidgets-select-dropdown,
+.rt-PopperContent.rt-DropdownMenuContent,
+.rt-DropdownMenuContent {
+  @apply menu bg-base-100 rounded-box shadow-lg border border-base-300 p-2;
+  font-family: inherit !important;
+}
+
+/* Dropdown menu items - style like DaisyUI menu items */
+.woswidgets-menu-item,
+.woswidgets-select-item,
+.rt-DropdownMenuItem {
+  @apply hover:bg-base-200 rounded cursor-pointer px-3 py-2 text-base-content;
+  font-family: inherit !important;
+}
+
+/* Dropdown menu labels */
+.rt-DropdownMenuLabel {
+  @apply text-xs font-semibold text-base-content opacity-60 px-3 py-1;
+}
+
+/* Selected/active state for menu items */
+.woswidgets-select-item[aria-selected="true"],
+.woswidgets-menu-item[data-highlighted],
+.rt-DropdownMenuItem[data-highlighted] {
+  @apply bg-base-200;
+}
+
+/* Hide the checkmark icons */
+.woswidgets-select-item .rt-SelectItemIndicator,
+.rt-DropdownMenuItem svg {
+  display: none;
+}
+
+/* Ensure tabs outside widgets are styled properly */
+.tabs-boxed {
+  @apply bg-base-200 rounded-box p-1;
+}
+
+.tab {
+  @apply rounded-lg;
+}
+
+.tab-active {
+  @apply bg-base-100 text-base-content;
+}

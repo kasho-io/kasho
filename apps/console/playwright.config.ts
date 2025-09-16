@@ -24,13 +24,14 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "npm run dev",
+    command: "MOCK_AUTH=true npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
     env: {
       ...process.env,
       NODE_ENV: "test",
+      MOCK_AUTH: "true",
       WORKOS_CLIENT_ID: "test_client_id",
       WORKOS_API_KEY: "sk_test_placeholder",
       WORKOS_CLIENT_SECRET: "test_secret",

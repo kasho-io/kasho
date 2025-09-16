@@ -3,6 +3,9 @@ import { put } from "@vercel/blob";
 import { withAuth, refreshSession } from "@workos-inc/authkit-nextjs";
 import type { WorkOSService, VercelBlobService, WorkOSSession, WorkOSUser } from "./types";
 
+// Match the WidgetScope type from @workos-inc/node internal types
+type WidgetScope = 'widgets:users-table:manage' | 'widgets:sso:manage' | 'widgets:domain-verification:manage';
+
 export class ProductionWorkOSService implements WorkOSService {
   private workos: WorkOS;
 
@@ -13,8 +16,16 @@ export class ProductionWorkOSService implements WorkOSService {
   async withAuth(): Promise<WorkOSSession> {
     const session = await withAuth();
     // Map the actual WorkOS session to our interface
+    // Return partial session if no user (not authenticated)
     if (!session.user) {
-      throw new Error("No user in session");
+      return {
+        user: null as unknown as WorkOSUser, // Navigation checks for this
+        sessionId: session.sessionId || "unknown",
+        organizationId: session.organizationId ?? undefined,
+        role: session.role ?? undefined,
+        permissions: session.permissions,
+        impersonator: session.impersonator,
+      };
     }
     return {
       user: {
@@ -77,9 +88,9 @@ export class ProductionWorkOSService implements WorkOSService {
   }
 
   async getWidgetToken(params: { userId: string; organizationId: string; scopes?: string[] }) {
-    // Pass parameters without scopes if not provided
+    // Pass parameters with scopes if provided, casting to WidgetScope array
     const tokenParams = params.scopes
-      ? { userId: params.userId, organizationId: params.organizationId }
+      ? { userId: params.userId, organizationId: params.organizationId, scopes: params.scopes as WidgetScope[] }
       : { userId: params.userId, organizationId: params.organizationId };
     const result = await this.workos.widgets.getToken(tokenParams);
     return result;

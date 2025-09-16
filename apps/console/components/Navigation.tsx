@@ -1,14 +1,18 @@
-import { withAuth } from "@workos-inc/authkit-nextjs";
+import { services } from "@/lib/services";
 import Image from "next/image";
 import Link from "next/link";
 import { WorkOSUser } from "@/lib/validation-schemas";
 
 export default async function Navigation() {
-  const { user } = await withAuth();
+  const session = await services.workos.withAuth();
+  const { user } = session;
 
   // Extract profile picture from metadata if it exists
   const workosUser = user as WorkOSUser;
   const profilePictureUrl = workosUser?.metadata?.profile_picture_url as string | undefined;
+
+  // Check if user has organization management permission
+  const canManageOrganization = session.permissions?.includes('organization:manage') || false;
 
   return (
     <nav className="navbar bg-base-100 shadow-sm">
@@ -39,9 +43,11 @@ export default async function Navigation() {
               <li>
                 <Link href="/account/profile">Profile</Link>
               </li>
-              <li>
-                <Link href="/account/organization">Organization</Link>
-              </li>
+              {canManageOrganization && (
+                <li>
+                  <Link href="/account/organization">Organization</Link>
+                </li>
+              )}
               <li className="divider"></li>
               <li>
                 <a href="/logout">Sign Out</a>
