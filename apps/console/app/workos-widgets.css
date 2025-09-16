@@ -34,8 +34,7 @@
 }
 
 /* Select dropdowns - match DaisyUI select styles */
-.woswidgets-select,
-.woswidgets-root .OrganizationSwitcherTrigger {
+.woswidgets-select {
   @apply select bg-base-100 text-base-content;
 }
 
@@ -107,43 +106,33 @@
 }
 
 /* Hide the extra SVG caret in select dropdowns */
-.woswidgets-select svg.rt-SelectIcon,
-.OrganizationSwitcherTrigger svg {
+.woswidgets-select svg.rt-SelectIcon {
   display: none;
 }
 
 /* Dropdown menu content styling - style like DaisyUI menu */
 .woswidgets-dropdown,
-.woswidgets-select-dropdown,
-.rt-PopperContent.rt-DropdownMenuContent,
-.rt-DropdownMenuContent {
+.woswidgets-select-dropdown {
   @apply menu bg-base-100 rounded-box shadow-lg border border-base-300 p-2;
   font-family: inherit !important;
 }
 
 /* Dropdown menu items - style like DaisyUI menu items */
 .woswidgets-menu-item,
-.woswidgets-select-item,
-.rt-DropdownMenuItem {
+.woswidgets-select-item {
   @apply hover:bg-base-200 rounded cursor-pointer px-3 py-2 text-base-content;
   font-family: inherit !important;
 }
 
-/* Dropdown menu labels */
-.rt-DropdownMenuLabel {
-  @apply text-xs font-semibold text-base-content opacity-60 px-3 py-1;
-}
 
 /* Selected/active state for menu items */
 .woswidgets-select-item[aria-selected="true"],
-.woswidgets-menu-item[data-highlighted],
-.rt-DropdownMenuItem[data-highlighted] {
+.woswidgets-menu-item[data-highlighted] {
   @apply bg-base-200;
 }
 
 /* Hide the checkmark icons */
-.woswidgets-select-item .rt-SelectItemIndicator,
-.rt-DropdownMenuItem svg {
+.woswidgets-select-item .rt-SelectItemIndicator {
   display: none;
 }
 

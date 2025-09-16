@@ -49,6 +49,10 @@ export class ProductionWorkOSService implements WorkOSService {
     return refreshSession();
   }
 
+  async switchToOrganization(organizationId: string) {
+    return refreshSession({ organizationId });
+  }
+
   async getUser(userId: string): Promise<WorkOSUser> {
     const user = await this.workos.userManagement.getUser(userId);
     return {
@@ -109,6 +113,27 @@ export class ProductionWorkOSService implements WorkOSService {
 
   async createOrganizationMembership(params: { userId: string; organizationId: string; roleSlug?: string }) {
     return this.workos.userManagement.createOrganizationMembership(params);
+  }
+
+  async listOrganizationMemberships(params: { userId: string }) {
+    const memberships = await this.workos.userManagement.listOrganizationMemberships(params);
+    // Fetch organization details for each membership
+    const membershipData = await Promise.all(
+      memberships.data.map(async (membership) => {
+        const org = await this.workos.organizations.getOrganization(membership.organizationId);
+        return {
+          id: membership.id,
+          userId: membership.userId,
+          organizationId: membership.organizationId,
+          organization: {
+            id: org.id,
+            name: org.name,
+          },
+          role: membership.role,
+        };
+      }),
+    );
+    return { data: membershipData };
   }
 }
 

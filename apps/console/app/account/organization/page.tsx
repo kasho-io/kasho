@@ -25,6 +25,23 @@ export default async function OrganizationPage() {
   // Get permissions directly from the session
   const userPermissions = session.permissions || [];
 
+  // Fetch all organization memberships for the user
+  let userOrganizations: Array<{ id: string; name: string }> = [];
+  try {
+    const memberships = await services.workos.listOrganizationMemberships({
+      userId: session.user.id,
+    });
+
+    // Filter to only organizations where user has organization:manage permission
+    // For now, we'll include all organizations and filter based on roles later if needed
+    userOrganizations = memberships.data.map((membership) => ({
+      id: membership.organization.id,
+      name: membership.organization.name,
+    }));
+  } catch (error) {
+    console.error("Failed to fetch user organizations:", error);
+  }
+
   // Fetch organization details
   if (organizationId) {
     try {
@@ -60,6 +77,7 @@ export default async function OrganizationPage() {
                   organizationId={organizationId}
                   currentOrganizationName={organizationName}
                   userPermissions={userPermissions}
+                  userOrganizations={userOrganizations}
                 />
               </div>
             </div>

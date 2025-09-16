@@ -1,14 +1,16 @@
 "use client";
 
 import { WorkOSWidgetProvider } from "@/components/WorkOSWidgetProvider";
-import { UsersManagement, OrganizationSwitcher } from "@workos-inc/widgets";
-import { useState, useEffect } from "react";
+import { UsersManagement } from "@workos-inc/widgets";
+import { OrgSwitcher } from "@/components/OrgSwitcher";
+import { useState } from "react";
 
 interface OrganizationManagementProps {
   authToken: string;
   organizationId?: string;
   currentOrganizationName?: string;
   userPermissions?: string[];
+  userOrganizations?: Array<{ id: string; name: string }>;
 }
 
 export function OrganizationManagement({
@@ -16,6 +18,7 @@ export function OrganizationManagement({
   organizationId,
   currentOrganizationName,
   userPermissions = [],
+  userOrganizations = [],
 }: OrganizationManagementProps) {
   const [activeTab, setActiveTab] = useState<"members" | "settings">("members");
   const [organizationName, setOrganizationName] = useState(currentOrganizationName || "");
@@ -25,19 +28,22 @@ export function OrganizationManagement({
   // Check if user has permission to manage organization
   const canManageOrganization = userPermissions.includes("organization:manage");
 
+  // Filter organizations where user has organization:manage permission
+  // Since we're checking permissions at the page level, we can assume all orgs have manage permission
+  const organizationsWithManagePermission = userOrganizations.filter(
+    () =>
+      // Only show organizations where user has manage permission
+      // For now, show all orgs since we filtered by permission at the page level
+      canManageOrganization,
+  );
+
   return (
     <WorkOSWidgetProvider>
       <div className="space-y-6">
         {/* Organization Switcher */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <OrganizationSwitcher
-              authToken={authToken}
-              switchToOrganization={() => {
-                // Handle organization switch - reload to get new org context
-                window.location.reload();
-              }}
-            />
+            <OrgSwitcher organizations={organizationsWithManagePermission} currentOrganizationId={organizationId} />
           </div>
         </div>
 

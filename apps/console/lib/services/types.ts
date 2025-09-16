@@ -24,6 +24,7 @@ export interface WorkOSService {
   // Authentication
   withAuth(): Promise<WorkOSSession>;
   refreshSession(): Promise<unknown>;
+  switchToOrganization(organizationId: string): Promise<unknown>;
 
   // User Management
   getUser(userId: string): Promise<WorkOSUser>;
@@ -46,6 +47,20 @@ export interface WorkOSService {
     userId: string;
     organizationId: string;
     roleSlug?: string;
+  }>;
+  listOrganizationMemberships(params: { userId: string }): Promise<{
+    data: Array<{
+      id: string;
+      userId: string;
+      organizationId: string;
+      organization: {
+        id: string;
+        name: string;
+      };
+      role?: {
+        slug: string;
+      };
+    }>;
   }>;
 }
 

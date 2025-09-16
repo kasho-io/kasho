@@ -35,6 +35,11 @@ export class TestWorkOSService implements WorkOSService {
     return Promise.resolve();
   }
 
+  async switchToOrganization(_organizationId: string) {
+    // No-op in test mode
+    return Promise.resolve();
+  }
+
   async getUser(_userId: string) {
     return mockUser;
   }
@@ -74,6 +79,37 @@ export class TestWorkOSService implements WorkOSService {
       userId: params.userId,
       organizationId: params.organizationId,
       roleSlug: params.roleSlug || "member",
+    };
+  }
+
+  async listOrganizationMemberships(_params: { userId: string }) {
+    return {
+      data: [
+        {
+          id: "membership-123",
+          userId: "test-user-123",
+          organizationId: "test-org-123",
+          organization: {
+            id: "test-org-123",
+            name: "Test Organization",
+          },
+          role: {
+            slug: "admin",
+          },
+        },
+        {
+          id: "membership-456",
+          userId: "test-user-123",
+          organizationId: "test-org-456",
+          organization: {
+            id: "test-org-456",
+            name: "Another Organization",
+          },
+          role: {
+            slug: "member",
+          },
+        },
+      ],
     };
   }
 }
