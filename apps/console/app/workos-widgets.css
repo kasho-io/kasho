@@ -35,7 +35,28 @@
 
 /* Select dropdowns - match DaisyUI select styles */
 .woswidgets-select {
-  @apply select bg-base-100 text-base-content;
+  @apply dropdown dropdown-end btn btn-ghost;
+  font-size: 12px;
+}
+
+.woswidgets-select::after {
+  content: '⏷';
+  padding-left: 0.25rem;
+}
+
+.woswidgets-dropdown,
+.woswidgets-select-dropdown {
+  @apply dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-52 mt-2 border border-base-300;
+}
+
+.woswidgets-menu-item,
+.woswidgets-select-item {
+  @apply rounded cursor-pointer px-3 py-2 text-base-content;
+}
+
+.woswidgets-select-item:hover,
+.woswidgets-menu-item:hover {
+  @apply bg-black bg-opacity-10 dark:bg-white dark:bg-opacity-10;
 }
 
 /* Avatars - DaisyUI avatar needs specific structure */
@@ -64,15 +85,6 @@
 /* Badge styling */
 .woswidgets-badge {
   @apply badge badge-soft badge-info badge-sm;
-}
-
-/* Organization switcher specific */
-.woswidgets-organization-switcher {
-  @apply dropdown dropdown-end;
-}
-
-.woswidgets-organization-switcher-trigger {
-  @apply btn btn-ghost;
 }
 
 /* Tabs styling */
@@ -110,41 +122,8 @@
   display: none;
 }
 
-/* Dropdown menu content styling - style like DaisyUI menu */
-.woswidgets-dropdown,
-.woswidgets-select-dropdown {
-  @apply menu bg-base-100 rounded-box shadow-lg border border-base-300 p-2;
-  font-family: inherit !important;
-}
-
-/* Dropdown menu items - style like DaisyUI menu items */
-.woswidgets-menu-item,
-.woswidgets-select-item {
-  @apply hover:bg-base-200 rounded cursor-pointer px-3 py-2 text-base-content;
-  font-family: inherit !important;
-}
-
-
-/* Selected/active state for menu items */
-.woswidgets-select-item[aria-selected="true"],
-.woswidgets-menu-item[data-highlighted] {
-  @apply bg-base-200;
-}
-
 /* Hide the checkmark icons */
 .woswidgets-select-item .rt-SelectItemIndicator {
   display: none;
 }
 
-/* Ensure tabs outside widgets are styled properly */
-.tabs-boxed {
-  @apply bg-base-200 rounded-box p-1;
-}
-
-.tab {
-  @apply rounded-lg;
-}
-
-.tab-active {
-  @apply bg-base-100 text-base-content;
-}
