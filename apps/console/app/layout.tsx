@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import Navigation from "@/components/Navigation";
+import ClientLayout from "@/components/ClientLayout";
+import { services } from "@/lib/services";
 import "./globals.css";
 
 const inter = Inter({
@@ -20,16 +22,27 @@ export const metadata: Metadata = {
   description: "Anonymized, live replicas on demand for development, testing and staging.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Check if user has an organization
+  let hasOrganization = false;
+  try {
+    const session = await services.workos.withAuth();
+    hasOrganization = !!session.organizationId;
+  } catch {
+    // User not authenticated or error - default to false
+  }
+
   return (
     <html lang="en">
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         <Navigation />
-        <main>{children}</main>
+        <ClientLayout hasOrganization={hasOrganization}>
+          <main>{children}</main>
+        </ClientLayout>
       </body>
     </html>
   );
