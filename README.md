@@ -2,6 +2,8 @@
 
 [![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](LICENSE)
 
+> **Getting Started?** Check out the [Kasho Documentation](https://docs.kasho.io) for installation guides and tutorials. This README is primarily for contributors and developers working on the project.
+
 Kasho is a security-and-privacy-first PostgreSQL replication tool that captures and applies DDL (Data Definition Language) and DML (Data Manipulation Language) changes from a primary database to a replica database. For DML changes, each will be fed through a transform layer in order to modify / sanitize things so that no sensitive data is exposed to the replica database. It uses PostgreSQL's logical replication capabilities to ensure that schema changes and data modifications are properly synchronized.
 
 ## Features

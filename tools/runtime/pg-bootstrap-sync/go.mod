@@ -8,6 +8,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	kasho/pkg/kvbuffer v0.0.0-00010101000000-000000000000
 	kasho/pkg/types v0.0.0-00010101000000-000000000000
+	kasho/pkg/version v0.0.0
 	kasho/proto v0.0.0-00010101000000-000000000000
 )
 
@@ -28,7 +29,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
 	google.golang.org/grpc v1.72.1 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
-	kasho/pkg/version v0.0.0 // indirect
 )
 
 replace kasho/pkg/kvbuffer => ../../../pkg/kvbuffer

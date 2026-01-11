@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
+	"kasho/pkg/version"
 	"pg-bootstrap-sync/internal/bootstrap"
 )
 
@@ -82,7 +83,9 @@ func runBootstrap(cmd *cobra.Command, args []string) error {
 
 	// Log startup configuration
 	slog.Info("Starting pg-bootstrap-sync",
-		"version", "1.0.0",
+		"version", version.Version,
+		"commit", version.GitCommit,
+		"built", version.BuildDate,
 		"dump_file", dumpFile,
 		"batch_size", batchSize,
 		"max_rows_per_table", maxRowsPerTable,
