@@ -58,23 +58,16 @@ jobs:
           key: ${{ secrets.DEMO_SSH_KEY }}
           script: |
             cd ~
-            
-            # Debug: Check SSH setup
-            echo "Debug: Checking SSH configuration..."
-            ssh -T git@github.com || true
-            
+
             # Remove existing repository to ensure clean state
             if [ -d "kasho" ]; then
               echo "Removing existing kasho directory..."
               rm -rf kasho
             fi
-            
-            # Clone fresh copy of the repository
+
+            # Clone fresh copy of the repository (using HTTPS for public repo)
             echo "Cloning fresh repository..."
-            git clone ${{ secrets.REPO_URL }} kasho || {
-              echo "Clone failed. Trying with explicit SSH format..."
-              git clone git@github.com:${{ github.repository }}.git kasho
-            }
+            git clone https://github.com/${{ github.repository }}.git kasho
             cd kasho
             
             # Install Task if not present
