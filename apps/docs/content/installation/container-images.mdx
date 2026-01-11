@@ -39,11 +39,6 @@ Update your `docker-compose.yml` to use the full image path:
 
 ```yaml
 services:
-  licensing:
-    image: kashoio/kasho:latest
-    command: /app/bin/licensing
-    # ... rest of configuration
-
   pg-change-stream:
     image: kashoio/kasho:latest
     command: /app/bin/pg-change-stream
@@ -75,14 +70,14 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: licensing
+  name: pg-translicator
 spec:
   template:
     spec:
       containers:
-      - name: licensing
+      - name: pg-translicator
         image: kashoio/kasho:latest
-        command: ["/app/bin/licensing"]
+        command: ["/app/bin/pg-translicator"]
 ```
 
 ## Version Policy

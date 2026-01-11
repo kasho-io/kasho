@@ -10,7 +10,6 @@ cat << 'EOF'
 SERVICES:
   /app/bin/pg-change-stream     - Start change stream service
   /app/bin/pg-translicator      - Start translicator service
-  /app/bin/licensing            - Start licensing service
 
 SCRIPTS:
   /app/scripts/prepare-primary-db.sh - Setup primary database for Kasho replication
@@ -54,13 +53,9 @@ pg-change-stream service:
 pg-translicator service:
   CHANGE_STREAM_SERVICE_ADDR - Change stream service address
                               Example: pg-change-stream:50051
-  
+
   REPLICA_DATABASE_URL       - Replica database connection URL
                               Example: postgresql://user:pass@host:5432/db?sslmode=disable
-
-All services:
-  LICENSING_SERVICE_ADDR     - License service address
-                              Example: licensing:50052
 
 URL FORMATS:
   Database URLs: postgresql://[user[:password]@][host][:port][/database][?param=value&...]
