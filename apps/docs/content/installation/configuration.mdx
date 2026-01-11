@@ -10,7 +10,6 @@ Kasho uses environment variables for service configuration and a YAML file for t
 |----------|-------------|----------|---------|
 | `KV_URL` | Redis connection URL | Yes | `redis://redis:6379` |
 | `PRIMARY_DATABASE_URL` | Source database connection URL | Yes | `postgresql://user:pass@host:5432/db` |
-| `LICENSING_SERVICE_ADDR` | Licensing service address | Yes | `licensing:50052` |
 
 ### `pg-translicator` Configuration
 
@@ -18,15 +17,10 @@ Kasho uses environment variables for service configuration and a YAML file for t
 |----------|-------------|----------|---------|
 | `CHANGE_STREAM_SERVICE_ADDR` | `pg-change-stream` service address | Yes | `pg-change-stream:50051` |
 | `REPLICA_DATABASE_URL` | Target database connection URL | Yes | `postgresql://user:pass@host:5432/db` |
-| `LICENSING_SERVICE_ADDR` | Licensing service address | Yes | `licensing:50052` |
 
 ### `pg-bootstrap-sync` Configuration
 
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `LICENSING_SERVICE_ADDR` | Licensing service address | Yes | `licensing:50052` |
-
-**Note**: `pg-bootstrap-sync` also uses command-line flags for configuration. See the [Bootstrap Process](/installation/bootstrap) guide for details.
+`pg-bootstrap-sync` uses command-line flags for configuration. See the [Bootstrap Process](/installation/bootstrap) guide for details.
 
 ## Database URL Format
 

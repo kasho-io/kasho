@@ -100,10 +100,7 @@ jobs:
             
             # Change stream service for pg-translicator
             CHANGE_STREAM_SERVICE_ADDR=${{ secrets.CHANGE_STREAM_SERVICE_ADDR }}
-            
-            # Licensing service address
-            LICENSING_SERVICE_ADDR=${{ secrets.LICENSING_SERVICE_ADDR }}
-            
+
             # Primary database URL for pg-change-stream
             PRIMARY_DATABASE_URL=${{ secrets.PRIMARY_DATABASE_URL }}
             
@@ -118,12 +115,7 @@ jobs:
             REPLICA_DATABASE_SU_PASSWORD=${{ secrets.REPLICA_DATABASE_SU_PASSWORD }}
             REPLICA_DATABASE_DB=${{ secrets.REPLICA_DATABASE_DB }}
             EOL
-            
-            # Create license file from secret
-            echo "🔑 Creating license file..."
-            mkdir -p config
-            echo "${{ secrets.DEMO_LICENSE_JWT }}" > config/license.jwt
-            
+
             docker compose down -v
             docker compose up -d
             
