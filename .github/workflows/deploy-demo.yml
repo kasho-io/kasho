@@ -41,15 +41,15 @@ jobs:
     steps:
       - name: Log deployment start
         run: |
-          echo "🚀 Starting deployment to DigitalOcean..."
+          echo "🚀 Starting deployment to demo server..."
           echo "Container publish succeeded: ${{ github.event.workflow_run.conclusion == 'success' }}"
-      
-      - name: Deploy to DigitalOcean
+
+      - name: Deploy to demo server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USERNAME }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
+          host: ${{ secrets.DEMO_HOST }}
+          username: ${{ secrets.DEMO_USERNAME }}
+          key: ${{ secrets.DEMO_SSH_KEY }}
           script: |
             cd ~
             
