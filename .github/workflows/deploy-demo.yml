@@ -57,6 +57,7 @@ jobs:
           username: ${{ secrets.DEMO_USERNAME }}
           key: ${{ secrets.DEMO_SSH_KEY }}
           script: |
+            set -e  # Exit immediately if any command fails
             cd ~
 
             # Remove existing repository to ensure clean state
