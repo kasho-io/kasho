@@ -14,7 +14,7 @@
 - Run lint and typecheck commands after making changes (if available)
 - Use idiomatic patterns for the languages and frameworks we are using
 - **IMPORTANT**: Always run Prettier and ESLint before committing changes to apps/* directories:
-  - For console app: `cd apps/console && npm run prettier:write && npm run lint`
+  - For homepage app: `cd apps/homepage && npm run prettier:write && npm run lint`
   - For demo app: `cd apps/demo && npm run prettier:write && npm run lint`
   - For docs app: `cd apps/docs && npm run prettier:write && npm run lint`
   - Note: Git pre-commit hooks will automatically run these checks, but running them manually helps catch issues earlier
@@ -22,9 +22,6 @@
 ## Testing
 - The services in the project have comprehensive test coverage - acknowledge existing tests rather than creating generic test plans
 - Service test files are located in `*_test.go` files following Go conventions
-- **Console App Testing**: The console app uses Playwright for E2E testing
-  - Authentication mocking is automatically configured in `playwright.config.ts`
-  - No need to set environment variables when running tests
 
 ## Documentation
 - As the codebase evolves, review the documentation in apps/docs to ensure that none of it is out of date, and if it is out of date, update it.

@@ -5,7 +5,7 @@
       "label": "Launch Kasho",
       "dependsOn": [
         "dev:reset",
-        "dev:app:console",
+        "dev:app:homepage",
         "dev:app:docs",
         "dev:app:demo",
         "kasho shell"
@@ -26,9 +26,9 @@
       "isBackground": true,
     },
     {
-      "label": "dev:app:console",
+      "label": "dev:app:homepage",
       "type": "shell",
-      "command": "task dev:app:console",
+      "command": "task dev:app:homepage",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",

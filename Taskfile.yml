@@ -182,7 +182,7 @@ tasks:
       - |
         app="{{index .MATCH 0}}"
         case "$app" in
-          console) port="${APP_CONSOLE_PORT:-3000}" ;;
+          homepage) port="${APP_HOMEPAGE_PORT:-3000}" ;;
           demo) port="${APP_DEMO_PORT:-3001}" ;;
           docs) port="${APP_DOCS_PORT:-3002}" ;;
           *) port=3000 ;;

@@ -34,35 +34,13 @@ jobs:
       - name: Install dependencies
         run: task apps:deps:install:${{ inputs.app-name }}
 
-      - name: Install Playwright browsers
-        if: inputs.app-name == 'console'
-        run: cd ${{ inputs.app-directory }} && npx playwright install chromium
-
       - name: Run tests
-        run: |
-          npm run test:ci --workspace=apps/${{ inputs.app-name }}
-          
-          if [ "${{ inputs.app-name }}" = "console" ]; then
-            npm run test:e2e --workspace=apps/${{ inputs.app-name }}
-          fi
-        env:
-          MOCK_AUTH: true
-          WORKOS_CLIENT_ID: test_client_id
-          WORKOS_API_KEY: sk_test_12345
-          WORKOS_CLIENT_SECRET: test_secret
-          NEXT_PUBLIC_WORKOS_REDIRECT_URI: http://localhost:3000/callback
-          WORKOS_COOKIE_PASSWORD: test_cookie_password_at_least_32_characters_long
+        run: npm run test:ci --workspace=apps/${{ inputs.app-name }}
 
       - name: Build application
         run: task apps:build:${{ inputs.app-name }}
         env:
           NODE_ENV: production
-          MOCK_AUTH: true
-          WORKOS_CLIENT_ID: test_client_id
-          WORKOS_API_KEY: sk_test_12345
-          WORKOS_CLIENT_SECRET: test_secret
-          NEXT_PUBLIC_WORKOS_REDIRECT_URI: http://localhost:3000/callback
-          WORKOS_COOKIE_PASSWORD: test_cookie_password_at_least_32_characters_long
 
       - name: Check build output
         run: |
