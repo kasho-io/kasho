@@ -189,4 +189,6 @@ task dev:app:demo
 
 ## License
 
-Copyright &copy; Jeffrey Wescott, 2025. All rights reserved.
+Kasho is licensed under the Business Source License 1.1. See [LICENSE](LICENSE) for details.
+
+After 4 years from each version's release date, that version converts to the MIT license.
