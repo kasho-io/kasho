@@ -198,12 +198,11 @@ jobs:
             fi
             
             # Run bootstrap process in a dedicated container
-            # Use internal Docker hostnames since container runs on demo_default network
             docker run --rm \
               --network demo_default \
-              -e PRIMARY_DATABASE_URL="postgresql://${{ secrets.PRIMARY_DATABASE_SU_USER }}:${{ secrets.PRIMARY_DATABASE_SU_PASSWORD }}@postgres-primary:5432/${{ secrets.PRIMARY_DATABASE_DB }}?sslmode=disable" \
-              -e KV_URL="redis://redis:6379" \
-              -e CHANGE_STREAM_SERVICE_ADDR="pg-change-stream:50051" \
+              -e PRIMARY_DATABASE_URL="${{ secrets.PRIMARY_DATABASE_URL }}" \
+              -e KV_URL="${{ secrets.KV_URL }}" \
+              -e CHANGE_STREAM_SERVICE="pg-change-stream:50051" \
               -e REPLICATION_SLOT_NAME="kasho_slot" \
               -e WAIT_FOR_BOOTSTRAP="true" \
               kashoio/kasho:develop \
