@@ -68,9 +68,11 @@ FROM alpine:latest AS production
 RUN apk add --no-cache ca-certificates tzdata redis postgresql-client bash
 # Add trurl from edge/community repository
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community trurl
-# Install grpcurl for bootstrap coordination
+# Install grpcurl for bootstrap coordination (architecture-aware for multi-platform builds)
+ARG TARGETARCH
 RUN apk add --no-cache curl && \
-    curl -sSL https://github.com/fullstorydev/grpcurl/releases/download/v1.8.9/grpcurl_1.8.9_linux_x86_64.tar.gz | tar -xz -C /usr/local/bin grpcurl && \
+    GRPCURL_ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "x86_64") && \
+    curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.9/grpcurl_1.8.9_linux_${GRPCURL_ARCH}.tar.gz" | tar -xz -C /usr/local/bin grpcurl && \
     chmod +x /usr/local/bin/grpcurl && \
     apk del curl
 
