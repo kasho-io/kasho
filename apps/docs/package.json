@@ -3,8 +3,8 @@
   "version": "0.2.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "NODE_OPTIONS='--require ./scripts/polyfill-localstorage.js' next dev",
+    "build": "NODE_OPTIONS='--require ./scripts/polyfill-localstorage.js' next build",
     "start": "next start",
     "lint": "eslint .",
     "test": "echo \"No tests yet\" && exit 0",
