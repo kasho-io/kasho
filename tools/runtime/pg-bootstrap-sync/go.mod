@@ -7,7 +7,6 @@ require (
 	github.com/pganalyze/pg_query_go/v6 v6.1.0
 	github.com/spf13/cobra v1.8.1
 	kasho/pkg/kvbuffer v0.0.0-00010101000000-000000000000
-	kasho/pkg/license v0.0.0-00010101000000-000000000000
 	kasho/pkg/types v0.0.0-00010101000000-000000000000
 	kasho/proto v0.0.0-00010101000000-000000000000
 )
@@ -15,7 +14,6 @@ require (
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -34,8 +32,6 @@ require (
 )
 
 replace kasho/pkg/kvbuffer => ../../../pkg/kvbuffer
-
-replace kasho/pkg/license => ../../../pkg/license
 
 replace kasho/pkg/types => ../../../pkg/types
 
