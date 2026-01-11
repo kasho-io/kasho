@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"kasho/pkg/version"
 	"kasho/proto"
 	"pg-translicator/internal/sql"
 	"pg-translicator/internal/transform"
@@ -47,6 +48,9 @@ func connectWithRetry[T any](ctx context.Context, connectFn func() (T, error)) (
 }
 
 func main() {
+	log.Printf("pg-translicator version %s (commit: %s, built: %s)",
+		version.Version, version.GitCommit, version.BuildDate)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

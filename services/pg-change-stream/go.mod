@@ -9,6 +9,7 @@ require (
 	google.golang.org/grpc v1.72.1
 	kasho/pkg/kvbuffer v0.0.0-00010101000000-000000000000
 	kasho/pkg/types v0.0.0-00010101000000-000000000000
+	kasho/pkg/version v0.0.0
 	kasho/proto v0.0.0-00010101000000-000000000000
 )
 
@@ -19,13 +20,12 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/redis/go-redis/v9 v9.8.0 // indirect
-	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/crypto v0.39.0 // indirect
+	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
-	kasho/pkg/version v0.0.0 // indirect
 )
 
 replace kasho/pkg/kvbuffer => ../../pkg/kvbuffer

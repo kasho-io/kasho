@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"kasho/pkg/kvbuffer"
+	"kasho/pkg/version"
 	"kasho/proto"
 	"pg-change-stream/internal/server"
 
@@ -18,6 +19,9 @@ import (
 )
 
 func main() {
+	log.Printf("pg-change-stream version %s (commit: %s, built: %s)",
+		version.Version, version.GitCommit, version.BuildDate)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
