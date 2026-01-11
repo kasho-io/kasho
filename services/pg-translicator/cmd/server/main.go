@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"kasho/pkg/license"
 	"kasho/proto"
 	"pg-translicator/internal/sql"
 	"pg-translicator/internal/transform"
@@ -51,25 +50,9 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Initialize license client
-	licenseConfig := &license.Config{
-		Address: os.Getenv("LICENSING_SERVICE_ADDR"),
-	}
-	licenseClient, err := license.NewClient(licenseConfig)
-	if err != nil {
-		log.Fatalf("Failed to create license client: %v", err)
-	}
-	defer licenseClient.Close()
-
-	// Validate license at startup
-	licenseClient.MustValidate(ctx)
-
-	// Start periodic license validation
-	licenseFail := licenseClient.StartPeriodicValidation(ctx, 5*time.Minute)
-
 	// Use hardcoded config directory path - expects mounted /app/config directory
 	configFile := "/app/config/transforms.yml"
-	
+
 	// Verify config directory exists and is actually a directory
 	configDir := "/app/config"
 	if stat, err := os.Stat(configDir); os.IsNotExist(err) {
@@ -79,7 +62,7 @@ func main() {
 	} else if !stat.IsDir() {
 		log.Fatal("/app/config exists but is not a directory. Please mount a config directory to /app/config")
 	}
-	
+
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		log.Fatal("Required config file /app/config/transforms.yml not found. Please ensure transforms.yml exists in the mounted config directory")
 	}
@@ -157,19 +140,14 @@ func main() {
 
 	streamClient := proto.NewChangeStreamClient(client)
 
-	// Handle shutdown signals and license failures
+	// Handle shutdown signals
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	
+
 	go func() {
-		select {
-		case <-sigChan:
-			log.Println("Received shutdown signal")
-			cancel()
-		case <-licenseFail:
-			log.Println("License validation failed, shutting down")
-			cancel()
-		}
+		<-sigChan
+		log.Println("Received shutdown signal")
+		cancel()
 	}()
 
 	// Main replication loop
@@ -182,7 +160,7 @@ func main() {
 				// Check if replica database has any user tables to determine starting LSN
 				lastLsn := determineStartingLSN(db)
 				log.Printf("Starting stream from LSN: %s", lastLsn)
-				
+
 				stream, err := streamClient.Stream(ctx, &proto.StreamRequest{LastLsn: lastLsn})
 				if err != nil {
 					log.Printf("Failed to start stream: %v", err)
@@ -197,48 +175,48 @@ func main() {
 						break
 					}
 
-			transformedChange, err := transform.TransformChange(config, change)
-			if err != nil {
-				log.Printf("Error transforming change: %v", err)
-				continue
-			}
-			
-			// Debug: Check if transform was applied
-			if dml := change.GetDml(); dml != nil && dml.Table == "users" {
-				transformedDml := transformedChange.GetDml()
-				if transformedDml != nil && len(transformedDml.ColumnNames) > 0 {
-					// Find password column index
-					for i, col := range transformedDml.ColumnNames {
-						if col == "password" && i < len(dml.ColumnValues) && i < len(transformedDml.ColumnValues) {
-							origPwd := "nil"
-							transPwd := "nil"
-							if dml.ColumnValues[i] != nil {
-								origPwd = fmt.Sprintf("%v", dml.ColumnValues[i].GetStringValue())[:20] + "..."
+					transformedChange, err := transform.TransformChange(config, change)
+					if err != nil {
+						log.Printf("Error transforming change: %v", err)
+						continue
+					}
+
+					// Debug: Check if transform was applied
+					if dml := change.GetDml(); dml != nil && dml.Table == "users" {
+						transformedDml := transformedChange.GetDml()
+						if transformedDml != nil && len(transformedDml.ColumnNames) > 0 {
+							// Find password column index
+							for i, col := range transformedDml.ColumnNames {
+								if col == "password" && i < len(dml.ColumnValues) && i < len(transformedDml.ColumnValues) {
+									origPwd := "nil"
+									transPwd := "nil"
+									if dml.ColumnValues[i] != nil {
+										origPwd = fmt.Sprintf("%v", dml.ColumnValues[i].GetStringValue())[:20] + "..."
+									}
+									if transformedDml.ColumnValues[i] != nil {
+										transPwd = fmt.Sprintf("%v", transformedDml.ColumnValues[i].GetStringValue())[:20] + "..."
+									}
+									log.Printf("Transform debug - users table password: original=%s, transformed=%s", origPwd, transPwd)
+									break
+								}
 							}
-							if transformedDml.ColumnValues[i] != nil {
-								transPwd = fmt.Sprintf("%v", transformedDml.ColumnValues[i].GetStringValue())[:20] + "..."
-							}
-							log.Printf("Transform debug - users table password: original=%s, transformed=%s", origPwd, transPwd)
-							break
 						}
 					}
-				}
-			}
 
-			stmt, err := sql.ToSQL(transformedChange)
-			if err != nil {
-				log.Printf("Error generating SQL: %v", err)
-				continue
-			}
+					stmt, err := sql.ToSQL(transformedChange)
+					if err != nil {
+						log.Printf("Error generating SQL: %v", err)
+						continue
+					}
 
-			if _, err := db.ExecContext(ctx, stmt); err != nil {
-				log.Printf("Error executing SQL: %v", err)
-				continue
-			}
+					if _, err := db.ExecContext(ctx, stmt); err != nil {
+						log.Printf("Error executing SQL: %v", err)
+						continue
+					}
 
-			if dml := transformedChange.GetDml(); dml != nil && dml.Kind == "insert" {
-				hasInserts = true
-			}
+					if dml := transformedChange.GetDml(); dml != nil && dml.Kind == "insert" {
+						hasInserts = true
+					}
 
 					log.Printf("%s (%s): %s", change.Lsn, change.Type, stmt)
 				}
@@ -257,22 +235,22 @@ func determineStartingLSN(db *dbsql.DB) string {
 	// Check for user tables (excluding system schemas)
 	var tableCount int
 	err := db.QueryRow(`
-		SELECT COUNT(*) 
-		FROM information_schema.tables 
+		SELECT COUNT(*)
+		FROM information_schema.tables
 		WHERE table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
 		AND table_type = 'BASE TABLE'
 	`).Scan(&tableCount)
-	
+
 	if err != nil {
 		log.Printf("Error checking replica tables: %v, assuming empty", err)
 		return "0/0"
 	}
-	
+
 	if tableCount == 0 {
 		log.Printf("Replica database is empty, will request all changes from beginning")
 		return "0/0"
 	}
-	
+
 	log.Printf("Replica database has %d tables, will only request new changes", tableCount)
 	return ""
 }
