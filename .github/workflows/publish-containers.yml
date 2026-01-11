@@ -1,6 +1,7 @@
 name: Publish Container Images
 
 on:
+  workflow_dispatch:  # Allow manual triggering
   workflow_run:
     workflows: ["Test Suite"]
     types:
@@ -16,8 +17,8 @@ env:
 
 jobs:
   check-changes:
-    # Run for workflow_run trigger and tag pushes
-    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) }}
+    # Run for workflow_run trigger, tag pushes, and manual dispatch
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) }}
     runs-on: ubuntu-latest
     permissions:
       actions: read

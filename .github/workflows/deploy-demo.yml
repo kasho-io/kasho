@@ -1,6 +1,7 @@
 name: Deploy Demo Environment
 
 on:
+  workflow_dispatch:  # Allow manual triggering
   workflow_run:
     workflows: ["Publish Container Images"]
     types:
@@ -10,7 +11,8 @@ on:
 
 jobs:
   check-if-should-deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Skip artifact check for manual dispatch
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     outputs:
       should-deploy: ${{ steps.check.outputs.should-deploy }}
@@ -26,7 +28,11 @@ jobs:
       - name: Check if develop image was built
         id: check
         run: |
-          if [ -f build-status.txt ] && grep -q "BUILT_DEVELOP_IMAGE=true" build-status.txt; then
+          # For manual dispatch, always deploy
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+            echo "✅ Manual dispatch, proceeding with deployment"
+          elif [ -f build-status.txt ] && grep -q "BUILT_DEVELOP_IMAGE=true" build-status.txt; then
             echo "should-deploy=true" >> $GITHUB_OUTPUT
             echo "✅ New develop image was built, proceeding with deployment"
           else
