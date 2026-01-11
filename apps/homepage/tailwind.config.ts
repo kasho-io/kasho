@@ -3,6 +3,7 @@ import type { Config } from "tailwindcss";
 const daisyui = require("daisyui");
 
 export default {
+  darkMode: "media",
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
