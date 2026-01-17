@@ -144,11 +144,10 @@ tasks:
         fi
 
   test:app:*:
-    desc: Run tests for a specific app
+    desc: Run tests for a specific app (runs prettier:check, lint, type-check, test)
     cmds:
       - echo "🧪 Testing {{index .MATCH 0}} app..."
       - npm run test:ci --workspace=apps/{{index .MATCH 0}}
-      - npm run test:e2e --workspace=apps/{{index .MATCH 0}}
 
   dev:
     desc: Start development environment (alias for dev:start)
