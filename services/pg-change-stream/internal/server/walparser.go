@@ -191,7 +191,7 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]types.Change, error) {
 					}
 				}
 			}
-			changes = append(changes, types.Change{LSN: lsn.String(), Data: ddl})
+			changes = append(changes, types.Change{Position: lsn.String(), Data: ddl})
 		} else {
 			dml := types.DMLData{
 				Table:        tableName,
@@ -215,7 +215,7 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]types.Change, error) {
 				}
 			}
 
-			changes = append(changes, types.Change{LSN: lsn.String(), Data: dml})
+			changes = append(changes, types.Change{Position: lsn.String(), Data: dml})
 		}
 
 	case *pglogrepl.UpdateMessageV2:
@@ -313,7 +313,7 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]types.Change, error) {
 			}
 		}
 
-		changes = append(changes, types.Change{LSN: lsn.String(), Data: dml})
+		changes = append(changes, types.Change{Position: lsn.String(), Data: dml})
 
 	case *pglogrepl.DeleteMessageV2:
 		rel, ok := relationMap[v.RelationID]
@@ -352,7 +352,7 @@ func ParseWALData(walData []byte, lsn pglogrepl.LSN) ([]types.Change, error) {
 			}
 		}
 
-		changes = append(changes, types.Change{LSN: lsn.String(), Data: dml})
+		changes = append(changes, types.Change{Position: lsn.String(), Data: dml})
 
 	case *pglogrepl.BeginMessage:
 		// No changes to create for begin messages

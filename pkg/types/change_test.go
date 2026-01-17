@@ -188,7 +188,7 @@ func TestChange_MarshalJSON(t *testing.T) {
 		{
 			name: "DML change",
 			change: Change{
-				LSN: "0/100",
+				Position: "0/100",
 				Data: &DMLData{
 					Table:       "users",
 					Kind:        "insert",
@@ -199,12 +199,12 @@ func TestChange_MarshalJSON(t *testing.T) {
 					},
 				},
 			},
-			wantJSON: `{"type":"dml","lsn":"0/100","data":{"table":"users","columnnames":["id","name"],"columnvalues":[1,"test"],"kind":"insert"}}`,
+			wantJSON: `{"type":"dml","position":"0/100","data":{"table":"users","columnnames":["id","name"],"columnvalues":[1,"test"],"kind":"insert"}}`,
 		},
 		{
 			name: "DDL change",
 			change: Change{
-				LSN: "0/200",
+				Position: "0/200",
 				Data: &DDLData{
 					ID:       1,
 					Time:     time.Date(2024, 3, 20, 15, 0, 0, 0, time.UTC),
@@ -213,7 +213,7 @@ func TestChange_MarshalJSON(t *testing.T) {
 					DDL:      "CREATE TABLE test (id SERIAL PRIMARY KEY)",
 				},
 			},
-			wantJSON: `{"type":"ddl","lsn":"0/200","data":{"id":1,"time":"2024-03-20T15:00:00Z","username":"postgres","database":"testdb","ddl":"CREATE TABLE test (id SERIAL PRIMARY KEY)"}}`,
+			wantJSON: `{"type":"ddl","position":"0/200","data":{"id":1,"time":"2024-03-20T15:00:00Z","username":"postgres","database":"testdb","ddl":"CREATE TABLE test (id SERIAL PRIMARY KEY)"}}`,
 		},
 	}
 
@@ -240,9 +240,9 @@ func TestChange_UnmarshalJSON(t *testing.T) {
 	}{
 		{
 			name:     "DML change",
-			jsonData: `{"type":"dml","lsn":"0/100","data":{"table":"users","columnnames":["id","name"],"columnvalues":[1,"test"],"kind":"insert"}}`,
+			jsonData: `{"type":"dml","position":"0/100","data":{"table":"users","columnnames":["id","name"],"columnvalues":[1,"test"],"kind":"insert"}}`,
 			want: Change{
-				LSN: "0/100",
+				Position: "0/100",
 				Data: &DMLData{
 					Table:       "users",
 					Kind:        "insert",
@@ -256,9 +256,9 @@ func TestChange_UnmarshalJSON(t *testing.T) {
 		},
 		{
 			name:     "DDL change",
-			jsonData: `{"type":"ddl","lsn":"0/200","data":{"id":1,"time":"2024-03-20T15:00:00Z","username":"postgres","database":"testdb","ddl":"CREATE TABLE test (id SERIAL PRIMARY KEY)"}}`,
+			jsonData: `{"type":"ddl","position":"0/200","data":{"id":1,"time":"2024-03-20T15:00:00Z","username":"postgres","database":"testdb","ddl":"CREATE TABLE test (id SERIAL PRIMARY KEY)"}}`,
 			want: Change{
-				LSN: "0/200",
+				Position: "0/200",
 				Data: &DDLData{
 					ID:       1,
 					Time:     time.Date(2024, 3, 20, 15, 0, 0, 0, time.UTC),
@@ -270,7 +270,7 @@ func TestChange_UnmarshalJSON(t *testing.T) {
 		},
 		{
 			name:     "unknown change type",
-			jsonData: `{"type":"unknown","lsn":"0/100","data":{}}`,
+			jsonData: `{"type":"unknown","position":"0/100","data":{}}`,
 			wantErr:  true,
 		},
 		{
@@ -301,7 +301,7 @@ func TestChange_UnmarshalJSON(t *testing.T) {
 func TestRoundTripSerialization(t *testing.T) {
 	// Test that marshaling and unmarshaling produces the same result
 	original := Change{
-		LSN: "0/12345",
+		Position: "0/12345",
 		Data: &DMLData{
 			Table:       "products",
 			Kind:        "update",

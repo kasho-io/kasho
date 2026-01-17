@@ -19,10 +19,10 @@ const (
 )
 
 // Change represents a database change event
-// GetLSN returns the position identifier (PostgreSQL LSN, MySQL binlog position, etc.)
+// GetPosition returns the position identifier (PostgreSQL LSN, MySQL binlog position, etc.)
 type Change interface {
 	Type() string
-	GetLSN() string
+	GetPosition() string
 }
 
 // KVBuffer manages change events in a Redis-backed buffer
@@ -49,12 +49,12 @@ func NewKVBuffer(kvURL string) (*KVBuffer, error) {
 	return &KVBuffer{client: client}, nil
 }
 
-// AddChange adds a change to the KV buffer with its LSN as the score
+// AddChange adds a change to the KV buffer with its position as the score
 func (b *KVBuffer) AddChange(ctx context.Context, change Change) error {
-	lsn := change.GetLSN()
-	score, err := b.parsePositionToScore(lsn)
+	position := change.GetPosition()
+	score, err := b.parsePositionToScore(position)
 	if err != nil {
-		return fmt.Errorf("failed to parse LSN: %w", err)
+		return fmt.Errorf("failed to parse position: %w", err)
 	}
 
 	data, err := json.Marshal(change)
@@ -83,23 +83,23 @@ func (b *KVBuffer) AddChange(ctx context.Context, change Change) error {
 	return nil
 }
 
-// GetChangesAfter returns all changes after the given LSN
+// GetChangesAfter returns all changes after the given position
 // NOTE: This method is limited to 1000 changes for backward compatibility.
 // Use GetChangesAfterBatch for paginated access to larger result sets.
-func (b *KVBuffer) GetChangesAfter(ctx context.Context, lsn string) ([]json.RawMessage, error) {
-	return b.GetChangesAfterBatch(ctx, lsn, 0, 1000)
+func (b *KVBuffer) GetChangesAfter(ctx context.Context, position string) ([]json.RawMessage, error) {
+	return b.GetChangesAfterBatch(ctx, position, 0, 1000)
 }
 
-// GetChangesAfterBatch returns a batch of changes after the given LSN with offset and limit
-func (b *KVBuffer) GetChangesAfterBatch(ctx context.Context, lsn string, offset int64, limit int64) ([]json.RawMessage, error) {
-	score, err := b.parsePositionToScore(lsn)
+// GetChangesAfterBatch returns a batch of changes after the given position with offset and limit
+func (b *KVBuffer) GetChangesAfterBatch(ctx context.Context, position string, offset int64, limit int64) ([]json.RawMessage, error) {
+	score, err := b.parsePositionToScore(position)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse LSN: %w", err)
+		return nil, fmt.Errorf("failed to parse position: %w", err)
 	}
 
-	// Special case: LSN "0/0" means get all changes including bootstrap
+	// Special case: position "0/0" means get all changes including bootstrap
 	minScore := fmt.Sprintf("(%g", score)
-	if lsn == "0/0" {
+	if position == "0/0" {
 		minScore = "-inf"
 	}
 

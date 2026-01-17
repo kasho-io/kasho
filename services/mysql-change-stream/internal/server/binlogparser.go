@@ -66,7 +66,7 @@ func RowsEventToChanges(e *canal.RowsEvent, pos mysql.Position) []types.Change {
 				}
 			}
 
-			changes = append(changes, types.Change{LSN: position, Data: dml})
+			changes = append(changes, types.Change{Position: position, Data: dml})
 		}
 
 	case canal.UpdateAction:
@@ -121,7 +121,7 @@ func RowsEventToChanges(e *canal.RowsEvent, pos mysql.Position) []types.Change {
 				}
 			}
 
-			changes = append(changes, types.Change{LSN: position, Data: dml})
+			changes = append(changes, types.Change{Position: position, Data: dml})
 		}
 
 	case canal.DeleteAction:
@@ -157,7 +157,7 @@ func RowsEventToChanges(e *canal.RowsEvent, pos mysql.Position) []types.Change {
 				}
 			}
 
-			changes = append(changes, types.Change{LSN: position, Data: dml})
+			changes = append(changes, types.Change{Position: position, Data: dml})
 		}
 	}
 
@@ -191,7 +191,7 @@ func QueryEventToChange(header *replication.EventHeader, e *replication.QueryEve
 		DDL:      query,
 	}
 
-	return &types.Change{LSN: position, Data: ddl}
+	return &types.Change{Position: position, Data: ddl}
 }
 
 // isPrimaryKey checks if a column is part of the primary key

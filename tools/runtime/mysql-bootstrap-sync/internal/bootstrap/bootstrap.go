@@ -124,7 +124,7 @@ func (b *Bootstrapper) Bootstrap(ctx context.Context) error {
 	// Update final statistics
 	b.stats.EndTime = time.Now()
 	if len(changes) > 0 {
-		b.stats.LastPosition = changes[len(changes)-1].LSN
+		b.stats.LastPosition = changes[len(changes)-1].Position
 	}
 	b.stats.TablesProcessed = parseResult.Metadata.TablesFound
 	b.stats.DDLCount = parseResult.Metadata.DDLCount
@@ -161,7 +161,7 @@ func (b *Bootstrapper) storeChanges(ctx context.Context, changes []*types.Change
 			b.stats.ErrorsEncountered++
 			slog.Error("Failed to store change",
 				"change_index", i+1,
-				"position", change.LSN,
+				"position", change.Position,
 				"error", err)
 			continue
 		}

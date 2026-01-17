@@ -150,7 +150,7 @@ func (s *ChangeStreamServer) Stream(req *proto.StreamRequest, stream proto.Chang
 
 func convertToProtoChange(change types.Change) *proto.Change {
 	protoChange := &proto.Change{
-		Position: change.GetLSN(),
+		Position: change.GetPosition(),
 		Type:     change.Type(),
 	}
 
