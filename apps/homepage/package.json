@@ -11,8 +11,7 @@
     "test:ci": "npm run prettier:check && npm run lint && npm run type-check",
     "type-check": "npx tsc --noEmit",
     "prettier": "npx prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "prettier:check": "npx prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "prettier:write": "npx prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "prettier:check": "npx prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "dependencies": {
     "daisyui": "^5.0.37",
