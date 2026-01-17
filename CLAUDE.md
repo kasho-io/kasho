@@ -5,7 +5,13 @@
 @AGENTS.md
 
 ## GitHub/Git Workflow Preferences
-- **PR Merging**: Always use `--rebase` instead of `--squash` when merging pull requests
+- **Feature Branches**: Always work on feature branches for large changes (new services, tools, multi-file refactors). Never commit large changes directly to main.
+- **PR Workflow**:
+  1. Create a feature branch (e.g., `feature/mysql-support`, `feature/kasho-md7-bootstrap-sync`)
+  2. Commit work to the branch
+  3. Create a PR with comprehensive summary of changes
+  4. **Wait for human review** - do not merge PRs automatically. The user will review all code changes before approval.
+  5. After approval, merge with `--rebase` (not `--squash`)
 - **Branch Cleanup**: After merging PRs, automatically clean up local branches with `git branch -d <branch-name>`
 - **PR Creation**: Include comprehensive summary of changes and note existing test coverage rather than generic test plans
 
