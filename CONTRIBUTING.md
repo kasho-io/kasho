@@ -21,7 +21,7 @@ go install github.com/go-task/task/v3/cmd/task@latest
 
 ```bash
 # 1. Clone and enter the repo
-git clone https://github.com/anthropics/kasho.git
+git clone https://github.com/kasho-io/kasho.git
 cd kasho
 
 # 2. Install git hooks (for automatic formatting)
