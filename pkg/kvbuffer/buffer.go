@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pglogrepl"
@@ -16,6 +18,7 @@ const (
 )
 
 // Change represents a database change event
+// GetLSN returns the position identifier (PostgreSQL LSN, MySQL binlog position, etc.)
 type Change interface {
 	Type() string
 	GetLSN() string
@@ -48,7 +51,7 @@ func NewKVBuffer(kvURL string) (*KVBuffer, error) {
 // AddChange adds a change to the KV buffer with its LSN as the score
 func (b *KVBuffer) AddChange(ctx context.Context, change Change) error {
 	lsn := change.GetLSN()
-	score, err := b.parseLSNToScore(lsn)
+	score, err := b.parsePositionToScore(lsn)
 	if err != nil {
 		return fmt.Errorf("failed to parse LSN: %w", err)
 	}
@@ -88,7 +91,7 @@ func (b *KVBuffer) GetChangesAfter(ctx context.Context, lsn string) ([]json.RawM
 
 // GetChangesAfterBatch returns a batch of changes after the given LSN with offset and limit
 func (b *KVBuffer) GetChangesAfterBatch(ctx context.Context, lsn string, offset int64, limit int64) ([]json.RawMessage, error) {
-	score, err := b.parseLSNToScore(lsn)
+	score, err := b.parsePositionToScore(lsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse LSN: %w", err)
 	}
@@ -117,25 +120,50 @@ func (b *KVBuffer) GetChangesAfterBatch(ctx context.Context, lsn string, offset 
 	return changes, nil
 }
 
-// parseLSNToScore converts an LSN string to a float64 score for Redis sorted set
-func (b *KVBuffer) parseLSNToScore(lsn string) (float64, error) {
-	// Handle synthetic bootstrap LSNs first (e.g., "0/BOOTSTRAP0000000000000001")
-	if len(lsn) > 2 && lsn[:2] == "0/" && len(lsn) > 11 && lsn[2:11] == "BOOTSTRAP" {
+// parsePositionToScore converts a database position to a Redis sorted set score
+// Supports:
+// - PostgreSQL LSN: "0/100" format
+// - MySQL binlog: "mysql-bin.000001:4" format (filename:offset)
+// - Bootstrap: "0/BOOTSTRAP%016d" format (negative scores for ordering)
+func (b *KVBuffer) parsePositionToScore(position string) (float64, error) {
+	// Bootstrap positions: "0/BOOTSTRAP%016d" → -1000000 + seq
+	if len(position) > 2 && position[:2] == "0/" && len(position) >= 11 && position[2:11] == "BOOTSTRAP" {
 		var seq int64
-		if n, err := fmt.Sscanf(lsn[2:], "BOOTSTRAP%016d", &seq); n == 1 && err == nil {
-			// Use negative scores for bootstrap LSNs to ensure they sort before real LSNs
+		if n, err := fmt.Sscanf(position[2:], "BOOTSTRAP%016d", &seq); n == 1 && err == nil {
 			return float64(-1000000 + seq), nil
 		}
-		// If it starts with BOOTSTRAP but doesn't match the pattern, it's invalid
-		return 0, fmt.Errorf("invalid bootstrap LSN format: %s", lsn)
+		return 0, fmt.Errorf("invalid bootstrap position format: %s", position)
 	}
 
-	// Handle PostgreSQL LSN format (e.g., "0/100")
-	if parsedLSN, err := pglogrepl.ParseLSN(lsn); err == nil {
+	// MySQL binlog position: "mysql-bin.000001:4" or "binlog.000001:4" → (filenum * 4294967296) + offset
+	if strings.Contains(position, ":") && (strings.Contains(position, "bin.") || strings.HasPrefix(position, "binlog.")) {
+		parts := strings.Split(position, ":")
+		if len(parts) == 2 {
+			// Extract file number from "mysql-bin.000001" or "binlog.000001"
+			filename := parts[0]
+			if idx := strings.LastIndex(filename, "."); idx != -1 {
+				fileNumStr := filename[idx+1:]
+				fileNum, err := strconv.ParseInt(fileNumStr, 10, 64)
+				if err != nil {
+					return 0, fmt.Errorf("invalid MySQL binlog file number: %s", position)
+				}
+				offset, err := strconv.ParseInt(parts[1], 10, 64)
+				if err != nil {
+					return 0, fmt.Errorf("invalid MySQL binlog offset: %s", position)
+				}
+				// Combine: file number * 4GB + offset for monotonic ordering
+				return float64(fileNum)*4294967296 + float64(offset), nil
+			}
+		}
+		return 0, fmt.Errorf("invalid MySQL binlog format: %s", position)
+	}
+
+	// PostgreSQL LSN: "0/100" → float64
+	if parsedLSN, err := pglogrepl.ParseLSN(position); err == nil {
 		return float64(parsedLSN), nil
 	}
 
-	return 0, fmt.Errorf("invalid LSN format: %s", lsn)
+	return 0, fmt.Errorf("invalid position format: %s", position)
 }
 
 // Subscribe creates a Redis pubsub subscription
