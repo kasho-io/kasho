@@ -2,6 +2,7 @@
 
 ## Project Overview
 @README.md
+@AGENTS.md
 
 ## GitHub/Git Workflow Preferences
 - **PR Merging**: Always use `--rebase` instead of `--squash` when merging pull requests
