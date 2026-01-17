@@ -172,11 +172,14 @@ func (b *Bootstrapper) storeChanges(ctx context.Context, changes []*types.Change
 		// Log progress
 		if (i+1)%progressInterval == 0 {
 			elapsed := time.Since(b.stats.StartTime)
-			rate := float64(stored) / elapsed.Seconds()
+			rateStr := "N/A"
+			if elapsed.Seconds() > 0 {
+				rateStr = fmt.Sprintf("%.1f changes/sec", float64(stored)/elapsed.Seconds())
+			}
 			slog.Info("Storage progress",
 				"stored", stored,
 				"total", len(changes),
-				"rate", fmt.Sprintf("%.1f changes/sec", rate),
+				"rate", rateStr,
 				"percentage", fmt.Sprintf("%.1f%%", float64(stored)/float64(len(changes))*100))
 		}
 
@@ -186,10 +189,14 @@ func (b *Bootstrapper) storeChanges(ctx context.Context, changes []*types.Change
 		}
 	}
 
+	successRate := "100.0%"
+	if len(changes) > 0 {
+		successRate = fmt.Sprintf("%.1f%%", float64(stored)/float64(len(changes))*100)
+	}
 	slog.Info("Storage completed",
 		"stored", stored,
 		"total", len(changes),
-		"success_rate", fmt.Sprintf("%.1f%%", float64(stored)/float64(len(changes))*100))
+		"success_rate", successRate)
 	return nil
 }
 
