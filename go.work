@@ -11,5 +11,6 @@ use (
 	./tools/development/generate-fake-saas-data
 	./tools/development/test-version
 	./tools/runtime/env-template
+	./tools/runtime/mysql-bootstrap-sync
 	./tools/runtime/pg-bootstrap-sync
 )
