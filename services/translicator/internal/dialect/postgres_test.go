@@ -232,6 +232,32 @@ func TestPostgreSQL_GetUserTablesQuery(t *testing.T) {
 	}
 }
 
+func TestPostgreSQL_formatRegclass(t *testing.T) {
+	d := NewPostgreSQL()
+
+	tests := []struct {
+		name     string
+		schema   string
+		seqName  string
+		want     string
+	}{
+		{"simple names", "public", "users_id_seq", "'public.users_id_seq'"},
+		{"with single quote in schema", "it's_schema", "seq", "'it''s_schema.seq'"},
+		{"with single quote in sequence", "public", "user's_seq", "'public.user''s_seq'"},
+		{"with quotes in both", "it's", "also'quoted", "'it''s.also''quoted'"},
+		{"reserved word schema", "select", "from_seq", "'select.from_seq'"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := d.formatRegclass(tt.schema, tt.seqName)
+			if got != tt.want {
+				t.Errorf("formatRegclass(%q, %q) = %v, want %v", tt.schema, tt.seqName, got, tt.want)
+			}
+		})
+	}
+}
+
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
 }

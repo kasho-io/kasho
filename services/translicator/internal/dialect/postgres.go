@@ -56,6 +56,15 @@ func (p *PostgreSQL) QuoteIdentifier(name string) string {
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
 }
 
+// formatRegclass formats a schema.sequence name for use with setval()
+// setval() takes a regclass, which can be a string literal
+func (p *PostgreSQL) formatRegclass(schema, name string) string {
+	// Escape single quotes in identifiers and wrap in quotes for regclass cast
+	escapedSchema := strings.ReplaceAll(schema, "'", "''")
+	escapedName := strings.ReplaceAll(name, "'", "''")
+	return fmt.Sprintf("'%s.%s'", escapedSchema, escapedName)
+}
+
 func (p *PostgreSQL) SetupConnection(db *sql.DB) error {
 	_, err := db.Exec("SET session_replication_role = 'replica'")
 	return err
@@ -88,17 +97,17 @@ func (p *PostgreSQL) SyncSequences(ctx context.Context, db *sql.DB) error {
 			return fmt.Errorf("failed to scan sequence info: %w", err)
 		}
 
-		fullTable := fmt.Sprintf("%s.%s", schema, table)
-		fullSeq := fmt.Sprintf("%s.%s", schema, sequence)
+		fullTable := fmt.Sprintf("%s.%s", p.QuoteIdentifier(schema), p.QuoteIdentifier(table))
+		fullSeq := fmt.Sprintf("%s.%s", p.QuoteIdentifier(schema), p.QuoteIdentifier(sequence))
 
 		var maxVal sql.NullInt64
-		err := db.QueryRowContext(ctx, fmt.Sprintf("SELECT COALESCE(MAX(%s), 1) FROM %s", column, fullTable)).Scan(&maxVal)
+		err := db.QueryRowContext(ctx, fmt.Sprintf("SELECT COALESCE(MAX(%s), 1) FROM %s", p.QuoteIdentifier(column), fullTable)).Scan(&maxVal)
 		if err != nil {
-			return fmt.Errorf("failed to get max value for %s: %w", fullTable, err)
+			return fmt.Errorf("failed to get max value for %s.%s: %w", schema, table, err)
 		}
 
-		// Set the sequence to the max value
-		_, err = db.ExecContext(ctx, fmt.Sprintf("SELECT setval('%s', %d, true)", fullSeq, maxVal.Int64))
+		// Set the sequence to the max value (setval takes a regclass, so we pass the quoted name as a string)
+		_, err = db.ExecContext(ctx, fmt.Sprintf("SELECT setval(%s, %d, true)", p.formatRegclass(schema, sequence), maxVal.Int64))
 		if err != nil {
 			return fmt.Errorf("failed to set sequence %s: %w", fullSeq, err)
 		}

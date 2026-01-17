@@ -100,7 +100,8 @@ func (m *MySQL) SyncSequences(ctx context.Context, db *sql.DB) error {
 
 		// Get max value for the column
 		var maxVal sql.NullInt64
-		maxQuery := fmt.Sprintf("SELECT COALESCE(MAX(`%s`), 0) + 1 FROM `%s`.`%s`", column, schema, table)
+		maxQuery := fmt.Sprintf("SELECT COALESCE(MAX(%s), 0) + 1 FROM %s.%s",
+			m.QuoteIdentifier(column), m.QuoteIdentifier(schema), m.QuoteIdentifier(table))
 		err := db.QueryRowContext(ctx, maxQuery).Scan(&maxVal)
 		if err != nil {
 			log.Printf("Warning: failed to get max value for %s.%s.%s: %v", schema, table, column, err)
@@ -108,7 +109,8 @@ func (m *MySQL) SyncSequences(ctx context.Context, db *sql.DB) error {
 		}
 
 		// Set the auto_increment value
-		alterQuery := fmt.Sprintf("ALTER TABLE `%s`.`%s` AUTO_INCREMENT = %d", schema, table, maxVal.Int64)
+		alterQuery := fmt.Sprintf("ALTER TABLE %s.%s AUTO_INCREMENT = %d",
+			m.QuoteIdentifier(schema), m.QuoteIdentifier(table), maxVal.Int64)
 		_, err = db.ExecContext(ctx, alterQuery)
 		if err != nil {
 			log.Printf("Warning: failed to set auto_increment for %s.%s: %v", schema, table, err)
