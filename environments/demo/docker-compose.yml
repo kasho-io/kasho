@@ -15,8 +15,8 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes
@@ -24,8 +24,8 @@ services:
   pg-change-stream:
     image: kashoio/kasho:develop
     command: ["/app/bin/pg-change-stream"]
-    ports:
-      - "${CHANGE_STREAM_PORT:-50051}:50051"
+    expose:
+      - "50051"
     env_file:
       - .env
     volumes:
