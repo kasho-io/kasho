@@ -35,14 +35,14 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 
 ### Environments
 
-#### Development (`environments/development/`)
+#### Development (`environments/pg-development/`)
 
 - Docker Compose setup for local development
 - Includes PostgreSQL primary and replica databases
 - Redis for caching
 - All core services configured for development with hot reload
 
-#### Demo (`environments/demo/`)
+#### Demo (`environments/pg-demo/`)
 
 - Production-like environment for demonstration and testing
 - Uses production Docker image builds
@@ -161,7 +161,7 @@ docker run kasho ./pg-translicator
 docker run kasho ./pg-bootstrap-sync --help
 
 # Or use environment-specific docker-compose files
-cd environments/demo && docker-compose up
+cd environments/pg-demo && docker-compose up
 ```
 
 ## Getting Started

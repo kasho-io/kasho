@@ -35,7 +35,7 @@ WORKDIR /app
 
 # Copy source code and workspace files
 COPY . .
-COPY environments/development/.air.toml /app/.air.toml
+COPY environments/pg-development/.air.toml /app/.air.toml
 
 # Download dependencies (using base image's module cache)
 RUN go work sync
