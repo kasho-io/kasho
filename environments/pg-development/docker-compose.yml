@@ -40,14 +40,14 @@ services:
       - postgres-primary
       - redis
 
-  pg-translicator:
+  translicator:
     image: kasho
-    command: ["sh", "-c", "cd /app/services/pg-translicator && air -c /app/.air.toml"]
+    command: ["sh", "-c", "cd /app/services/translicator && air -c /app/.air.toml"]
     env_file:
       - .env
     volumes:
       - ./config:/app/config
-      - ../../services/pg-translicator:/app/services/pg-translicator
+      - ../../services/translicator:/app/services/translicator
       - ../../proto:/app/proto
     depends_on:
       pg-change-stream:

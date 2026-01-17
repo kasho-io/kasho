@@ -64,7 +64,7 @@ jobs:
         run: |
           # Combine coverage from all services
           echo "mode: atomic" > combined-coverage.out
-          for service in services/pg-change-stream services/pg-translicator proto/kasho/proto; do
+          for service in services/pg-change-stream services/translicator proto/kasho/proto; do
             if [ -f "$service/coverage.out" ]; then
               tail -n +2 "$service/coverage.out" >> combined-coverage.out
             fi
@@ -87,7 +87,7 @@ jobs:
           echo "📊 Service Coverage:"
           
           # Display coverage for each service
-          for service in services/pg-change-stream services/pg-translicator proto/kasho/proto; do
+          for service in services/pg-change-stream services/translicator proto/kasho/proto; do
             if [ -f "$service/coverage.out" ]; then
               coverage=$(go tool cover -func="$service/coverage.out" | grep total | awk '{print substr($3, 1, length($3)-1)}')
               echo "   • $(basename $service): ${coverage}%"

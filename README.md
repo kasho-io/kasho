@@ -26,7 +26,7 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 - Handles connection management and retries
 - Uses Redis for buffering and pub/sub
 
-#### pg-translicator (`services/pg-translicator/`)
+#### translicator (`services/translicator/`)
 
 - Go service for translating and transforming database changes
 - Processes change events from pg-change-stream
@@ -157,7 +157,7 @@ docker build -t kasho .
 
 # Run individual services
 docker run kasho ./pg-change-stream
-docker run kasho ./pg-translicator
+docker run kasho ./translicator
 docker run kasho ./pg-bootstrap-sync --help
 
 # Or use environment-specific docker-compose files

@@ -109,7 +109,7 @@ jobs:
           path: change-detection.json
           retention-days: 1
 
-  # Test Go services (pg-change-stream, pg-translicator)
+  # Test Go services (pg-change-stream, translicator)
   test-go-services:
     needs: detect-changes
     if: needs.detect-changes.outputs.go-services == 'true' || github.event.inputs.force_all_tests == 'true'

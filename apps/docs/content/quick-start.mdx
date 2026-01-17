@@ -1,4 +1,4 @@
-import { Callout } from 'nextra/components'
+import { Callout } from "nextra/components";
 
 # Quick Start
 
@@ -10,57 +10,47 @@ Kasho consists of three required containers that work together:
 
 1. **Redis** - Used for distributed state management and caching
 2. **pg-change-stream** - Captures changes from your source PostgreSQL database
-3. **pg-translicator** - Applies transformations and writes to your target database
+3. **translicator** - Applies transformations and writes to your target database
 
 <Callout type="info">
-  **Production Environments**
-  
-  Most production deployments use Kubernetes, ECS, or similar orchestration systems. The Docker Compose example below illustrates how the containers interact and can be adapted to your specific environment.
+  **Production Environments** Most production deployments use Kubernetes, ECS, or similar orchestration systems. The
+  Docker Compose example below illustrates how the containers interact and can be adapted to your specific environment.
 </Callout>
 
 ### Container Images
 
 All Kasho components are packaged in a single Docker image available from Docker Hub:
-- Image: `kashoio/kasho:latest` (or specific version like `v0.3.0`)
-- Commands: `./pg-change-stream` and `./pg-translicator`
 
+- Image: `kashoio/kasho:latest` (or specific version like `v0.3.0`)
+- Commands: `./pg-change-stream` and `./translicator`
 
 ## Prerequisites
 
 <Callout type="warning">
   **Important: Single Translicator Only**
 
-  Currently, only a single `pg-translicator` instance is supported. Multiple translicators would process the same changes multiple times.
+Currently, only a single `translicator` instance is supported. Multiple translicators would process the same changes multiple times.
+
 </Callout>
 
 Before you begin, ensure you have:
+
 - PostgreSQL 15+ databases (source and target)
 - Databases configured with `wal_level = logical` (see below)
 - A Redis instance (or Redis-compatible service)
 - Container orchestration system (Kubernetes, ECS, Docker, etc.)
 
 <Callout type="warning">
-  **PostgreSQL WAL Level Configuration**
-  
-  Check your current WAL level:
-  ```sql
-  SHOW wal_level;
-  ```
-  
-  If it's not `logical`, update your `postgresql.conf`:
-  ```
-  wal_level = logical
-  ```
-  
-  **Important**: After changing this setting, you must restart PostgreSQL for it to take effect.
+  **PostgreSQL WAL Level Configuration** Check your current WAL level: ```sql SHOW wal_level; ``` If it's not `logical`,
+  update your `postgresql.conf`: ``` wal_level = logical ``` **Important**: After changing this setting, you must
+  restart PostgreSQL for it to take effect.
 </Callout>
 
 ## Docker Compose Example
 
 <Callout type="info">
-  **Example Configuration**
-  
-  The following Docker Compose configuration demonstrates how Kasho's containers interact. Adapt this to your production orchestration system (Kubernetes manifests, ECS task definitions, etc.).
+  **Example Configuration** The following Docker Compose configuration demonstrates how Kasho's containers interact.
+  Adapt this to your production orchestration system (Kubernetes manifests, ECS task definitions, etc.).
 </Callout>
 
 ### Step 1: Example Directory Structure
@@ -77,9 +67,9 @@ cd kasho-example
 Create a `docker-compose.yml` file:
 
 <Callout type="info">
-  **Port Conflicts**
-  
-  If you have other services running locally, you may need to change the exposed ports. For example, change `"6379:6379"` to `"6380:6379"` if Redis is already running. The second number is the container's internal port and should not be changed.
+  **Port Conflicts** If you have other services running locally, you may need to change the exposed ports. For example,
+  change `"6379:6379"` to `"6380:6379"` if Redis is already running. The second number is the container's internal port
+  and should not be changed.
 </Callout>
 
 ```yaml
@@ -102,14 +92,14 @@ services:
     depends_on:
       - redis
 
-  pg-translicator:
+  translicator:
     image: kashoio/kasho:latest
-    command: /app/bin/pg-translicator
+    command: /app/bin/translicator
     environment:
       CHANGE_STREAM_SERVICE_ADDR: pg-change-stream:50051
       REPLICA_DATABASE_URL: ${REPLICA_DATABASE_URL}
     volumes:
-      - ./config:/app/config:ro  # Contains transforms.yml
+      - ./config:/app/config:ro # Contains transforms.yml
     depends_on:
       - pg-change-stream
 
@@ -143,7 +133,8 @@ See the [Transform Configuration](/configuration/transforms) guide for all avail
 Create a `.env` file with your database connections and service configuration.
 
 <Callout type="warning">
-  **Important**: Replace the example database URLs below with your actual PostgreSQL connection strings. The services will not start successfully without valid database connections.
+  **Important**: Replace the example database URLs below with your actual PostgreSQL connection strings. The services
+  will not start successfully without valid database connections.
 </Callout>
 
 ```bash
@@ -151,21 +142,20 @@ Create a `.env` file with your database connections and service configuration.
 # Replace with your actual source database connection string
 PRIMARY_DATABASE_URL=postgresql://kasho:password@source-host:5432/source_db?sslmode=disable
 
-# Target database (write access needed)  
+# Target database (write access needed)
 # Replace with your actual target database connection string
 REPLICA_DATABASE_URL=postgresql://kasho:password@target-host:5432/target_db?sslmode=disable
 
 # Redis connection for pg-change-stream
 KV_URL=redis://redis:6379
 
-# Change stream service for pg-translicator
+# Change stream service for translicator
 CHANGE_STREAM_SERVICE_ADDR=pg-change-stream:50051
 ```
 
 <Callout type="info">
-  **Production Note**
-  
-  In production, these service URLs will depend on your infrastructure. For example, in Kubernetes you might use service names like `redis.default.svc.cluster.local:6379`.
+  **Production Note** In production, these service URLs will depend on your infrastructure. For example, in Kubernetes
+  you might use service names like `redis.default.svc.cluster.local:6379`.
 </Callout>
 
 ### Step 5: Run the Example
@@ -181,9 +171,10 @@ docker-compose ps
 ```
 
 You should see:
+
 - `redis` - Running
 - `pg-change-stream` - Running on port 50051
-- `pg-translicator` - Running
+- `translicator` - Running
 
 ## Production Considerations
 
@@ -197,7 +188,7 @@ When deploying to production:
 2. **Redis**: Use a managed Redis service or ensure high availability
 
 3. **Networking**: Ensure containers can communicate:
-   - `pg-translicator` must reach `pg-change-stream` service
+   - `translicator` must reach `pg-change-stream` service
    - Both services need access to their respective databases
    - Consider service discovery mechanisms in your environment
 
@@ -222,9 +213,8 @@ docker exec -it kasho-example-pg-change-stream-1 /app/scripts/bootstrap-kasho.sh
 ```
 
 <Callout type="info">
-  **Container Name**
-  
-  The container name may vary based on your setup. Use `docker ps` to find the exact name of your pg-change-stream container.
+  **Container Name** The container name may vary based on your setup. Use `docker ps` to find the exact name of your
+  pg-change-stream container.
 </Callout>
 
 2. The bootstrap process will:
@@ -240,18 +230,21 @@ If you prefer, you can manually bootstrap things with a bit more effort. See the
 Check that replication is working:
 
 1. **Check `pg-change-stream` status (using gRPC):**
+
    ```bash
    # Using grpcurl (install with: brew install grpcurl)
    grpcurl -plaintext localhost:50051 kasho.ChangeStreamService/GetStatus
    ```
 
 2. **View logs:**
+
    ```bash
    docker-compose logs -f pg-change-stream
-   docker-compose logs -f pg-translicator
+   docker-compose logs -f translicator
    ```
 
 3. **Make a test change in your source database:**
+
    ```sql
    -- In your source database
    UPDATE users SET updated_at = NOW() WHERE id = 1;
@@ -268,11 +261,13 @@ Check that replication is working:
 ## Troubleshooting
 
 **Services won't start:**
+
 - Ensure your environment variables are set correctly, especially the database URLs.
 - Verify `transforms.yml` exists in the config directory
 - Check logs: `docker-compose logs [service-name]`
 
 **Connection errors:**
+
 - Ensure databases are accessible from Docker containers
 - Verify PostgreSQL has `wal_level = logical`
 - Check firewall rules allow connections

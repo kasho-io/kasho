@@ -6,7 +6,7 @@ use (
 	./pkg/version
 	./proto/kasho/proto
 	./services/pg-change-stream
-	./services/pg-translicator
+	./services/translicator
 	./tools/development/generate-fake-saas-data
 	./tools/development/test-version
 	./tools/runtime/env-template

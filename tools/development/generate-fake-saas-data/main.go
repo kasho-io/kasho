@@ -224,13 +224,13 @@ func generateUsers(orgs []Organization, r *rand.Rand) []User {
 				CreatedAt:      createdAt,
 				UpdatedAt:      randomTimeAfter(createdAt, r),
 			}
-			// Generate password hash using Argon2id with same parameters as pg-translicator
+			// Generate password hash using Argon2id with same parameters as translicator
 			// Use a deterministic cleartext based on user info for consistent demo data
 			cleartext := "password123" // Simple cleartext for demo
 			user.Password = generatePasswordArgon2id(
 				cleartext,  // cleartext password
 				true,       // useSalt
-				3,          // time (default from pg-translicator)
+				3,          // time (default from translicator)
 				65536,      // memory (default: 64MB in KiB)
 				4,          // threads (default)
 				user.ID,    // original (for deterministic salt)
@@ -507,7 +507,7 @@ func generateValidCardNumber(r *rand.Rand) string {
 }
 
 // generateDeterministicSalt creates a deterministic salt based on the original value
-// This matches the implementation in pg-translicator
+// This matches the implementation in translicator
 func generateDeterministicSalt(original string, length int) []byte {
 	h := sha256.New()
 	h.Write([]byte(original))
@@ -522,7 +522,7 @@ func generateDeterministicSalt(original string, length int) []byte {
 }
 
 // generatePasswordArgon2id applies Argon2id hashing to the cleartext
-// This matches the implementation in pg-translicator exactly
+// This matches the implementation in translicator exactly
 func generatePasswordArgon2id(cleartext string, useSalt bool, time, memory uint32, threads uint8, original string) string {
 	var salt []byte
 	if useSalt {

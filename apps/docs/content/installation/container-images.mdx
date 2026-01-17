@@ -5,6 +5,7 @@ Kasho is distributed as Docker container images hosted on Docker Hub.
 ## Available Images
 
 ### Production Image
+
 The main Kasho image contains all components needed for deployment:
 
 ```
@@ -44,9 +45,9 @@ services:
     command: /app/bin/pg-change-stream
     # ... rest of configuration
 
-  pg-translicator:
+  translicator:
     image: kashoio/kasho:latest
-    command: /app/bin/pg-translicator
+    command: /app/bin/translicator
     # ... rest of configuration
 ```
 
@@ -63,21 +64,21 @@ spec:
   template:
     spec:
       containers:
-      - name: pg-change-stream
-        image: kashoio/kasho:latest
-        command: ["/app/bin/pg-change-stream"]
+        - name: pg-change-stream
+          image: kashoio/kasho:latest
+          command: ["/app/bin/pg-change-stream"]
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pg-translicator
+  name: translicator
 spec:
   template:
     spec:
       containers:
-      - name: pg-translicator
-        image: kashoio/kasho:latest
-        command: ["/app/bin/pg-translicator"]
+        - name: translicator
+          image: kashoio/kasho:latest
+          command: ["/app/bin/translicator"]
 ```
 
 ## Version Policy

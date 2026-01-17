@@ -9,7 +9,7 @@ cat << 'EOF'
 
 SERVICES:
   /app/bin/pg-change-stream     - Start change stream service
-  /app/bin/pg-translicator      - Start translicator service
+  /app/bin/translicator      - Start translicator service
 
 SCRIPTS:
   /app/scripts/prepare-primary-db.sh - Setup primary database for Kasho replication
@@ -20,7 +20,7 @@ EXAMPLES:
   docker run --rm kasho /app/bin/pg-change-stream
 
   # Start translicator service  
-  docker run --rm kasho /app/bin/pg-translicator
+  docker run --rm kasho /app/bin/translicator
 
   # Bootstrap Kasho replication (from inside running container)
   docker exec -it <container-name> /app/scripts/bootstrap-kasho.sh
@@ -50,7 +50,7 @@ pg-change-stream service:
   PRIMARY_DATABASE_URL   - Primary database connection URL
                           Example: postgresql://user:pass@host:5432/db?sslmode=disable
 
-pg-translicator service:
+translicator service:
   CHANGE_STREAM_SERVICE_ADDR - Change stream service address
                               Example: pg-change-stream:50051
 

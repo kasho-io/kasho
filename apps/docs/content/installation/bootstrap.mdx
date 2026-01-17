@@ -1,4 +1,4 @@
-import { Callout } from 'nextra/components'
+import { Callout } from "nextra/components";
 
 # Bootstrap Process
 
@@ -9,13 +9,16 @@ The bootstrap process loads existing data from your source database into Kasho w
 `pg-change-stream` operates in three states during its lifecycle:
 
 ### WAITING
+
 No replication slot exists. Service is ready to begin bootstrap.
 
 ### ACCUMULATING
+
 Replication slot created. Capturing changes during initial data load.
 
 ### STREAMING
-Normal operation. Streaming all changes to `pg-translicator`.
+
+Normal operation. Streaming all changes to `translicator`.
 
 ## How Bootstrap Works
 
@@ -33,6 +36,7 @@ This approach guarantees that no changes are lost during the initial data migrat
 ### Prerequisites
 
 Before starting bootstrap:
+
 - Ensure `pg-change-stream` is running and in WAITING state
 - Have sufficient disk space for the database dump
 - Ensure network connectivity between all components
@@ -60,12 +64,12 @@ docker exec -it <pg-change-stream-container> \
 ```
 
 <Callout type="info">
-  **Finding Your Container Name**
-  
-  Use `docker ps` to find your pg-change-stream container name. It will typically be something like `kasho-pg-change-stream-1` or similar based on your deployment method.
+  **Finding Your Container Name** Use `docker ps` to find your pg-change-stream container name. It will typically be
+  something like `kasho-pg-change-stream-1` or similar based on your deployment method.
 </Callout>
 
 The script will:
+
 1. Create a temporary replication slot for consistent snapshot
 2. Signal `pg-change-stream` to start accumulating changes
 3. Take a database dump using the snapshot
@@ -85,7 +89,7 @@ For more control, you can run the bootstrap steps manually:
 ```sql
 -- Connect to source database as kasho user
 -- Create a temporary slot to get a consistent snapshot
-SELECT slot_name, lsn, snapshot_name 
+SELECT slot_name, lsn, snapshot_name
 FROM pg_create_logical_replication_slot('kasho_temp_slot', 'pgoutput', true);
 
 -- Note the LSN and snapshot_name values
@@ -162,11 +166,13 @@ docker logs -f pg-change-stream
 For databases larger than 100GB:
 
 1. **Use compression:**
+
    ```bash
    pg_dump ... | gzip > dump.sql.gz
    ```
 
 2. **Consider parallel dump:**
+
    ```bash
    pg_dump --jobs=4 ...
    ```
@@ -194,6 +200,7 @@ Then restart `pg-change-stream` to return to WAITING state.
 ### Bootstrap seems stuck
 
 Check for:
+
 - Network connectivity issues
 - Disk space for dump file
 - Long-running transactions blocking the snapshot
