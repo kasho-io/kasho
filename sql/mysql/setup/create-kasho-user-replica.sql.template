@@ -1,0 +1,16 @@
+-- Create Kasho user on MySQL REPLICA
+-- Template variables: {{.REPLICA_DATABASE_KASHO_USER}}, {{.REPLICA_DATABASE_KASHO_PASSWORD}}
+
+-- Drop user if exists
+DROP USER IF EXISTS '{{.REPLICA_DATABASE_KASHO_USER}}'@'%';
+
+-- Create user with write privileges for applying changes
+CREATE USER '{{.REPLICA_DATABASE_KASHO_USER}}'@'%'
+    IDENTIFIED BY '{{.REPLICA_DATABASE_KASHO_PASSWORD}}';
+
+-- Grant privileges needed to apply replicated changes
+-- SUPER is needed to bypass foreign key checks during replication
+GRANT ALL PRIVILEGES ON *.* TO '{{.REPLICA_DATABASE_KASHO_USER}}'@'%' WITH GRANT OPTION;
+
+-- Apply privileges
+FLUSH PRIVILEGES;

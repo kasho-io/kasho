@@ -1,0 +1,19 @@
+-- Create Kasho replication user on MySQL PRIMARY
+-- Template variables: {{.PRIMARY_DATABASE_KASHO_USER}}, {{.PRIMARY_DATABASE_KASHO_PASSWORD}}
+
+-- Drop user if exists (MySQL 5.7+)
+DROP USER IF EXISTS '{{.PRIMARY_DATABASE_KASHO_USER}}'@'%';
+
+-- Create user with replication privileges
+CREATE USER '{{.PRIMARY_DATABASE_KASHO_USER}}'@'%'
+    IDENTIFIED BY '{{.PRIMARY_DATABASE_KASHO_PASSWORD}}';
+
+-- Grant replication privileges
+GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.*
+    TO '{{.PRIMARY_DATABASE_KASHO_USER}}'@'%';
+
+-- Grant SELECT on all tables for reading data
+GRANT SELECT ON *.* TO '{{.PRIMARY_DATABASE_KASHO_USER}}'@'%';
+
+-- Apply privileges
+FLUSH PRIVILEGES;
