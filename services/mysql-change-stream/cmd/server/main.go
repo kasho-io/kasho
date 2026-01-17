@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -99,13 +100,15 @@ func main() {
 	// Start binlog processing goroutine that monitors state changes
 	go func() {
 		var client *server.Client
-		var err error
+		var clientDone <-chan struct{}
+		var changeWg sync.WaitGroup
 
 		for {
 			select {
 			case <-ctx.Done():
 				if client != nil {
 					client.Close(ctx)
+					changeWg.Wait() // Wait for change processor to finish
 				}
 				return
 			case <-time.After(1 * time.Second):
@@ -114,17 +117,24 @@ func main() {
 				// If we're in STREAMING state but don't have a client, create one
 				if currentState == server.StateStreaming && client == nil {
 					log.Println("In STREAMING state, starting binlog client")
+					var err error
 					client, err = server.NewClient(ctx, dbURL, buffer, changeStreamServer)
 					if err != nil {
 						log.Printf("Failed to create binlog client: %v", err)
 						continue
 					}
+					clientDone = client.Done()
 
 					// Start goroutine to process changes from the client
-					go func(c *server.Client) {
+					changeWg.Add(1)
+					go func(c *server.Client, done <-chan struct{}) {
+						defer changeWg.Done()
 						for {
 							select {
 							case <-ctx.Done():
+								return
+							case <-done:
+								// Client was closed, exit this goroutine
 								return
 							case change, ok := <-c.Changes():
 								if !ok {
@@ -141,11 +151,13 @@ func main() {
 								}
 							}
 						}
-					}(client)
+					}(client, clientDone)
 				} else if currentState != server.StateStreaming && client != nil {
 					log.Println("Not in STREAMING state, closing binlog client")
 					client.Close(ctx)
+					changeWg.Wait() // Wait for change processor to finish before clearing client
 					client = nil
+					clientDone = nil
 				}
 			}
 		}

@@ -32,6 +32,8 @@ type Client struct {
 	mu            sync.Mutex
 	currentPos    mysql.Position
 	changeChan    chan types.Change
+	ready         chan struct{} // signals when canal is ready to receive events
+	wg            sync.WaitGroup // tracks the canal goroutine
 }
 
 // EventHandler implements the canal.EventHandler interface
@@ -139,6 +141,7 @@ func NewClient(ctx context.Context, dbURL string, buffer *kvbuffer.KVBuffer, cha
 		changeServer: changeServer,
 		done:         make(chan struct{}),
 		changeChan:   make(chan types.Change, 1000),
+		ready:        make(chan struct{}),
 	}
 
 	if err := client.ConnectWithRetry(ctx); err != nil {
@@ -179,15 +182,15 @@ func (c *Client) Connect(ctx context.Context) error {
 	handler := &EventHandler{client: c}
 	canalInstance.SetEventHandler(handler)
 
+	// Start from the beginning or from saved position
 	c.mu.Lock()
+	startPos := c.currentPos
 	if c.canal != nil {
 		c.canal.Close()
 	}
 	c.canal = canalInstance
 	c.mu.Unlock()
 
-	// Start from the beginning or from saved position
-	startPos := c.currentPos
 	if startPos.Name == "" {
 		// Get current binlog position to start from
 		pos, err := canalInstance.GetMasterPos()
@@ -200,14 +203,31 @@ func (c *Client) Connect(ctx context.Context) error {
 		log.Printf("Resuming from position: %s:%d", startPos.Name, startPos.Pos)
 	}
 
-	// Run canal in a goroutine
+	// Run canal in a goroutine with proper synchronization
+	c.wg.Add(1)
 	go func() {
+		defer c.wg.Done()
+		// Signal that the canal goroutine has started and is ready to process events
+		close(c.ready)
 		if err := canalInstance.RunFrom(startPos); err != nil {
-			log.Printf("Canal error: %v", err)
+			// Only log if not a clean shutdown
+			select {
+			case <-c.done:
+				// Clean shutdown, don't log error
+			default:
+				log.Printf("Canal error: %v", err)
+			}
 		}
 	}()
 
-	log.Printf("MySQL binlog replication started")
+	// Wait for the canal goroutine to signal it's ready
+	select {
+	case <-c.ready:
+		log.Printf("MySQL binlog replication started")
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
 	return nil
 }
 
@@ -238,11 +258,14 @@ func (c *Client) ConnectWithRetry(ctx context.Context) error {
 func (c *Client) Close(ctx context.Context) {
 	close(c.done)
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	if c.canal != nil {
 		c.canal.Close()
 		c.canal = nil
 	}
+	c.mu.Unlock()
+
+	// Wait for canal goroutine to finish
+	c.wg.Wait()
 }
 
 func (c *Client) GetPosition() mysql.Position {
@@ -260,4 +283,9 @@ func (c *Client) SetPosition(pos mysql.Position) {
 // Changes returns the channel of changes
 func (c *Client) Changes() <-chan types.Change {
 	return c.changeChan
+}
+
+// Done returns a channel that is closed when the client is closed
+func (c *Client) Done() <-chan struct{} {
+	return c.done
 }
