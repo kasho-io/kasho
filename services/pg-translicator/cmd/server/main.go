@@ -165,7 +165,7 @@ func main() {
 				lastLsn := determineStartingLSN(db)
 				log.Printf("Starting stream from LSN: %s", lastLsn)
 
-				stream, err := streamClient.Stream(ctx, &proto.StreamRequest{LastLsn: lastLsn})
+				stream, err := streamClient.Stream(ctx, &proto.StreamRequest{LastPosition: lastLsn})
 				if err != nil {
 					log.Printf("Failed to start stream: %v", err)
 					time.Sleep(time.Second)
@@ -222,7 +222,7 @@ func main() {
 						hasInserts = true
 					}
 
-					log.Printf("%s (%s): %s", change.Lsn, change.Type, stmt)
+					log.Printf("%s (%s): %s", change.Position, change.Type, stmt)
 				}
 			}
 		}

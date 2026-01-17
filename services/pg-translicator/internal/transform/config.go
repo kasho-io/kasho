@@ -496,8 +496,8 @@ func (ft TransformType) GetTransformFunction() (any, error) {
 func TransformChange(c *Config, change *proto.Change) (*proto.Change, error) {
 	// Create a new Change object to avoid modifying the original
 	newChange := &proto.Change{
-		Lsn:  change.Lsn,
-		Type: change.Type,
+		Position: change.Position,
+		Type:     change.Type,
 	}
 
 	switch data := change.Data.(type) {

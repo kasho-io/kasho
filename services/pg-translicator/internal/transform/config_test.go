@@ -419,8 +419,8 @@ func TestTransformChange(t *testing.T) {
 		{
 			name: "DML INSERT change",
 			change: &proto.Change{
-				Lsn:  "123",
-				Type: "DML",
+				Position: "123",
+				Type:     "DML",
 				Data: &proto.Change_Dml{
 					Dml: &proto.DMLData{
 						Table:       "public.users",
@@ -439,8 +439,8 @@ func TestTransformChange(t *testing.T) {
 		{
 			name: "DML UPDATE change with old keys",
 			change: &proto.Change{
-				Lsn:  "124",
-				Type: "DML",
+				Position: "124",
+				Type:     "DML",
 				Data: &proto.Change_Dml{
 					Dml: &proto.DMLData{
 						Table:       "public.users",
@@ -463,8 +463,8 @@ func TestTransformChange(t *testing.T) {
 		{
 			name: "DDL change",
 			change: &proto.Change{
-				Lsn:  "125",
-				Type: "DDL",
+				Position: "125",
+				Type:     "DDL",
 				Data: &proto.Change_Ddl{
 					Ddl: &proto.DDLData{
 						Ddl: "CREATE TABLE test (id INT PRIMARY KEY)",
@@ -476,8 +476,8 @@ func TestTransformChange(t *testing.T) {
 		{
 			name: "unknown table (no transform)",
 			change: &proto.Change{
-				Lsn:  "126",
-				Type: "DML",
+				Position: "126",
+				Type:     "DML",
 				Data: &proto.Change_Dml{
 					Dml: &proto.DMLData{
 						Table:       "unknown.table",
@@ -511,8 +511,8 @@ func TestTransformChange(t *testing.T) {
 				}
 
 				// Verify the change structure is preserved
-				if result.Lsn != tt.change.Lsn {
-					t.Errorf("LSN mismatch: got %s, want %s", result.Lsn, tt.change.Lsn)
+				if result.Position != tt.change.Position {
+					t.Errorf("Position mismatch: got %s, want %s", result.Position, tt.change.Position)
 				}
 				if result.Type != tt.change.Type {
 					t.Errorf("Type mismatch: got %v, want %v", result.Type, tt.change.Type)
@@ -1138,8 +1138,8 @@ func TestTransformChangeWithCrossColumnTemplates(t *testing.T) {
 
 	// Create a test change with original data
 	change := &proto.Change{
-		Lsn:  "0/123",
-		Type: "DML",
+		Position: "0/123",
+		Type:     "DML",
 		Data: &proto.Change_Dml{
 			Dml: &proto.DMLData{
 				Table:       "public.users",
