@@ -321,55 +321,117 @@ func TestNewKVBuffer_ConnectionTimeout(t *testing.T) {
 	}
 }
 
-func TestParseLSNToScore(t *testing.T) {
+func TestParsePositionToScore(t *testing.T) {
 	kvBuffer := &KVBuffer{}
 
 	tests := []struct {
 		name     string
-		lsn      string
+		position string
 		expected float64
 		wantErr  bool
 	}{
 		{
 			name:     "valid PostgreSQL LSN",
-			lsn:      "0/100",
+			position: "0/100",
 			expected: 256, // 0x100 = 256
 			wantErr:  false,
 		},
 		{
-			name:     "bootstrap LSN",
-			lsn:      "0/BOOTSTRAP00000001",
+			name:     "bootstrap position",
+			position: "0/BOOTSTRAP00000001",
 			expected: -999999, // -1000000 + 1
 			wantErr:  false,
 		},
 		{
-			name:     "bootstrap LSN with higher sequence",
-			lsn:      "0/BOOTSTRAP00000123",
+			name:     "bootstrap position with higher sequence",
+			position: "0/BOOTSTRAP00000123",
 			expected: -999877, // -1000000 + 123
 			wantErr:  false,
 		},
 		{
-			name:    "invalid LSN format",
-			lsn:     "invalid",
+			name:    "invalid position format",
+			position: "invalid",
 			wantErr: true,
 		},
 		{
-			name:    "malformed bootstrap LSN",
-			lsn:     "0/BOOTSTRAPinvalid",
+			name:    "malformed bootstrap position",
+			position: "0/BOOTSTRAPinvalid",
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			score, err := kvBuffer.parseLSNToScore(tt.lsn)
+			score, err := kvBuffer.parsePositionToScore(tt.position)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("parseLSNToScore() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("parsePositionToScore() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !tt.wantErr && score != tt.expected {
-				t.Errorf("parseLSNToScore() = %v, want %v", score, tt.expected)
+				t.Errorf("parsePositionToScore() = %v, want %v", score, tt.expected)
 			}
 		})
+	}
+}
+
+func TestParsePositionToScore_MySQLBinlog(t *testing.T) {
+	buffer := &KVBuffer{}
+
+	tests := []struct {
+		name     string
+		position string
+		wantErr  bool
+	}{
+		{"mysql binlog basic", "mysql-bin.000001:4", false},
+		{"mysql binlog large file", "mysql-bin.000100:1234567", false},
+		{"mysql binlog zero offset", "mysql-bin.000001:0", false},
+		{"binlog variant", "binlog.000001:100", false},
+		{"invalid no colon", "mysql-bin.000001", true},
+		{"invalid no file number", "mysql-bin:100", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			score, err := buffer.parsePositionToScore(tt.position)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error for position %s", tt.position)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("unexpected error for position %s: %v", tt.position, err)
+				return
+			}
+			if score <= 0 {
+				t.Errorf("expected positive score for position %s, got %f", tt.position, score)
+			}
+		})
+	}
+}
+
+func TestParsePositionToScore_MySQLOrdering(t *testing.T) {
+	buffer := &KVBuffer{}
+
+	// Test that positions are ordered correctly
+	positions := []string{
+		"mysql-bin.000001:4",
+		"mysql-bin.000001:100",
+		"mysql-bin.000001:1000",
+		"mysql-bin.000002:4",
+		"mysql-bin.000002:100",
+	}
+
+	var lastScore float64 = -1
+	for _, pos := range positions {
+		score, err := buffer.parsePositionToScore(pos)
+		if err != nil {
+			t.Errorf("unexpected error for position %s: %v", pos, err)
+			continue
+		}
+		if score <= lastScore {
+			t.Errorf("position %s (score %f) should be > previous score %f", pos, score, lastScore)
+		}
+		lastScore = score
 	}
 }
