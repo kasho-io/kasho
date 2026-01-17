@@ -75,7 +75,7 @@ fi
 echo ""
 echo "2. Starting change accumulation..."
 RESPONSE=$(grpcurl -import-path /app/proto -proto change_stream.proto -plaintext \
-  -d "{\"start_lsn\": \"$START_LSN\"}" \
+  -d "{\"start_position\": \"$START_LSN\"}" \
   "$CHANGE_STREAM_SERVICE_ADDR" change_stream.ChangeStream/StartBootstrap 2>&1)
 
 if [[ $? -ne 0 ]]; then
