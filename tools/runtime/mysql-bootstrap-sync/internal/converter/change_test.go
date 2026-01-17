@@ -170,3 +170,158 @@ func TestChangeConverter_ColumnCountMismatch(t *testing.T) {
 		t.Error("expected error for column count mismatch")
 	}
 }
+
+func TestChangeConverter_ConvertValueTypes_EdgeCases(t *testing.T) {
+	conv := NewChangeConverter()
+
+	tests := []struct {
+		name  string
+		value string
+	}{
+		// Numeric edge cases
+		{"max int64", "9223372036854775807"},
+		{"min int64", "-9223372036854775808"},
+		{"zero", "0"},
+		{"large float", "123456789.123456"},
+		{"scientific notation", "1.23e10"},
+		{"negative float", "-3.14159"},
+
+		// String edge cases
+		{"string with numbers", "abc123"},
+		{"numeric string that should stay string", "007"},
+		{"phone number", "+1-555-1234"},
+		{"uuid", "550e8400-e29b-41d4-a716-446655440000"},
+
+		// Timestamp edge cases
+		{"timestamp with microseconds", "2024-03-20 15:04:05.123456"},
+		{"date only", "2024-03-20"},
+		{"year only", "2024"},
+
+		// Special values
+		{"NULL literal", "NULL"},
+		{"whitespace", "   "},
+		{"newline in value", "line1\nline2"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stmt := parser.DMLStatement{
+				Table:        "test",
+				ColumnNames:  []string{"col"},
+				ColumnValues: [][]string{{tt.value}},
+			}
+
+			changes, err := conv.ConvertStatements([]parser.Statement{stmt})
+			if err != nil {
+				t.Fatalf("ConvertStatements() error = %v", err)
+			}
+
+			if len(changes) != 1 {
+				t.Fatalf("expected 1 change, got %d", len(changes))
+			}
+
+			// Reset converter for next test
+			conv = NewChangeConverter()
+		})
+	}
+}
+
+func TestChangeConverter_EmptyStatements(t *testing.T) {
+	conv := NewChangeConverter()
+
+	changes, err := conv.ConvertStatements([]parser.Statement{})
+	if err != nil {
+		t.Fatalf("ConvertStatements() error = %v", err)
+	}
+
+	if len(changes) != 0 {
+		t.Errorf("expected 0 changes for empty input, got %d", len(changes))
+	}
+}
+
+func TestChangeConverter_DMLWithNoRows(t *testing.T) {
+	conv := NewChangeConverter()
+
+	stmt := parser.DMLStatement{
+		Table:        "users",
+		ColumnNames:  []string{"id", "name"},
+		ColumnValues: [][]string{}, // No rows
+	}
+
+	changes, err := conv.ConvertStatements([]parser.Statement{stmt})
+	if err != nil {
+		t.Fatalf("ConvertStatements() error = %v", err)
+	}
+
+	if len(changes) != 0 {
+		t.Errorf("expected 0 changes for DML with no rows, got %d", len(changes))
+	}
+}
+
+func TestChangeConverter_LargeNumberOfRows(t *testing.T) {
+	conv := NewChangeConverter()
+
+	// Create 1000 rows
+	rows := make([][]string, 1000)
+	for i := 0; i < 1000; i++ {
+		rows[i] = []string{string(rune('0' + i%10))}
+	}
+
+	stmt := parser.DMLStatement{
+		Table:        "test",
+		ColumnNames:  []string{"id"},
+		ColumnValues: rows,
+	}
+
+	changes, err := conv.ConvertStatements([]parser.Statement{stmt})
+	if err != nil {
+		t.Fatalf("ConvertStatements() error = %v", err)
+	}
+
+	if len(changes) != 1000 {
+		t.Errorf("expected 1000 changes, got %d", len(changes))
+	}
+
+	// Verify all positions are sequential
+	for i := 1; i < len(changes); i++ {
+		pos1, _ := ParseBootstrapPosition(changes[i-1].GetLSN())
+		pos2, _ := ParseBootstrapPosition(changes[i].GetLSN())
+		if pos2 != pos1+1 {
+			t.Errorf("positions should be sequential at index %d: %d -> %d", i, pos1, pos2)
+		}
+	}
+}
+
+func TestChangeConverter_SpecialTableNames(t *testing.T) {
+	conv := NewChangeConverter()
+
+	tables := []string{
+		"users",
+		"user_accounts",
+		"UserAccounts",
+		"table with spaces",
+		"table-with-dashes",
+		"日本語テーブル",
+	}
+
+	for _, table := range tables {
+		t.Run(table, func(t *testing.T) {
+			stmt := parser.DMLStatement{
+				Table:        table,
+				ColumnNames:  []string{"id"},
+				ColumnValues: [][]string{{"1"}},
+			}
+
+			changes, err := conv.ConvertStatements([]parser.Statement{stmt})
+			if err != nil {
+				t.Fatalf("ConvertStatements() error = %v for table %q", err, table)
+			}
+
+			if len(changes) != 1 {
+				t.Errorf("expected 1 change, got %d", len(changes))
+			}
+
+			conv = NewChangeConverter()
+		})
+	}
+}

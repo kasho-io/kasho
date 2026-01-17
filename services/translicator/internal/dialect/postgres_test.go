@@ -119,6 +119,86 @@ func TestPostgreSQL_FormatValue(t *testing.T) {
 			value:   &proto.ColumnValue{Value: &proto.ColumnValue_TimestampValue{TimestampValue: "not-a-date"}},
 			wantErr: true,
 		},
+		// Edge cases for strings
+		{
+			name:  "string with newline",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: "line1\nline2"}},
+			want:  "'line1\nline2'",
+		},
+		{
+			name:  "string with tab",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: "col1\tcol2"}},
+			want:  "'col1\tcol2'",
+		},
+		{
+			name:  "string with backslash",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: "path\\to\\file"}},
+			want:  "'path\\to\\file'",
+		},
+		{
+			name:  "unicode string",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: "日本語テスト"}},
+			want:  "'日本語テスト'",
+		},
+		{
+			name:  "emoji string",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: "hello 👋 world"}},
+			want:  "'hello 👋 world'",
+		},
+		{
+			name:  "empty string",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: ""}},
+			want:  "''",
+		},
+		{
+			name:  "string of only quotes",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: "'''"}},
+			want:  "''''''''",
+		},
+		// Edge cases for integers
+		{
+			name:  "max int64",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_IntValue{IntValue: 9223372036854775807}},
+			want:  "9223372036854775807",
+		},
+		{
+			name:  "min int64",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_IntValue{IntValue: -9223372036854775808}},
+			want:  "-9223372036854775808",
+		},
+		{
+			name:  "zero",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_IntValue{IntValue: 0}},
+			want:  "0",
+		},
+		// Edge cases for floats
+		{
+			name:  "very small float",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_FloatValue{FloatValue: 0.000001}},
+			want:  "0.000001",
+		},
+		{
+			name:  "negative float",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_FloatValue{FloatValue: -3.14}},
+			want:  "-3.140000",
+		},
+		{
+			name:  "zero float",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_FloatValue{FloatValue: 0.0}},
+			want:  "0.000000",
+		},
+		// Edge cases for timestamps
+		// Note: timestamps with timezone are preserved as-is (not converted to UTC)
+		{
+			name:  "timestamp with positive timezone",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_TimestampValue{TimestampValue: "2024-03-20T15:04:05+02:00"}},
+			want:  "'2024-03-20 15:04:05'",
+		},
+		{
+			name:  "timestamp with negative timezone",
+			value: &proto.ColumnValue{Value: &proto.ColumnValue_TimestampValue{TimestampValue: "2024-03-20T15:04:05-05:00"}},
+			want:  "'2024-03-20 15:04:05'",
+		},
 	}
 
 	for _, tt := range tests {
