@@ -165,7 +165,7 @@ func RowsEventToChanges(e *canal.RowsEvent, pos mysql.Position) []types.Change {
 }
 
 // QueryEventToChange converts a DDL query event to a Change
-func QueryEventToChange(e *replication.QueryEvent, pos mysql.Position) *types.Change {
+func QueryEventToChange(header *replication.EventHeader, e *replication.QueryEvent, pos mysql.Position) *types.Change {
 	query := string(e.Query)
 
 	// Skip non-DDL queries
@@ -180,9 +180,12 @@ func QueryEventToChange(e *replication.QueryEvent, pos mysql.Position) *types.Ch
 
 	position := FormatBinlogPosition(pos)
 
+	// Use the event header timestamp (Unix timestamp when event occurred on the server)
+	eventTime := time.Unix(int64(header.Timestamp), 0)
+
 	ddl := types.DDLData{
 		ID:       0, // MySQL doesn't have a DDL ID like PostgreSQL
-		Time:     time.Now(),
+		Time:     eventTime,
 		Username: "", // Not available from binlog
 		Database: string(e.Schema),
 		DDL:      query,
