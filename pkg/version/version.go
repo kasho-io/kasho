@@ -7,7 +7,7 @@ import (
 
 var (
 	// Version is the full semver version (set at build time)
-	Version = "0.0.0"
+	Version = "0.5.0"
 
 	// GitCommit is the git commit hash (set at build time)
 	GitCommit = "unknown"

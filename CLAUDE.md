@@ -27,3 +27,26 @@
 ## Documentation
 - As the codebase evolves, review the documentation in apps/docs to ensure that none of it is out of date, and if it is out of date, update it.
 - The audience for the documenation are customers of Kasho. These will typically be SRE / Infra / Platform engineers who are technical, understand Docker, containers, and DevOps.
+
+## Releasing New Versions
+
+When cutting a new release, **always** update versions in these locations:
+
+1. **Go services**: Update `pkg/version/version.go` - change the `Version` variable
+2. **Apps**: Update the top-level `"version"` field in each package.json:
+   - `apps/demo/package.json`
+   - `apps/homepage/package.json`
+   - `apps/docs/package.json`
+
+   **IMPORTANT**: Only edit the `"version"` field at the top of each file. Do NOT use sed/regex replacement that might accidentally change dependency versions.
+
+3. **Git tag**: After committing version updates, tag and push:
+   ```bash
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+
+### Version Numbering (Semantic Versioning)
+- **Breaking changes**: Bump minor version (0.X.0) while pre-1.0
+- **New features**: Bump minor version (0.X.0)
+- **Bug fixes only**: Bump patch version (0.0.X)
