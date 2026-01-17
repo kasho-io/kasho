@@ -12,8 +12,9 @@ import (
 
 	"kasho/pkg/version"
 	"kasho/proto"
-	"pg-translicator/internal/sql"
-	"pg-translicator/internal/transform"
+	"translicator/internal/dialect"
+	"translicator/internal/sql"
+	"translicator/internal/transform"
 
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
@@ -48,7 +49,7 @@ func connectWithRetry[T any](ctx context.Context, connectFn func() (T, error)) (
 }
 
 func main() {
-	log.Printf("pg-translicator version %s (commit: %s, built: %s)",
+	log.Printf("translicator version %s (commit: %s, built: %s)",
 		version.Version, version.GitCommit, version.BuildDate)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -81,9 +82,19 @@ func main() {
 		log.Fatal("REPLICA_DATABASE_URL environment variable is required")
 	}
 
+	// Determine the dialect from the connection string
+	dbDialect, err := dialect.FromConnectionString(dbConnStr)
+	if err != nil {
+		log.Fatalf("Failed to determine database dialect: %v", err)
+	}
+	log.Printf("Using %s dialect", dbDialect.Name())
+
+	// Create SQL generator with the detected dialect
+	sqlGenerator := sql.NewSQLGenerator(dbDialect)
+
 	db, err := connectWithRetry(ctx, func() (*dbsql.DB, error) {
 		log.Printf("Connecting to replica database ...")
-		db, err := dbsql.Open("postgres", dbConnStr)
+		db, err := dbsql.Open(dbDialect.GetDriverName(), dbConnStr)
 		if err != nil {
 			return nil, err
 		}
@@ -99,14 +110,13 @@ func main() {
 	defer db.Close()
 	log.Printf("Successfully connected to replica database")
 
-	// Set session replication role to 'replica' to prevent triggers from firing
-	// This mimics physical replication behavior where triggers exist but don't execute
-	if _, err := db.Exec("SET session_replication_role = 'replica'"); err != nil {
-		log.Fatalf("Failed to set session_replication_role: %v", err)
+	// Set up connection for replication (dialect-specific)
+	if err := dbDialect.SetupConnection(db); err != nil {
+		log.Fatalf("Failed to set up connection: %v", err)
 	}
-	log.Printf("Set session_replication_role to 'replica' - triggers will not fire during replication")
+	log.Printf("Connection setup complete for %s dialect", dbDialect.Name())
 
-	// Start periodic sequence sync
+	// Start periodic sequence/auto-increment sync
 	syncTicker := time.NewTicker(15 * time.Second)
 	defer syncTicker.Stop()
 
@@ -117,7 +127,7 @@ func main() {
 			select {
 			case <-syncTicker.C:
 				if hasInserts {
-					if err := sql.SyncSequences(ctx, db); err != nil {
+					if err := dbDialect.SyncSequences(ctx, db); err != nil {
 						log.Printf("Error during sequence sync: %v", err)
 					}
 					hasInserts = false
@@ -162,7 +172,7 @@ func main() {
 				return
 			default:
 				// Check if replica database has any user tables to determine starting LSN
-				lastLsn := determineStartingLSN(db)
+				lastLsn := determineStartingLSN(db, dbDialect)
 				log.Printf("Starting stream from LSN: %s", lastLsn)
 
 				stream, err := streamClient.Stream(ctx, &proto.StreamRequest{LastPosition: lastLsn})
@@ -207,7 +217,7 @@ func main() {
 						}
 					}
 
-					stmt, err := sql.ToSQL(transformedChange)
+					stmt, err := sqlGenerator.ToSQL(transformedChange)
 					if err != nil {
 						log.Printf("Error generating SQL: %v", err)
 						continue
@@ -230,20 +240,15 @@ func main() {
 
 	// Wait for shutdown
 	<-ctx.Done()
-	log.Println("Shutting down pg-translicator")
+	log.Println("Shutting down translicator")
 }
 
 // determineStartingLSN checks if the replica has any user tables
 // Returns "0/0" if empty (needs bootstrap), or "" if tables exist
-func determineStartingLSN(db *dbsql.DB) string {
-	// Check for user tables (excluding system schemas)
+func determineStartingLSN(db *dbsql.DB, dbDialect dialect.Dialect) string {
+	// Check for user tables (using dialect-specific query)
 	var tableCount int
-	err := db.QueryRow(`
-		SELECT COUNT(*)
-		FROM information_schema.tables
-		WHERE table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
-		AND table_type = 'BASE TABLE'
-	`).Scan(&tableCount)
+	err := db.QueryRow(dbDialect.GetUserTablesQuery()).Scan(&tableCount)
 
 	if err != nil {
 		log.Printf("Error checking replica tables: %v, assuming empty", err)

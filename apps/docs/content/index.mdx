@@ -1,4 +1,4 @@
-import { Cards, Callout } from 'nextra/components'
+import { Cards, Callout } from "nextra/components";
 
 # Welcome to Kasho
 
@@ -9,28 +9,30 @@ Kasho solves the age-old problem of "production-like data" for staging, testing,
 Kasho consists of two main components working together:
 
 - **`pg-change-stream`** - Captures changes from your PostgreSQL database
-- **`pg-translicator`** - Applies changes to target databases with optional transformations
+- **`translicator`** - Applies changes to target databases with optional transformations
 
 Under the hood, **Redis** is used for reliable, ordered message buffering.
 
 ## Key Features
 
 ### 🚀 Live, Hot, Compliant Replicas
+
 Stream database changes with minimal latency using PostgreSQL's logical replication, including both DDL and DML operations. Your replicas stay in sync automatically.
 
-### 🔒 Data Transformation  
+### 🔒 Data Transformation
+
 Transform sensitive data with configurable rules before writing to the replica. Perfect for creating GDPR-compliant development environments from production data.
 
 ### 📦 Simple Deployment
+
 Deploy with Docker using a single image containing all components. Available from Docker Hub at `kashoio/kasho`. Works with Kubernetes, ECS, or any container orchestration platform.
 
 ### ⚡ Bootstrap Support
+
 Get up and running with existing data and zero downtime using the included bootstrap process. Seamlessly migrate petabytes of data without missing a single change.
 
 ## Getting Started
 
-<Callout type="info">
-  Kasho requires PostgreSQL 15+ with logical replication enabled
-</Callout>
+<Callout type="info">Kasho requires PostgreSQL 15+ with logical replication enabled</Callout>
 
 Ready to get started? Check out the [Quick Start Guide](/quick-start) to deploy Kasho with Docker Compose.

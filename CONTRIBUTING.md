@@ -84,7 +84,7 @@ kasho/
 │   └── docs/                # Documentation site (port 3002)
 ├── services/                # Go backend services
 │   ├── pg-change-stream/    # Captures database changes
-│   └── pg-translicator/     # Transforms and applies changes
+│   └── translicator/     # Transforms and applies changes
 ├── tools/                   # CLI utilities
 │   ├── runtime/             # Production tools (pg-bootstrap-sync, env-template)
 │   └── development/         # Dev tools (generate-fake-saas-data)

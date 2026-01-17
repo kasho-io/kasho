@@ -14,6 +14,18 @@ interface Row {
   updated_at: string;
 }
 
+interface DatabaseInfo {
+  type: "postgresql" | "mysql";
+  host: string;
+  port: string;
+  database: string;
+}
+
+interface DatabaseInfoResponse {
+  primary: DatabaseInfo;
+  replica: DatabaseInfo;
+}
+
 export default function Home() {
   const [primaryRows, setPrimaryRows] = useState<Row[] | null>(null);
   const [replicaRows, setReplicaRows] = useState<Row[] | null>(null);
@@ -25,7 +37,24 @@ export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [saveKey, setSaveKey] = useState(0);
   const [instructionsExpanded, setInstructionsExpanded] = useState(false);
+  const [databaseInfo, setDatabaseInfo] = useState<DatabaseInfoResponse | null>(null);
   const firstLoad = useRef(true);
+
+  useEffect(() => {
+    // Fetch database info once on mount
+    async function fetchDatabaseInfo() {
+      try {
+        const res = await fetch("/api/database-info");
+        if (res.ok) {
+          const data = await res.json();
+          setDatabaseInfo(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch database info:", err);
+      }
+    }
+    fetchDatabaseInfo();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -157,7 +186,11 @@ export default function Home() {
           >
             <span className="text-xl font-bold text-primary">
               Primary{" "}
-              <span className="text-sm font-normal opacity-70 font-mono">(primary_db@postgres-primary:5432)</span>
+              <span className="text-sm font-normal opacity-70 font-mono">
+                {databaseInfo
+                  ? `(${databaseInfo.primary.database}@${databaseInfo.primary.host}:${databaseInfo.primary.port})`
+                  : ""}
+              </span>
             </span>
             {primaryEdits.length > 0 && (
               <button className="btn btn-xs btn-success" onClick={handleSave} disabled={saving}>
@@ -214,7 +247,12 @@ export default function Home() {
       <div className="flex-1 bg-base-300">
         <div className="max-w-6xl mx-auto w-full">
           <span className="text-xl font-bold mb-2 text-accent">
-            Replica <span className="text-sm font-normal opacity-70 font-mono">(replica_db@postgres-replica:5432)</span>
+            Replica{" "}
+            <span className="text-sm font-normal opacity-70 font-mono">
+              {databaseInfo
+                ? `(${databaseInfo.replica.database}@${databaseInfo.replica.host}:${databaseInfo.replica.port})`
+                : ""}
+            </span>
           </span>
         </div>
         {replicaError && (

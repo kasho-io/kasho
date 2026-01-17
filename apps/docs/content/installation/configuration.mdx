@@ -6,17 +6,17 @@ Kasho uses environment variables for service configuration and a YAML file for t
 
 ### `pg-change-stream` Configuration
 
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `KV_URL` | Redis connection URL | Yes | `redis://redis:6379` |
-| `PRIMARY_DATABASE_URL` | Source database connection URL | Yes | `postgresql://user:pass@host:5432/db` |
+| Variable               | Description                    | Required | Example                               |
+| ---------------------- | ------------------------------ | -------- | ------------------------------------- |
+| `KV_URL`               | Redis connection URL           | Yes      | `redis://redis:6379`                  |
+| `PRIMARY_DATABASE_URL` | Source database connection URL | Yes      | `postgresql://user:pass@host:5432/db` |
 
-### `pg-translicator` Configuration
+### `translicator` Configuration
 
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `CHANGE_STREAM_SERVICE_ADDR` | `pg-change-stream` service address | Yes | `pg-change-stream:50051` |
-| `REPLICA_DATABASE_URL` | Target database connection URL | Yes | `postgresql://user:pass@host:5432/db` |
+| Variable                     | Description                        | Required | Example                               |
+| ---------------------------- | ---------------------------------- | -------- | ------------------------------------- |
+| `CHANGE_STREAM_SERVICE_ADDR` | `pg-change-stream` service address | Yes      | `pg-change-stream:50051`              |
+| `REPLICA_DATABASE_URL`       | Target database connection URL     | Yes      | `postgresql://user:pass@host:5432/db` |
 
 ### `pg-bootstrap-sync` Configuration
 
@@ -37,7 +37,6 @@ postgresql://[user[:password]@][host][:port][/database][?param=value&...]
   - `require` - SSL required
   - `verify-ca` - SSL with CA verification
   - `verify-full` - SSL with full verification
-  
 - **`connect_timeout`** - Connection timeout in seconds (default: 30)
 
 - **`application_name`** - Identifies your application in pg_stat_activity
@@ -57,11 +56,11 @@ postgresql://kasho:mypassword@db:5432/mydb?connect_timeout=10&application_name=k
 
 ## Transform Configuration
 
-`pg-translicator` requires a `transforms.yml` file that defines how data should be transformed during replication.
+`translicator` requires a `transforms.yml` file that defines how data should be transformed during replication.
 
 ### File Location
 
-The transforms file must be mounted at `/app/config/transforms.yml` in the `pg-translicator` container. How you mount this file depends on your deployment platform:
+The transforms file must be mounted at `/app/config/transforms.yml` in the `translicator` container. How you mount this file depends on your deployment platform:
 
 - **Kubernetes**: ConfigMap or Volume mount
 - **ECS**: Task definition with mounted file from S3 or EFS
@@ -86,7 +85,7 @@ tables:
     email: FakeEmail
     phone: FakePhone
     address: FakeStreetAddress
-  
+
   public.orders:
     customer_email: FakeEmail
     billing_address: FakeStreetAddress
@@ -103,7 +102,7 @@ For production deployments, mount the transforms configuration using your orches
 - **Docker Swarm**: Use configs or secrets
 - **Other platforms**: Follow your platform's configuration mounting practices
 
-The key requirement is that `transforms.yml` must be available at `/app/config/transforms.yml` inside the pg-translicator container.
+The key requirement is that `transforms.yml` must be available at `/app/config/transforms.yml` inside the translicator container.
 
 ## Configuration Best Practices
 
@@ -128,4 +127,3 @@ The key requirement is that `transforms.yml` must be available at `/app/config/t
 - Set up the [Bootstrap Process](/installation/bootstrap) for existing data
 - Configure [Data Transforms](/configuration/transforms)
 - Review the [Quick Start](/quick-start) guide
-

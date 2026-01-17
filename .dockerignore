@@ -39,8 +39,8 @@ Thumbs.db
 # Built binaries (will be rebuilt in container)
 services/pg-change-stream/pg-change-stream
 services/pg-change-stream/server
-services/pg-translicator/pg-translicator
-services/pg-translicator/server
+services/translicator/translicator
+services/translicator/server
 tools/pg-bootstrap-sync/pg-bootstrap-sync
 tools/env-template/env-template
 

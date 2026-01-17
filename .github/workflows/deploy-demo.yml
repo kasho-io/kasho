@@ -98,13 +98,13 @@ jobs:
             # Redis connection for pg-change-stream
             KV_URL=${{ secrets.KV_URL }}
             
-            # Change stream service for pg-translicator
+            # Change stream service for translicator
             CHANGE_STREAM_SERVICE_ADDR=${{ secrets.CHANGE_STREAM_SERVICE_ADDR }}
 
             # Primary database URL for pg-change-stream
             PRIMARY_DATABASE_URL=${{ secrets.PRIMARY_DATABASE_URL }}
             
-            # Replica database URL for pg-translicator
+            # Replica database URL for translicator
             REPLICA_DATABASE_URL=${{ secrets.REPLICA_DATABASE_URL }}
             
             # Database configuration for docker-compose PostgreSQL containers
@@ -136,14 +136,14 @@ jobs:
               echo "✅ pg-change-stream is running"
             fi
             
-            # Check pg-translicator service
-            if ! docker compose ps pg-translicator | grep -q "Up"; then
-              echo "❌ pg-translicator failed to start"
-              echo "📋 pg-translicator logs:"
-              docker compose logs --tail=50 pg-translicator
+            # Check translicator service
+            if ! docker compose ps translicator | grep -q "Up"; then
+              echo "❌ translicator failed to start"
+              echo "📋 translicator logs:"
+              docker compose logs --tail=50 translicator
               exit 1
             else
-              echo "✅ pg-translicator is running"
+              echo "✅ translicator is running"
             fi
             
             # Check database services

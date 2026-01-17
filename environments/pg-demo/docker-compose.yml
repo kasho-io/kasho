@@ -39,9 +39,9 @@ services:
       - postgres-primary
       - redis
 
-  pg-translicator:
+  translicator:
     image: kashoio/kasho:develop
-    command: ["/app/bin/pg-translicator"]
+    command: ["/app/bin/translicator"]
     env_file:
       - .env
     depends_on:

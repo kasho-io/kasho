@@ -1,4 +1,4 @@
-module pg-translicator
+module translicator
 
 go 1.24.3
 

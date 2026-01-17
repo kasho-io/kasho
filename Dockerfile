@@ -21,7 +21,7 @@ RUN --mount=type=cache,target=/go/pkg/mod go work sync
 
 # Build all services and tools with version information
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-change-stream ./services/pg-change-stream/cmd/server
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-translicator ./services/pg-translicator/cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/translicator ./services/translicator/cmd/server
 RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-bootstrap-sync ./tools/runtime/pg-bootstrap-sync
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/env-template ./tools/runtime/env-template
 
@@ -88,7 +88,7 @@ WORKDIR /app
 
 # Copy built binaries from builder stage
 COPY --from=builder /bin/pg-change-stream /app/bin/
-COPY --from=builder /bin/pg-translicator /app/bin/
+COPY --from=builder /bin/translicator /app/bin/
 COPY --from=builder /bin/pg-bootstrap-sync /app/bin/
 COPY --from=builder /bin/env-template /app/bin/
 
@@ -127,6 +127,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 CMD ["/app/scripts/kasho-help.sh"]
 
 # Alternative entry points (examples):
-# docker run kasho /app/bin/pg-translicator
+# docker run kasho /app/bin/translicator
 # docker run kasho /app/bin/pg-bootstrap-sync --help
 # docker run kasho /app/bin/env-template
