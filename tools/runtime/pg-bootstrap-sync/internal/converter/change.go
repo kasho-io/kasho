@@ -68,8 +68,8 @@ func (c *ChangeConverter) convertDDLStatement(stmt parser.DDLStatement) (*types.
 	}
 
 	change := &types.Change{
-		LSN:  lsn,
-		Data: ddlData,
+		Position: lsn,
+		Data:     ddlData,
 	}
 
 	return change, nil
@@ -112,8 +112,8 @@ func (c *ChangeConverter) convertDMLStatement(stmt parser.DMLStatement) ([]*type
 		}
 
 		change := &types.Change{
-			LSN:  lsn,
-			Data: dmlData,
+			Position: lsn,
+			Data:     dmlData,
 		}
 
 		changes = append(changes, change)

@@ -42,7 +42,7 @@ type Statistics struct {
 	DDLCount          int
 	DMLCount          int
 	TablesProcessed   []string
-	LastLSN           string
+	LastPosition      string
 	BytesProcessed    int64
 	ErrorsEncountered int
 }
@@ -124,7 +124,7 @@ func (b *Bootstrapper) Bootstrap(ctx context.Context) error {
 	// Update final statistics
 	b.stats.EndTime = time.Now()
 	if len(changes) > 0 {
-		b.stats.LastLSN = changes[len(changes)-1].LSN
+		b.stats.LastPosition = changes[len(changes)-1].Position
 	}
 	b.stats.TablesProcessed = parseResult.Metadata.TablesFound
 	b.stats.DDLCount = parseResult.Metadata.DDLCount
@@ -161,7 +161,7 @@ func (b *Bootstrapper) storeChanges(ctx context.Context, changes []*types.Change
 			b.stats.ErrorsEncountered++
 			slog.Error("Failed to store change",
 				"change_index", i+1,
-				"lsn", change.LSN,
+				"position", change.Position,
 				"error", err)
 			continue
 		}
@@ -211,7 +211,7 @@ func (b *Bootstrapper) logFinalStatistics(ctx context.Context) {
 		"dml_count", b.stats.DMLCount,
 		"tables_processed_count", len(b.stats.TablesProcessed),
 		"tables_list", b.stats.TablesProcessed,
-		"last_lsn", b.stats.LastLSN,
+		"last_position", b.stats.LastPosition,
 		"errors_encountered", b.stats.ErrorsEncountered,
 	}
 

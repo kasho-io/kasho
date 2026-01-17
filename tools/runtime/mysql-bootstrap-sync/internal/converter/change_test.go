@@ -32,14 +32,14 @@ func TestChangeConverter_ConvertDMLStatement(t *testing.T) {
 	if change1.Type() != "dml" {
 		t.Errorf("change1.Type() = %v, want dml", change1.Type())
 	}
-	if !IsBootstrapPosition(change1.GetLSN()) {
-		t.Errorf("change1.GetLSN() = %v, should be bootstrap position", change1.GetLSN())
+	if !IsBootstrapPosition(change1.GetPosition()) {
+		t.Errorf("change1.GetPosition() = %v, should be bootstrap position", change1.GetPosition())
 	}
 
 	// Check second change has incremented position
 	change2 := changes[1]
-	pos1, _ := ParseBootstrapPosition(change1.GetLSN())
-	pos2, _ := ParseBootstrapPosition(change2.GetLSN())
+	pos1, _ := ParseBootstrapPosition(change1.GetPosition())
+	pos2, _ := ParseBootstrapPosition(change2.GetPosition())
 	if pos2 != pos1+1 {
 		t.Errorf("positions should be sequential: %d, %d", pos1, pos2)
 	}
@@ -67,8 +67,8 @@ func TestChangeConverter_ConvertDDLStatement(t *testing.T) {
 	if change.Type() != "ddl" {
 		t.Errorf("change.Type() = %v, want ddl", change.Type())
 	}
-	if !IsBootstrapPosition(change.GetLSN()) {
-		t.Errorf("change.GetLSN() = %v, should be bootstrap position", change.GetLSN())
+	if !IsBootstrapPosition(change.GetPosition()) {
+		t.Errorf("change.GetPosition() = %v, should be bootstrap position", change.GetPosition())
 	}
 }
 
@@ -146,8 +146,8 @@ func TestChangeConverter_MixedStatements(t *testing.T) {
 
 	// Verify positions are strictly sequential
 	for i := 1; i < len(changes); i++ {
-		pos1, _ := ParseBootstrapPosition(changes[i-1].GetLSN())
-		pos2, _ := ParseBootstrapPosition(changes[i].GetLSN())
+		pos1, _ := ParseBootstrapPosition(changes[i-1].GetPosition())
+		pos2, _ := ParseBootstrapPosition(changes[i].GetPosition())
 		if pos2 != pos1+1 {
 			t.Errorf("positions should be sequential at index %d: %d -> %d", i, pos1, pos2)
 		}
@@ -284,8 +284,8 @@ func TestChangeConverter_LargeNumberOfRows(t *testing.T) {
 
 	// Verify all positions are sequential
 	for i := 1; i < len(changes); i++ {
-		pos1, _ := ParseBootstrapPosition(changes[i-1].GetLSN())
-		pos2, _ := ParseBootstrapPosition(changes[i].GetLSN())
+		pos1, _ := ParseBootstrapPosition(changes[i-1].GetPosition())
+		pos2, _ := ParseBootstrapPosition(changes[i].GetPosition())
 		if pos2 != pos1+1 {
 			t.Errorf("positions should be sequential at index %d: %d -> %d", i, pos1, pos2)
 		}

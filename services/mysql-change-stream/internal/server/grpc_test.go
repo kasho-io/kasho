@@ -18,7 +18,7 @@ func TestConvertToProtoChange_DMLData(t *testing.T) {
 		{
 			name: "DML insert without old keys",
 			change: types.Change{
-				LSN: "mysql-bin.000001:100",
+				Position: "mysql-bin.000001:100",
 				Data: &types.DMLData{
 					Table:       "testdb.users",
 					Kind:        "insert",
@@ -51,7 +51,7 @@ func TestConvertToProtoChange_DMLData(t *testing.T) {
 		{
 			name: "DML update with old keys",
 			change: types.Change{
-				LSN: "mysql-bin.000001:200",
+				Position: "mysql-bin.000001:200",
 				Data: &types.DMLData{
 					Table:       "testdb.users",
 					Kind:        "update",
@@ -94,7 +94,7 @@ func TestConvertToProtoChange_DMLData(t *testing.T) {
 		{
 			name: "DML delete with old keys",
 			change: types.Change{
-				LSN: "mysql-bin.000001:300",
+				Position: "mysql-bin.000001:300",
 				Data: &types.DMLData{
 					Table:        "testdb.users",
 					Kind:         "delete",
@@ -148,7 +148,7 @@ func TestConvertToProtoChange_DDLData(t *testing.T) {
 	testTime := time.Date(2024, 3, 20, 15, 4, 5, 0, time.UTC)
 
 	change := types.Change{
-		LSN: "mysql-bin.000001:400",
+		Position: "mysql-bin.000001:400",
 		Data: &types.DDLData{
 			ID:       0, // MySQL doesn't have DDL IDs
 			Time:     testTime,
@@ -180,7 +180,7 @@ func TestConvertToProtoChange_DDLData(t *testing.T) {
 
 func TestConvertToProtoChange_DifferentColumnTypes(t *testing.T) {
 	change := types.Change{
-		LSN: "mysql-bin.000001:500",
+		Position: "mysql-bin.000001:500",
 		Data: &types.DMLData{
 			Table:       "testdb.test_table",
 			Kind:        "insert",
@@ -219,7 +219,7 @@ func TestConvertToProtoChange_DifferentColumnTypes(t *testing.T) {
 
 func TestConvertToProtoChange_EmptyData(t *testing.T) {
 	change := types.Change{
-		LSN: "mysql-bin.000001:600",
+		Position: "mysql-bin.000001:600",
 		Data: &types.DMLData{
 			Table:        "testdb.empty_table",
 			Kind:         "insert",

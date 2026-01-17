@@ -320,7 +320,7 @@ func TestParseWALData_Insert(t *testing.T) {
 			{ColumnValue: &proto.ColumnValue{Value: &proto.ColumnValue_StringValue{StringValue: "john@example.com"}}},
 		},
 	}
-	changes = append(changes, types.Change{LSN: lsn.String(), Data: dml})
+	changes = append(changes, types.Change{Position: lsn.String(), Data: dml})
 
 	// Verify the result
 	if len(changes) != 1 {
@@ -328,8 +328,8 @@ func TestParseWALData_Insert(t *testing.T) {
 	}
 
 	change := changes[0]
-	if change.LSN != "0/64" {
-		t.Errorf("Expected LSN 0/64, got %s", change.LSN)
+	if change.Position != "0/64" {
+		t.Errorf("Expected LSN 0/64, got %s", change.Position)
 	}
 
 	dmlData, ok := change.Data.(types.DMLData)
@@ -381,7 +381,7 @@ func TestParseWALData_DDL(t *testing.T) {
 		Database: "testdb",
 		DDL:      "CREATE TABLE test (id SERIAL PRIMARY KEY)",
 	}
-	changes = append(changes, types.Change{LSN: lsn.String(), Data: ddl})
+	changes = append(changes, types.Change{Position: lsn.String(), Data: ddl})
 
 	// Verify the result
 	if len(changes) != 1 {
@@ -567,7 +567,7 @@ func TestParseWALData_UpdateMessage(t *testing.T) {
 			},
 		},
 	}
-	changes = append(changes, types.Change{LSN: lsn.String(), Data: dml})
+	changes = append(changes, types.Change{Position: lsn.String(), Data: dml})
 
 	// Verify the result structure
 	if len(changes) != 1 {
@@ -633,7 +633,7 @@ func TestParseWALData_DeleteMessage(t *testing.T) {
 			},
 		},
 	}
-	changes = append(changes, types.Change{LSN: lsn.String(), Data: dml})
+	changes = append(changes, types.Change{Position: lsn.String(), Data: dml})
 
 	// Verify the result structure
 	if len(changes) != 1 {
@@ -689,7 +689,7 @@ func TestParseWALData_DDLInsert_MissingFields(t *testing.T) {
 		DDL: "CREATE TABLE partial_test (id INT)",
 		// Other fields will be zero values
 	}
-	changes = append(changes, types.Change{LSN: lsn.String(), Data: ddl})
+	changes = append(changes, types.Change{Position: lsn.String(), Data: ddl})
 
 	// Verify the result
 	if len(changes) != 1 {

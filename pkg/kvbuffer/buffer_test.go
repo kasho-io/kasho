@@ -12,16 +12,16 @@ import (
 
 // Test types - simulating the types from pg-change-stream
 type TestChange struct {
-	LSN  string      `json:"lsn"`
-	Data TestDMLData `json:"data"`
+	Position string      `json:"position"`
+	Data     TestDMLData `json:"data"`
 }
 
 func (c TestChange) Type() string {
 	return "dml"
 }
 
-func (c TestChange) GetLSN() string {
-	return c.LSN
+func (c TestChange) GetPosition() string {
+	return c.Position
 }
 
 type TestDMLData struct {
@@ -47,9 +47,9 @@ func TestKVBuffer_AddChange(t *testing.T) {
 	kvBuffer := &KVBuffer{client: db}
 
 	ctx := context.Background()
-	lsn := "0/100"
+	position := "0/100"
 	change := TestChange{
-		LSN: lsn,
+		Position: position,
 		Data: TestDMLData{
 			Table:       "users",
 			Kind:        "insert",
@@ -84,7 +84,7 @@ func TestKVBuffer_AddChange(t *testing.T) {
 	}
 }
 
-func TestKVBuffer_AddChange_BootstrapLSN(t *testing.T) {
+func TestKVBuffer_AddChange_BootstrapPosition(t *testing.T) {
 	// Create mock Redis client
 	db, mock := redismock.NewClientMock()
 	defer db.Close()
@@ -92,9 +92,9 @@ func TestKVBuffer_AddChange_BootstrapLSN(t *testing.T) {
 	kvBuffer := &KVBuffer{client: db}
 
 	ctx := context.Background()
-	lsn := "0/BOOTSTRAP00000001"
+	position := "0/BOOTSTRAP00000001"
 	change := TestChange{
-		LSN: lsn,
+		Position: position,
 		Data: TestDMLData{
 			Table: "users",
 			Kind:  "insert",
@@ -104,7 +104,7 @@ func TestKVBuffer_AddChange_BootstrapLSN(t *testing.T) {
 	// Marshal change for expectations
 	data, _ := json.Marshal(change)
 
-	// Set expectations - bootstrap LSNs get negative scores
+	// Set expectations - bootstrap positions get negative scores
 	mock.ExpectZAdd(changesKey, redis.Z{
 		Score:  float64(-999999), // -1000000 + 1
 		Member: data,
@@ -124,16 +124,16 @@ func TestKVBuffer_AddChange_BootstrapLSN(t *testing.T) {
 	}
 }
 
-func TestKVBuffer_AddChange_InvalidLSN(t *testing.T) {
+func TestKVBuffer_AddChange_InvalidPosition(t *testing.T) {
 	db, _ := redismock.NewClientMock()
 	defer db.Close()
 
 	kvBuffer := &KVBuffer{client: db}
 
 	ctx := context.Background()
-	invalidLSN := "invalid"
+	invalidPosition := "invalid"
 	change := TestChange{
-		LSN: invalidLSN,
+		Position: invalidPosition,
 		Data: TestDMLData{
 			Table: "users",
 			Kind:  "insert",
@@ -142,7 +142,7 @@ func TestKVBuffer_AddChange_InvalidLSN(t *testing.T) {
 
 	err := kvBuffer.AddChange(ctx, change)
 	if err == nil {
-		t.Errorf("Expected error for invalid LSN, got nil")
+		t.Errorf("Expected error for invalid position, got nil")
 	}
 }
 
@@ -153,11 +153,11 @@ func TestKVBuffer_GetChangesAfter(t *testing.T) {
 	kvBuffer := &KVBuffer{client: db}
 
 	ctx := context.Background()
-	lsn := "0/100"
+	position := "0/100"
 
 	// Create test changes
 	change1 := TestChange{
-		LSN: "0/200",
+		Position: "0/200",
 		Data: TestDMLData{
 			Table:       "users",
 			Kind:        "insert",
@@ -168,7 +168,7 @@ func TestKVBuffer_GetChangesAfter(t *testing.T) {
 		},
 	}
 	change2 := TestChange{
-		LSN: "0/300",
+		Position: "0/300",
 		Data: TestDMLData{
 			Table:       "users",
 			Kind:        "update",
@@ -184,14 +184,14 @@ func TestKVBuffer_GetChangesAfter(t *testing.T) {
 
 	// Set expectations
 	mock.ExpectZRangeByScore(changesKey, &redis.ZRangeBy{
-		Min:    "(256", // Exclude LSN 0/100
+		Min:    "(256", // Exclude position 0/100
 		Max:    "+inf",
 		Offset: 0,
 		Count:  1000,
 	}).SetVal([]string{string(data1), string(data2)})
 
 	// Test GetChangesAfter - now returns []json.RawMessage
-	rawChanges, err := kvBuffer.GetChangesAfter(ctx, lsn)
+	rawChanges, err := kvBuffer.GetChangesAfter(ctx, position)
 	if err != nil {
 		t.Errorf("GetChangesAfter() error = %v", err)
 	}
@@ -216,7 +216,7 @@ func TestKVBuffer_GetChangesAfter_EmptyResult(t *testing.T) {
 	kvBuffer := &KVBuffer{client: db}
 
 	ctx := context.Background()
-	lsn := "0/100"
+	position := "0/100"
 
 	// Set expectations for empty result
 	mock.ExpectZRangeByScore(changesKey, &redis.ZRangeBy{
@@ -226,7 +226,7 @@ func TestKVBuffer_GetChangesAfter_EmptyResult(t *testing.T) {
 		Count:  1000,
 	}).SetVal([]string{})
 
-	rawChanges, err := kvBuffer.GetChangesAfter(ctx, lsn)
+	rawChanges, err := kvBuffer.GetChangesAfter(ctx, position)
 	if err != nil {
 		t.Errorf("GetChangesAfter() error = %v", err)
 	}

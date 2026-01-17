@@ -76,8 +76,8 @@ func (cv *ColumnValueWrapper) UnmarshalJSON(data []byte) error {
 }
 
 type Change struct {
-	LSN  string
-	Data interface {
+	Position string
+	Data     interface {
 		Type() string
 	}
 }
@@ -86,8 +86,8 @@ func (c Change) Type() string {
 	return c.Data.Type()
 }
 
-func (c Change) GetLSN() string {
-	return c.LSN
+func (c Change) GetPosition() string {
+	return c.Position
 }
 
 func (c Change) MarshalJSON() ([]byte, error) {
@@ -97,27 +97,27 @@ func (c Change) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(struct {
-		Type string          `json:"type"`
-		LSN  string          `json:"lsn"`
-		Data json.RawMessage `json:"data"`
+		Type     string          `json:"type"`
+		Position string          `json:"position"`
+		Data     json.RawMessage `json:"data"`
 	}{
-		Type: c.Type(),
-		LSN:  c.LSN,
-		Data: data,
+		Type:     c.Type(),
+		Position: c.Position,
+		Data:     data,
 	})
 }
 
 func (c *Change) UnmarshalJSON(data []byte) error {
 	var aux struct {
-		Type string          `json:"type"`
-		LSN  string          `json:"lsn"`
-		Data json.RawMessage `json:"data"`
+		Type     string          `json:"type"`
+		Position string          `json:"position"`
+		Data     json.RawMessage `json:"data"`
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
-	c.LSN = aux.LSN
+	c.Position = aux.Position
 
 	switch aux.Type {
 	case "dml":

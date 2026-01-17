@@ -27,8 +27,8 @@ func TestChangeConverter_ConvertDDLStatement(t *testing.T) {
 		t.Errorf("Expected type 'ddl', got %q", change.Type())
 	}
 
-	if change.LSN != "0/BOOTSTRAP0000000000000001" {
-		t.Errorf("Expected LSN '0/BOOTSTRAP0000000000000001', got %q", change.LSN)
+	if change.Position != "0/BOOTSTRAP0000000000000001" {
+		t.Errorf("Expected Position '0/BOOTSTRAP0000000000000001', got %q", change.Position)
 	}
 
 	ddlData, ok := change.Data.(*types.DDLData)
@@ -73,8 +73,8 @@ func TestChangeConverter_ConvertDMLStatement(t *testing.T) {
 		t.Errorf("Expected type 'dml', got %q", change1.Type())
 	}
 
-	if change1.LSN != "0/BOOTSTRAP0000000000000001" {
-		t.Errorf("Expected LSN '0/BOOTSTRAP0000000000000001', got %q", change1.LSN)
+	if change1.Position != "0/BOOTSTRAP0000000000000001" {
+		t.Errorf("Expected Position '0/BOOTSTRAP0000000000000001', got %q", change1.Position)
 	}
 
 	dmlData1, ok := change1.Data.(*types.DMLData)
@@ -98,10 +98,10 @@ func TestChangeConverter_ConvertDMLStatement(t *testing.T) {
 		t.Errorf("Expected 3 column values, got %d", len(dmlData1.ColumnValues))
 	}
 
-	// Verify second change has incremented LSN
+	// Verify second change has incremented position
 	change2 := changes[1]
-	if change2.LSN != "0/BOOTSTRAP0000000000000002" {
-		t.Errorf("Expected LSN '0/BOOTSTRAP0000000000000002', got %q", change2.LSN)
+	if change2.Position != "0/BOOTSTRAP0000000000000002" {
+		t.Errorf("Expected Position '0/BOOTSTRAP0000000000000002', got %q", change2.Position)
 	}
 }
 
@@ -212,16 +212,16 @@ func TestChangeConverter_ConvertStatements(t *testing.T) {
 		}
 	}
 
-	// Verify LSN sequence
-	expectedLSNs := []string{
+	// Verify position sequence
+	expectedPositions := []string{
 		"0/BOOTSTRAP0000000000000001",
 		"0/BOOTSTRAP0000000000000002",
 		"0/BOOTSTRAP0000000000000003",
 	}
 
-	for i, expected := range expectedLSNs {
-		if changes[i].LSN != expected {
-			t.Errorf("Change %d: expected LSN %q, got %q", i, expected, changes[i].LSN)
+	for i, expected := range expectedPositions {
+		if changes[i].Position != expected {
+			t.Errorf("Change %d: expected Position %q, got %q", i, expected, changes[i].Position)
 		}
 	}
 }

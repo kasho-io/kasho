@@ -18,7 +18,7 @@ func TestConvertToProtoChange_DMLData(t *testing.T) {
 		{
 			name: "DML insert without old keys",
 			change: types.Change{
-				LSN: "0/100",
+				Position: "0/100",
 				Data: &types.DMLData{
 					Table:       "public.users",
 					Kind:        "insert",
@@ -51,7 +51,7 @@ func TestConvertToProtoChange_DMLData(t *testing.T) {
 		{
 			name: "DML update with old keys",
 			change: types.Change{
-				LSN: "0/200",
+				Position: "0/200",
 				Data: &types.DMLData{
 					Table:       "public.users",
 					Kind:        "update",
@@ -94,7 +94,7 @@ func TestConvertToProtoChange_DMLData(t *testing.T) {
 		{
 			name: "DML delete with old keys",
 			change: types.Change{
-				LSN: "0/300",
+				Position: "0/300",
 				Data: &types.DMLData{
 					Table:        "public.users",
 					Kind:         "delete",
@@ -148,7 +148,7 @@ func TestConvertToProtoChange_DDLData(t *testing.T) {
 	testTime := time.Date(2024, 3, 20, 15, 4, 5, 0, time.UTC)
 	
 	change := types.Change{
-		LSN: "0/400",
+		Position: "0/400",
 		Data: &types.DDLData{
 			ID:       123,
 			Time:     testTime,
@@ -180,7 +180,7 @@ func TestConvertToProtoChange_DDLData(t *testing.T) {
 
 func TestConvertToProtoChange_DifferentColumnTypes(t *testing.T) {
 	change := types.Change{
-		LSN: "0/500",
+		Position: "0/500",
 		Data: &types.DMLData{
 			Table:       "public.test_table",
 			Kind:        "insert",
@@ -219,7 +219,7 @@ func TestConvertToProtoChange_DifferentColumnTypes(t *testing.T) {
 
 func TestConvertToProtoChange_EmptyData(t *testing.T) {
 	change := types.Change{
-		LSN: "0/600",
+		Position: "0/600",
 		Data: &types.DMLData{
 			Table:        "public.empty_table",
 			Kind:         "insert",

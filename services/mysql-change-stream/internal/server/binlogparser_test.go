@@ -192,8 +192,8 @@ func TestQueryEventToChange_DDL(t *testing.T) {
 				if got.Type() != "ddl" {
 					t.Errorf("QueryEventToChange().Type() = %v, want ddl", got.Type())
 				}
-				if got.GetLSN() != "mysql-bin.000001:1234" {
-					t.Errorf("QueryEventToChange().GetLSN() = %v, want mysql-bin.000001:1234", got.GetLSN())
+				if got.GetPosition() != "mysql-bin.000001:1234" {
+					t.Errorf("QueryEventToChange().GetPosition() = %v, want mysql-bin.000001:1234", got.GetPosition())
 				}
 			}
 		})
@@ -338,7 +338,7 @@ func TestConvertToProtoChange_MySQL_DMLData(t *testing.T) {
 		{
 			name: "DML insert with MySQL position",
 			change: types.Change{
-				LSN: "mysql-bin.000001:1234",
+				Position: "mysql-bin.000001:1234",
 				Data: &types.DMLData{
 					Table:       "testdb.users",
 					Kind:        "insert",
@@ -371,7 +371,7 @@ func TestConvertToProtoChange_MySQL_DMLData(t *testing.T) {
 		{
 			name: "DML delete with old keys",
 			change: types.Change{
-				LSN: "binlog.000005:5678",
+				Position: "binlog.000005:5678",
 				Data: &types.DMLData{
 					Table:        "testdb.users",
 					Kind:         "delete",
