@@ -35,4 +35,4 @@ The workflows are designed to run in this order:
 
 ## Local Development
 
-The development environment (`environments/development/`) continues to use local builds with hot-reload via air. Only the demo and production deployments use the published container images.
+The development environment (`environments/pg-development/`) continues to use local builds with hot-reload via air. Only the demo and production deployments use the published container images.

@@ -28,7 +28,7 @@ PRIMARY_DATABASE_KASHO_PASSWORD=secret
 
 Running:
 ```bash
-go run main.go --dirs "environments/development/primary-init.d"
+go run main.go --dirs "environments/pg-development/primary-init.d"
 ```
 
 Will create `example.sql`:

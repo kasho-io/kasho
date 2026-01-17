@@ -87,7 +87,7 @@ jobs:
             # Pull the develop image
             docker pull kashoio/kasho:develop
             
-            cd environments/demo
+            cd environments/pg-demo
             
             # Create .env file from secrets
             cat > .env << EOL

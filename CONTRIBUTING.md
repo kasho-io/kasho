@@ -90,8 +90,8 @@ kasho/
 │   └── development/         # Dev tools (generate-fake-saas-data)
 ├── pkg/                     # Shared Go packages
 ├── environments/            # Docker Compose configurations
-│   ├── development/         # Local dev environment
-│   └── demo/                # Production-like demo
+│   ├── pg-development/      # Local dev environment
+│   └── pg-demo/             # Production-like demo
 ├── proto/                   # Protocol buffer definitions
 └── sql/                     # Database setup scripts
 ```
@@ -141,7 +141,7 @@ npm run prettier --workspace=apps/demo
 
 Environment variables are managed separately for Docker services and apps:
 
-- **Docker services**: `environments/development/.env` and `environments/demo/.env`
+- **Docker services**: `environments/pg-development/.env` and `environments/pg-demo/.env`
 - **Next.js apps**: Use standard Next.js `.env.local` files within each app directory
 
 See `.env.example` files in each environment directory for available variables.

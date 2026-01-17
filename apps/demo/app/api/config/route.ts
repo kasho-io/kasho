@@ -10,7 +10,7 @@ export async function GET() {
 
     return NextResponse.json({
       content,
-      source: "environments/demo/config/transforms.yml",
+      source: "environments/pg-demo/config/transforms.yml",
     });
   } catch (err) {
     console.error("Config file error:", err);
