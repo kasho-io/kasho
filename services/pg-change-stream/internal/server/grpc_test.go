@@ -31,7 +31,7 @@ func TestConvertToProtoChange_DMLData(t *testing.T) {
 				},
 			},
 			want: &proto.Change{
-				Lsn:  "0/100",
+				Position: "0/100",
 				Type: "dml",
 				Data: &proto.Change_Dml{
 					Dml: &proto.DMLData{
@@ -71,7 +71,7 @@ func TestConvertToProtoChange_DMLData(t *testing.T) {
 				},
 			},
 			want: &proto.Change{
-				Lsn:  "0/200",
+				Position: "0/200",
 				Type: "dml",
 				Data: &proto.Change_Dml{
 					Dml: &proto.DMLData{
@@ -113,7 +113,7 @@ func TestConvertToProtoChange_DMLData(t *testing.T) {
 				},
 			},
 			want: &proto.Change{
-				Lsn:  "0/300",
+				Position: "0/300",
 				Type: "dml",
 				Data: &proto.Change_Dml{
 					Dml: &proto.DMLData{
@@ -159,7 +159,7 @@ func TestConvertToProtoChange_DDLData(t *testing.T) {
 	}
 
 	want := &proto.Change{
-		Lsn:  "0/400",
+		Position: "0/400",
 		Type: "ddl",
 		Data: &proto.Change_Ddl{
 			Ddl: &proto.DDLData{
@@ -194,7 +194,7 @@ func TestConvertToProtoChange_DifferentColumnTypes(t *testing.T) {
 	}
 
 	want := &proto.Change{
-		Lsn:  "0/500",
+		Position: "0/500",
 		Type: "dml",
 		Data: &proto.Change_Dml{
 			Dml: &proto.DMLData{
@@ -229,7 +229,7 @@ func TestConvertToProtoChange_EmptyData(t *testing.T) {
 	}
 
 	want := &proto.Change{
-		Lsn:  "0/600",
+		Position: "0/600",
 		Type: "dml",
 		Data: &proto.Change_Dml{
 			Dml: &proto.DMLData{
