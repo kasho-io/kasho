@@ -56,7 +56,7 @@ func (h *EventHandler) OnRow(e *canal.RowsEvent) error {
 
 func (h *EventHandler) OnDDL(header *replication.EventHeader, nextPos mysql.Position, queryEvent *replication.QueryEvent) error {
 	h.client.SetPosition(nextPos)
-	change := QueryEventToChange(queryEvent, nextPos)
+	change := QueryEventToChange(header, queryEvent, nextPos)
 	if change != nil {
 		select {
 		case h.client.changeChan <- *change:

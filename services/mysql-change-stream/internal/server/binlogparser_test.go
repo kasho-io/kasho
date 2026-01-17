@@ -169,13 +169,16 @@ func TestQueryEventToChange_DDL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			header := &replication.EventHeader{
+				Timestamp: 1710950645, // 2024-03-20 15:04:05 UTC
+			}
 			event := &replication.QueryEvent{
 				Query:  []byte(tt.query),
 				Schema: []byte(tt.schema),
 			}
 			pos := mysql.Position{Name: "mysql-bin.000001", Pos: 1234}
 
-			got := QueryEventToChange(event, pos)
+			got := QueryEventToChange(header, event, pos)
 
 			if tt.wantNil {
 				if got != nil {
@@ -194,6 +197,35 @@ func TestQueryEventToChange_DDL(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestQueryEventToChange_UsesHeaderTimestamp(t *testing.T) {
+	// Unix timestamp for 2024-03-20 15:04:05 UTC
+	expectedTimestamp := uint32(1710950645)
+	header := &replication.EventHeader{
+		Timestamp: expectedTimestamp,
+	}
+	event := &replication.QueryEvent{
+		Query:  []byte("CREATE TABLE test (id INT)"),
+		Schema: []byte("testdb"),
+	}
+	pos := mysql.Position{Name: "mysql-bin.000001", Pos: 1234}
+
+	got := QueryEventToChange(header, event, pos)
+
+	if got == nil {
+		t.Fatal("QueryEventToChange() returned nil")
+	}
+
+	ddl, ok := got.Data.(types.DDLData)
+	if !ok {
+		t.Fatal("Expected DDLData type")
+	}
+
+	expectedTime := time.Unix(int64(expectedTimestamp), 0)
+	if !ddl.Time.Equal(expectedTime) {
+		t.Errorf("DDL time = %v, want %v", ddl.Time, expectedTime)
 	}
 }
 
