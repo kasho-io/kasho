@@ -5,6 +5,7 @@ use (
 	./pkg/types
 	./pkg/version
 	./proto/kasho/proto
+	./services/mysql-change-stream
 	./services/pg-change-stream
 	./services/translicator
 	./tools/development/generate-fake-saas-data
