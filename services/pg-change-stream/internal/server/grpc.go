@@ -125,7 +125,7 @@ func (s *ChangeStreamServer) Stream(req *proto.StreamRequest, stream proto.Chang
 	}
 
 	// Subscribe to new changes
-	pubsub := s.buffer.Subscribe(stream.Context(), "pg:changes")
+	pubsub := s.buffer.Subscribe(stream.Context(), "kasho:changes")
 	defer pubsub.Close()
 
 	// Keep the connection open and wait for new changes

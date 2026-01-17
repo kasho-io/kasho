@@ -70,7 +70,7 @@ func TestKVBuffer_AddChange(t *testing.T) {
 		Member: data,
 	}).SetVal(1)
 	mock.ExpectExpire(changesKey, changesTTL).SetVal(true)
-	mock.ExpectPublish("pg:changes", data).SetVal(1)
+	mock.ExpectPublish(changesChannel, data).SetVal(1)
 
 	// Test AddChange
 	err := kvBuffer.AddChange(ctx, change)
@@ -110,7 +110,7 @@ func TestKVBuffer_AddChange_BootstrapLSN(t *testing.T) {
 		Member: data,
 	}).SetVal(1)
 	mock.ExpectExpire(changesKey, changesTTL).SetVal(true)
-	mock.ExpectPublish("pg:changes", data).SetVal(1)
+	mock.ExpectPublish(changesChannel, data).SetVal(1)
 
 	// Test AddChange
 	err := kvBuffer.AddChange(ctx, change)

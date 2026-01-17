@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	changesKey = "pg:changes"
-	changesTTL = 24 * time.Hour
+	changesKey    = "kasho:changes"
+	changesChannel = "kasho:changes"
+	changesTTL    = 24 * time.Hour
 )
 
 // Change represents a database change event
@@ -74,7 +75,7 @@ func (b *KVBuffer) AddChange(ctx context.Context, change Change) error {
 		return fmt.Errorf("failed to set TTL: %w", err)
 	}
 
-	err = b.client.Publish(ctx, "pg:changes", data).Err()
+	err = b.client.Publish(ctx, changesChannel, data).Err()
 	if err != nil {
 		return fmt.Errorf("failed to publish change: %w", err)
 	}
