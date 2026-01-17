@@ -91,12 +91,12 @@ func (s *ChangeStreamServer) Stream(req *proto.StreamRequest, stream proto.Chang
 	}()
 	
 	// Send buffered changes first in batches
-	if req.LastLsn != "" {
+	if req.LastPosition != "" {
 		const batchSize = 1000
 		offset := int64(0)
-		
+
 		for {
-			rawChanges, err := s.buffer.GetChangesAfterBatch(stream.Context(), req.LastLsn, offset, batchSize)
+			rawChanges, err := s.buffer.GetChangesAfterBatch(stream.Context(), req.LastPosition, offset, batchSize)
 			if err != nil {
 				return fmt.Errorf("failed to get buffered changes: %w", err)
 			}
@@ -150,8 +150,8 @@ func (s *ChangeStreamServer) Stream(req *proto.StreamRequest, stream proto.Chang
 
 func convertToProtoChange(change types.Change) *proto.Change {
 	protoChange := &proto.Change{
-		Lsn:  change.GetLSN(),
-		Type: change.Type(),
+		Position: change.GetLSN(),
+		Type:     change.Type(),
 	}
 
 	switch data := change.Data.(type) {
@@ -206,7 +206,7 @@ func (s *ChangeStreamServer) StartBootstrap(ctx context.Context, req *proto.Star
 	
 	// Transition to ACCUMULATING
 	s.state.Current = StateAccumulating
-	s.state.StartLSN = req.StartLsn
+	s.state.StartLSN = req.StartPosition
 	s.state.TransitionTime = time.Now()
 	s.state.AccumulatedChanges = 0
 	
@@ -279,8 +279,8 @@ func (s *ChangeStreamServer) GetStatus(ctx context.Context, req *proto.GetStatus
 	
 	return &proto.StatusResponse{
 		State:              currentState,
-		StartLsn:           startLSN,
-		CurrentLsn:         currentLSN,
+		StartPosition:      startLSN,
+		CurrentPosition:    currentLSN,
 		AccumulatedChanges: accumulated,
 		ConnectedClients:   clients,
 		UptimeSeconds:      uptime,

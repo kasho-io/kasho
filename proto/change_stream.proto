@@ -15,11 +15,11 @@ service ChangeStream {
 }
 
 message StreamRequest {
-  string last_lsn = 1;
+  string last_position = 1;
 }
 
 message Change {
-  string lsn = 1;
+  string position = 1;
   string type = 2;
   oneof data {
     DMLData dml = 3;
@@ -60,7 +60,7 @@ message DDLData {
 
 // Bootstrap coordination messages
 message StartBootstrapRequest {
-  string start_lsn = 1;
+  string start_position = 1;
   string snapshot_name = 2;
 }
 
@@ -78,8 +78,8 @@ message BootstrapResponse {
 
 message StatusResponse {
   string state = 1;
-  string start_lsn = 2;
-  string current_lsn = 3;
+  string start_position = 2;
+  string current_position = 3;
   int64 accumulated_changes = 4;
   int32 connected_clients = 5;
   int64 uptime_seconds = 6;
