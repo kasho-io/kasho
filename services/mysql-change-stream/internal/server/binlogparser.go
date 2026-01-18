@@ -22,7 +22,7 @@ func FormatBinlogPosition(pos mysql.Position) string {
 
 // ParseBinlogPosition parses our position string format back to mysql.Position
 func ParseBinlogPosition(position string) (mysql.Position, error) {
-	if position == "" || position == "0/0" {
+	if position == "" || position == "bootstrap" {
 		return mysql.Position{}, nil
 	}
 

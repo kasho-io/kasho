@@ -175,11 +175,11 @@ func main() {
 			case <-ctx.Done():
 				return
 			default:
-				// Check if replica database has any user tables to determine starting LSN
-				lastLsn := determineStartingLSN(db, dbDialect)
-				log.Printf("Starting stream from LSN: %s", lastLsn)
+				// Check if replica database has any user tables to determine starting position
+				lastPosition := determineStartingPosition(db, dbDialect)
+				log.Printf("Starting stream from position: %s", lastPosition)
 
-				stream, err := streamClient.Stream(ctx, &proto.StreamRequest{LastPosition: lastLsn})
+				stream, err := streamClient.Stream(ctx, &proto.StreamRequest{LastPosition: lastPosition})
 				if err != nil {
 					log.Printf("Failed to start stream: %v", err)
 					time.Sleep(time.Second)
@@ -247,21 +247,21 @@ func main() {
 	log.Println("Shutting down translicator")
 }
 
-// determineStartingLSN checks if the replica has any user tables
-// Returns "0/0" if empty (needs bootstrap), or "" if tables exist
-func determineStartingLSN(db *dbsql.DB, dbDialect dialect.Dialect) string {
+// determineStartingPosition checks if the replica has any user tables
+// Returns "bootstrap" if empty (needs bootstrap), or "" if tables exist
+func determineStartingPosition(db *dbsql.DB, dbDialect dialect.Dialect) string {
 	// Check for user tables (using dialect-specific query)
 	var tableCount int
 	err := db.QueryRow(dbDialect.GetUserTablesQuery()).Scan(&tableCount)
 
 	if err != nil {
 		log.Printf("Error checking replica tables: %v, assuming empty", err)
-		return "0/0"
+		return "bootstrap"
 	}
 
 	if tableCount == 0 {
 		log.Printf("Replica database is empty, will request all changes from beginning")
-		return "0/0"
+		return "bootstrap"
 	}
 
 	log.Printf("Replica database has %d tables, will only request new changes", tableCount)
