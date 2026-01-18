@@ -16,6 +16,7 @@ import (
 	"translicator/internal/sql"
 	"translicator/internal/transform"
 
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
