@@ -8,18 +8,34 @@ set -e
 parse_db_url() {
     local url="$1"
     local prefix="$2"
-    
+
     if [ -z "$url" ]; then
         return 0
     fi
-    
+
     # Extract components using trurl
+    local scheme=$(trurl --url "$url" --get '{scheme}' 2>/dev/null || echo "")
     local user=$(trurl --url "$url" --get '{user}' 2>/dev/null || echo "")
     local password=$(trurl --url "$url" --get '{password}' 2>/dev/null || echo "")
     local host=$(trurl --url "$url" --get '{host}' 2>/dev/null || echo "")
-    local port=$(trurl --url "$url" --get '{port}' 2>/dev/null || echo "5432")
+    local port=$(trurl --url "$url" --get '{port}' 2>/dev/null || echo "")
     local dbname=$(trurl --url "$url" --get '{path}' 2>/dev/null | sed 's|^/||' || echo "")
     local sslmode=$(trurl --url "$url" --get '{query:sslmode}' 2>/dev/null || echo "")
+
+    # Set default port based on scheme if not specified
+    if [ -z "$port" ]; then
+        case "$scheme" in
+            mysql)
+                port="3306"
+                ;;
+            postgresql|postgres)
+                port="5432"
+                ;;
+            *)
+                port="5432"
+                ;;
+        esac
+    fi
     
     # Export variables with prefix
     echo "export ${prefix}_KASHO_USER='$user'"

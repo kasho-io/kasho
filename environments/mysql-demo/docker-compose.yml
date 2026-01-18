@@ -1,0 +1,113 @@
+services:
+  prepare-mysql-init-d:
+    user: "${UID}:${GID}"
+    image: kashoio/kasho:develop
+    volumes:
+      - ../../sql:/app/sql:ro
+      - ./primary-init.d:/app/primary-init.d
+      - ./replica-init.d:/app/replica-init.d
+      - ../../scripts/development/populate-mysql-init.sh:/app/scripts/populate-mysql-init.sh:ro
+    env_file:
+      - .env
+    environment:
+      - ENV=demo
+    command: ["/app/scripts/populate-mysql-init.sh"]
+
+  redis:
+    image: redis:7-alpine
+    expose:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+
+  mysql-change-stream:
+    image: kashoio/kasho:develop
+    command: ["/app/bin/mysql-change-stream"]
+    expose:
+      - "50051"
+    env_file:
+      - .env
+    volumes:
+      - redis-data:/data/redis
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50051"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      - mysql-primary
+      - redis
+
+  translicator:
+    image: kashoio/kasho:develop
+    command: ["/app/bin/translicator"]
+    env_file:
+      - .env
+    depends_on:
+      mysql-change-stream:
+        condition: service_healthy
+      mysql-replica:
+        condition: service_started
+    volumes:
+      - ./config:/app/config
+
+  mysql-primary:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${PRIMARY_DATABASE_SU_PASSWORD}
+      MYSQL_DATABASE: ${PRIMARY_DATABASE_DB}
+      MYSQL_USER: ${PRIMARY_DATABASE_KASHO_USER}
+      MYSQL_PASSWORD: ${PRIMARY_DATABASE_KASHO_PASSWORD}
+    env_file:
+      - .env
+    ports:
+      - "3306:${PRIMARY_DATABASE_PORT:-3306}"
+    volumes:
+      - mysql-primary-data:/var/lib/mysql
+      - ./primary-init.d:/docker-entrypoint-initdb.d:ro
+    command: >
+      --server-id=1
+      --log-bin=mysql-bin
+      --binlog-format=ROW
+      --binlog-row-image=FULL
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
+      --log_connections=on
+    depends_on:
+      prepare-mysql-init-d:
+        condition: service_completed_successfully
+
+  mysql-replica:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${REPLICA_DATABASE_SU_PASSWORD}
+      MYSQL_DATABASE: ${REPLICA_DATABASE_DB}
+      MYSQL_USER: ${REPLICA_DATABASE_KASHO_USER}
+      MYSQL_PASSWORD: ${REPLICA_DATABASE_KASHO_PASSWORD}
+    env_file:
+      - .env
+    ports:
+      - "3307:${REPLICA_DATABASE_PORT:-3306}"
+    volumes:
+      - mysql-replica-data:/var/lib/mysql
+      - ./replica-init.d:/docker-entrypoint-initdb.d:ro
+    command: >
+      --server-id=2
+      --log-bin=mysql-bin
+      --binlog-format=ROW
+      --binlog-row-image=FULL
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
+      --log_connections=on
+    depends_on:
+      prepare-mysql-init-d:
+        condition: service_completed_successfully
+
+volumes:
+  mysql-primary-data:
+    driver: local
+  mysql-replica-data:
+    driver: local
+  redis-data:
+    driver: local
