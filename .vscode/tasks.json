@@ -2,13 +2,13 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Launch Kasho",
+      "label": "Launch Kasho (PostgreSQL)",
       "dependsOn": [
-        "dev:reset",
+        "dev:pg:reset",
         "dev:app:homepage",
         "dev:app:docs",
         "dev:app:demo",
-        "kasho shell"
+        "kasho shell (PostgreSQL)"
       ],
       "group": {
         "kind": "build",
@@ -16,14 +16,38 @@
       }
     },
     {
-      "label": "dev:reset",
+      "label": "Launch Kasho (MySQL)",
+      "dependsOn": [
+        "dev:mysql:reset",
+        "dev:app:homepage",
+        "dev:app:docs",
+        "dev:app:demo",
+        "kasho shell (MySQL)"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "dev:pg:reset",
       "type": "shell",
-      "command": "task dev:reset",
+      "command": "task dev:pg:reset",
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated",
+        "panel": "dedicated"
       },
-      "isBackground": true,
+      "isBackground": true
+    },
+    {
+      "label": "dev:mysql:reset",
+      "type": "shell",
+      "command": "task dev:mysql:reset",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "isBackground": true
     },
     {
       "label": "dev:app:homepage",
@@ -31,9 +55,9 @@
       "command": "task dev:app:homepage",
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated",
+        "panel": "dedicated"
       },
-      "isBackground": true,
+      "isBackground": true
     },
     {
       "label": "dev:app:docs",
@@ -41,9 +65,9 @@
       "command": "task dev:app:docs",
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated",
+        "panel": "dedicated"
       },
-      "isBackground": true,
+      "isBackground": true
     },
     {
       "label": "dev:app:demo",
@@ -51,21 +75,33 @@
       "command": "task dev:app:demo",
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated",
+        "panel": "dedicated"
       },
-      "isBackground": true,
+      "isBackground": true
     },
     {
-      "label": "kasho shell",
+      "label": "kasho shell (PostgreSQL)",
       "type": "shell",
-      "command": "echo 'You probably want to run \"task dev:bootstrap\" once things are up and running'; zsh",
+      "command": "echo 'You probably want to run \"task dev:pg:bootstrap\" once things are up and running'; zsh",
       "presentation": {
         "reveal": "always",
         "panel": "new",
         "echo": false,
-        "focus": true,
+        "focus": true
       },
-      "isBackground": true,
+      "isBackground": true
     },
+    {
+      "label": "kasho shell (MySQL)",
+      "type": "shell",
+      "command": "echo 'Note: MySQL bootstrap is not yet implemented. See kasho-c4p for progress.'; zsh",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "echo": false,
+        "focus": true
+      },
+      "isBackground": true
+    }
   ]
 }
