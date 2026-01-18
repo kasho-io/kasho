@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
+	"kasho/pkg/dialect"
 	"kasho/pkg/version"
 	"kasho/proto"
-	"translicator/internal/dialect"
 	"translicator/internal/sql"
 	"translicator/internal/transform"
 
