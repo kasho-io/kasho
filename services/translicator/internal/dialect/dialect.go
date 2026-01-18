@@ -31,4 +31,7 @@ type Dialect interface {
 
 	// GetDriverName returns the database/sql driver name
 	GetDriverName() string
+
+	// FormatDSN converts a URL-style connection string to the driver's native DSN format
+	FormatDSN(connStr string) string
 }

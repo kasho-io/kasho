@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 	"time"
 
@@ -135,4 +136,45 @@ func (m *MySQL) GetUserTablesQuery() string {
 
 func (m *MySQL) GetDriverName() string {
 	return "mysql"
+}
+
+func (m *MySQL) FormatDSN(connStr string) string {
+	// Convert URL format (mysql://user:pass@host:port/db) to MySQL DSN format (user:pass@tcp(host:port)/db)
+	if !strings.HasPrefix(connStr, "mysql://") {
+		// Already in DSN format or unknown format, return as-is
+		return connStr
+	}
+
+	u, err := url.Parse(connStr)
+	if err != nil {
+		// Can't parse, return as-is
+		return connStr
+	}
+
+	var dsn strings.Builder
+
+	// Add user:password@
+	if u.User != nil {
+		dsn.WriteString(u.User.String())
+		dsn.WriteString("@")
+	}
+
+	// Add tcp(host:port)
+	host := u.Hostname()
+	port := u.Port()
+	if port == "" {
+		port = "3306"
+	}
+	dsn.WriteString(fmt.Sprintf("tcp(%s:%s)", host, port))
+
+	// Add /database
+	dsn.WriteString(u.Path)
+
+	// Add query parameters if any
+	if u.RawQuery != "" {
+		dsn.WriteString("?")
+		dsn.WriteString(u.RawQuery)
+	}
+
+	return dsn.String()
 }

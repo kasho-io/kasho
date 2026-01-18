@@ -132,3 +132,8 @@ func (p *PostgreSQL) GetUserTablesQuery() string {
 func (p *PostgreSQL) GetDriverName() string {
 	return "postgres"
 }
+
+func (p *PostgreSQL) FormatDSN(connStr string) string {
+	// lib/pq supports URL format natively, no conversion needed
+	return connStr
+}

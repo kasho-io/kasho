@@ -93,9 +93,12 @@ func main() {
 	// Create SQL generator with the detected dialect
 	sqlGenerator := sql.NewSQLGenerator(dbDialect)
 
+	// Convert connection string to driver-specific DSN format
+	dsn := dbDialect.FormatDSN(dbConnStr)
+
 	db, err := connectWithRetry(ctx, func() (*dbsql.DB, error) {
 		log.Printf("Connecting to replica database ...")
-		db, err := dbsql.Open(dbDialect.GetDriverName(), dbConnStr)
+		db, err := dbsql.Open(dbDialect.GetDriverName(), dsn)
 		if err != nil {
 			return nil, err
 		}

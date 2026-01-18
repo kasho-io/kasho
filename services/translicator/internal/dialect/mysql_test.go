@@ -282,3 +282,53 @@ func TestMySQL_QuoteIdentifierDiffersFromPostgres(t *testing.T) {
 		t.Errorf("PostgreSQL QuoteIdentifier = %v, want \"table\"", pgQuoted)
 	}
 }
+
+func TestMySQL_FormatDSN(t *testing.T) {
+	d := NewMySQL()
+
+	tests := []struct {
+		name     string
+		connStr  string
+		expected string
+	}{
+		{
+			name:     "full URL with port",
+			connStr:  "mysql://user:password@localhost:3306/mydb",
+			expected: "user:password@tcp(localhost:3306)/mydb",
+		},
+		{
+			name:     "URL without port uses default",
+			connStr:  "mysql://user:password@localhost/mydb",
+			expected: "user:password@tcp(localhost:3306)/mydb",
+		},
+		{
+			name:     "URL with query parameters",
+			connStr:  "mysql://user:password@localhost:3306/mydb?parseTime=true&charset=utf8mb4",
+			expected: "user:password@tcp(localhost:3306)/mydb?parseTime=true&charset=utf8mb4",
+		},
+		{
+			name:     "URL with special characters in password",
+			connStr:  "mysql://user:p%40ssword@localhost:3306/mydb",
+			expected: "user:p%40ssword@tcp(localhost:3306)/mydb",
+		},
+		{
+			name:     "already in DSN format (no mysql:// prefix)",
+			connStr:  "user:password@tcp(localhost:3306)/mydb",
+			expected: "user:password@tcp(localhost:3306)/mydb",
+		},
+		{
+			name:     "URL with hostname",
+			connStr:  "mysql://root:secret@mysql-replica:3306/saas_demo",
+			expected: "root:secret@tcp(mysql-replica:3306)/saas_demo",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := d.FormatDSN(tt.connStr)
+			if got != tt.expected {
+				t.Errorf("FormatDSN(%q) = %q, want %q", tt.connStr, got, tt.expected)
+			}
+		})
+	}
+}
