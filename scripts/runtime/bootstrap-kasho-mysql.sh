@@ -21,15 +21,15 @@ if ! command -v grpcurl &> /dev/null; then
     exit 1
 fi
 
-# Check if mysql client is available
-if ! command -v mysql &> /dev/null; then
-    echo "ERROR: mysql client is required but not installed"
+# Check if mariadb client is available (use mariadb instead of mysql to avoid deprecation warnings)
+if ! command -v mariadb &> /dev/null; then
+    echo "ERROR: mariadb client is required but not installed"
     exit 1
 fi
 
-# Check if mysqldump is available
-if ! command -v mysqldump &> /dev/null; then
-    echo "ERROR: mysqldump is required but not installed"
+# Check if mariadb-dump is available
+if ! command -v mariadb-dump &> /dev/null; then
+    echo "ERROR: mariadb-dump is required but not installed"
     exit 1
 fi
 
@@ -73,19 +73,19 @@ echo "1. Getting binlog position..."
 # MySQL connection options - skip SSL for development (self-signed certs)
 MYSQL_OPTS="--skip-ssl"
 
-# Test basic connectivity
-if ! mysql $MYSQL_OPTS -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; then
+# Test basic connectivity (using mariadb client to connect to MySQL server)
+if ! mariadb $MYSQL_OPTS -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; then
     echo "ERROR: Cannot connect to MySQL at $MYSQL_HOST:$MYSQL_PORT"
-    mysql $MYSQL_OPTS -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "SELECT 1" 2>&1
+    mariadb $MYSQL_OPTS -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "SELECT 1" 2>&1
     exit 1
 fi
 
-# Get binlog position (redirect stderr to avoid deprecation warnings polluting output)
-BINLOG_OUTPUT=$(mysql $MYSQL_OPTS -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -N -e "SHOW MASTER STATUS" 2>/dev/null)
+# Get binlog position
+BINLOG_OUTPUT=$(mariadb $MYSQL_OPTS -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -N -e "SHOW MASTER STATUS" 2>/dev/null)
 
 if [[ $? -ne 0 ]]; then
     echo "ERROR: Failed to get binlog position"
-    mysql $MYSQL_OPTS -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -N -e "SHOW MASTER STATUS" 2>&1
+    mariadb $MYSQL_OPTS -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -N -e "SHOW MASTER STATUS" 2>&1
     echo ""
     echo "The MySQL user may need additional privileges:"
     echo "  GRANT RELOAD, REPLICATION CLIENT ON *.* TO 'kasho'@'%';"
@@ -126,17 +126,17 @@ echo ""
 echo "3. Dumping database..."
 DUMP_FILE="/tmp/kasho_mysql_bootstrap_$(date +%Y%m%d_%H%M%S).sql"
 
-# mysqldump with options for consistent backup
+# mariadb-dump with options for consistent backup
 # --single-transaction: Use a consistent snapshot for InnoDB tables
 # --routines: Include stored procedures and functions
 # --triggers: Include triggers
 # --no-tablespaces: Don't include tablespace info (not needed for replica)
 # --skip-lock-tables: Don't lock tables (--single-transaction handles consistency)
 # --complete-insert: Include column names in INSERT statements (required for translicator)
-# Note: --set-gtid-purged is MySQL-specific and not supported by MariaDB's mysqldump
+# Note: --set-gtid-purged is MySQL-specific and not supported by mariadb-dump
 
 set +e  # Temporarily disable exit on error
-mysqldump \
+mariadb-dump \
     $MYSQL_OPTS \
     -h "$MYSQL_HOST" \
     -P "$MYSQL_PORT" \
