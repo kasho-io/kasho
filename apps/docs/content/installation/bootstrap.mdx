@@ -49,7 +49,7 @@ The easiest way to bootstrap is using the provided script:
 
 ```bash
 # Check pg-change-stream status
-grpcurl -plaintext pg-change-stream:50051 kasho.ChangeStreamService/GetStatus
+grpcurl -plaintext pg-change-stream:50051 change_stream.ChangeStream/GetStatus
 
 # Should show state: WAITING
 ```
@@ -102,9 +102,9 @@ FROM pg_create_logical_replication_slot('kasho_temp_slot', 'pgoutput', true);
 ```bash
 # Tell pg-change-stream to create permanent slot and start accumulating
 grpcurl -plaintext \
-  -d '{"start_lsn": "<lsn-from-step-1>", "snapshot_name": "<snapshot-from-step-1>"}' \
+  -d '{"start_position": "<lsn-from-step-1>", "snapshot_name": "<snapshot-from-step-1>"}' \
   pg-change-stream:50051 \
-  kasho.ChangeStreamService/StartBootstrap
+  change_stream.ChangeStream/StartBootstrap
 ```
 
 #### Step 3: Take Database Dump
@@ -127,9 +127,9 @@ docker run --rm \
   -v $(pwd):/data \
   --network your-network \
   kashoio/kasho:latest \
-  pg-bootstrap-sync \
+  /app/bin/pg-bootstrap-sync \
     --dump-file=/data/dump.sql \
-    --redis-url=redis://redis:6379
+    --kv-url=redis://redis:6379
 ```
 
 #### Step 5: Clean Up and Transition
@@ -143,7 +143,7 @@ SELECT pg_drop_replication_slot('kasho_temp_slot');
 # Transition to streaming mode
 grpcurl -plaintext \
   pg-change-stream:50051 \
-  kasho.ChangeStreamService/CompleteBootstrap
+  change_stream.ChangeStream/CompleteBootstrap
 ```
 
 </details>
@@ -155,7 +155,7 @@ The easiest way to bootstrap is using the provided script:
 
 ```bash
 # Check mysql-change-stream status
-grpcurl -plaintext mysql-change-stream:50051 kasho.ChangeStreamService/GetStatus
+grpcurl -plaintext mysql-change-stream:50051 change_stream.ChangeStream/GetStatus
 
 # Should show state: WAITING
 ```
@@ -208,7 +208,7 @@ SHOW MASTER STATUS;
 grpcurl -plaintext \
   -d '{"start_position": "mysql-bin.000001:12345"}' \
   mysql-change-stream:50051 \
-  kasho.ChangeStreamService/StartBootstrap
+  change_stream.ChangeStream/StartBootstrap
 ```
 
 #### Step 3: Take Database Dump
@@ -250,7 +250,7 @@ docker run --rm \
 # Transition to streaming mode
 grpcurl -plaintext \
   mysql-change-stream:50051 \
-  kasho.ChangeStreamService/CompleteBootstrap
+  change_stream.ChangeStream/CompleteBootstrap
 ```
 
 </details>
@@ -265,7 +265,7 @@ During bootstrap, monitor the progress:
 <Tabs.Tab>
 ```bash
 # Check current state
-grpcurl -plaintext pg-change-stream:50051 kasho.ChangeStreamService/GetStatus
+grpcurl -plaintext pg-change-stream:50051 change_stream.ChangeStream/GetStatus
 
 # Watch logs
 docker logs -f pg-change-stream
@@ -277,7 +277,7 @@ docker logs -f pg-change-stream
 <Tabs.Tab>
 ```bash
 # Check current state
-grpcurl -plaintext mysql-change-stream:50051 kasho.ChangeStreamService/GetStatus
+grpcurl -plaintext mysql-change-stream:50051 change_stream.ChangeStream/GetStatus
 
 # Watch logs
 docker logs -f mysql-change-stream

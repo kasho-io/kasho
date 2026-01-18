@@ -63,7 +63,7 @@ export REPLICA_DATABASE_SU_USER="postgres"
 export REPLICA_DATABASE_SU_PASSWORD="postgres"
 
 # Run setup script that configures both databases
-docker run --rm kasho:latest /app/scripts/prepare-dbs-pg.sh
+docker run --rm kashoio/kasho:latest /app/scripts/prepare-dbs-pg.sh
 ```
 
 This script will:
@@ -177,51 +177,30 @@ psql "postgresql://kasho:password@target-host:5432/target_db?sslmode=disable" -c
 
 ## Step 5: DDL Replication Setup
 
-In order to replicate schema changes (CREATE TABLE, ALTER TABLE, etc.), you must set up DDL logging:
+In order to replicate schema changes (CREATE TABLE, ALTER TABLE, etc.), you must set up DDL logging. This is automatically handled by the **Option A: Automated Setup** above.
 
-```sql
--- Create DDL log table
-CREATE TABLE IF NOT EXISTS kasho_ddl_log (
-    id BIGSERIAL PRIMARY KEY,
-    lsn pg_lsn NOT NULL,
-    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    username TEXT NOT NULL,
-    database TEXT NOT NULL,
-    ddl TEXT NOT NULL
-);
+<Callout type="info">
+  **Recommended: Use Automated Setup** The DDL logging setup involves event triggers with a two-phase capture mechanism.
+  Running the automated setup script (Option A) is strongly recommended as it handles all the complexity correctly.
+</Callout>
 
--- Create cleanup function
-CREATE OR REPLACE FUNCTION kasho_cleanup_ddl_log() RETURNS void AS $$
-BEGIN
-    DELETE FROM kasho_ddl_log WHERE timestamp < NOW() - INTERVAL '7 days';
-END;
-$$ LANGUAGE plpgsql;
+If you used the manual setup in Option B and need to add DDL logging separately, you can run just the DDL setup portion:
 
--- Create DDL capture function
-CREATE OR REPLACE FUNCTION kasho_log_ddl() RETURNS event_trigger AS $$
-DECLARE
-    current_lsn pg_lsn;
-    ddl_text TEXT;
-BEGIN
-    SELECT pg_current_wal_lsn() INTO current_lsn;
-    SELECT current_query() INTO ddl_text;
+```bash
+# Set environment variables
+export PRIMARY_DATABASE_URL="postgresql://kasho:pass@primary:5432/db"
+export PRIMARY_DATABASE_SU_USER="postgres"
+export PRIMARY_DATABASE_SU_PASSWORD="postgres"
 
-    INSERT INTO kasho_ddl_log (lsn, username, database, ddl)
-    VALUES (current_lsn, current_user, current_database(), ddl_text);
-
-    PERFORM kasho_cleanup_ddl_log();
-END;
-$$ LANGUAGE plpgsql;
-
--- Create event triggers
-CREATE EVENT TRIGGER kasho_log_ddl_start
-ON ddl_command_start
-EXECUTE FUNCTION kasho_log_ddl();
-
-CREATE EVENT TRIGGER kasho_log_ddl_end
-ON ddl_command_end
-EXECUTE FUNCTION kasho_log_ddl();
+# Run DDL setup script
+docker run --rm kashoio/kasho:latest /app/scripts/setup-ddl-logging-pg.sh
 ```
+
+This creates:
+
+- `kasho_ddl_log` table to store DDL statements with their WAL LSN positions
+- Event triggers that capture DDL using PostgreSQL's `set_config`/`current_setting` mechanism
+- Automatic cleanup of entries older than 7 days
 </Tabs.Tab>
 <Tabs.Tab>
 ## MySQL Database Requirements
@@ -292,7 +271,7 @@ export REPLICA_DATABASE_SU_USER="root"
 export REPLICA_DATABASE_SU_PASSWORD="root"
 
 # Run setup script that configures both databases
-docker run --rm kasho:latest /app/scripts/prepare-dbs-mysql.sh
+docker run --rm kashoio/kasho:latest /app/scripts/prepare-dbs-mysql.sh
 ```
 
 This script will:
