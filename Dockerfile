@@ -71,7 +71,7 @@ CMD ["sh", "-c", "redis-server --daemonize no --protected-mode no --logfile /dev
 FROM alpine:latest AS production
 
 # Install runtime dependencies including trurl for URL parsing
-RUN apk add --no-cache ca-certificates tzdata redis postgresql-client mysql-client bash
+RUN apk add --no-cache ca-certificates tzdata redis postgresql-client mysql-client mariadb-connector-c bash
 # Add trurl from edge/community repository
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community trurl
 # Install grpcurl for bootstrap coordination (architecture-aware for multi-platform builds)

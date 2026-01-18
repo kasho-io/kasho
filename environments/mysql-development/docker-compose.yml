@@ -75,7 +75,6 @@ services:
       --binlog-row-image=FULL
       --gtid-mode=ON
       --enforce-gtid-consistency=ON
-      --default-authentication-plugin=mysql_native_password
     depends_on:
       prepare-mysql-init-d:
         condition: service_completed_successfully
@@ -100,7 +99,6 @@ services:
       --binlog-row-image=FULL
       --gtid-mode=ON
       --enforce-gtid-consistency=ON
-      --default-authentication-plugin=mysql_native_password
     depends_on:
       prepare-mysql-init-d:
         condition: service_completed_successfully

@@ -14,7 +14,8 @@ RUN apk add --no-cache \
     curl \
     bash \
     postgresql-client \
-    mysql-client
+    mysql-client \
+    mariadb-connector-c
 
 # Add trurl from edge/community repository
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community trurl
@@ -65,7 +66,8 @@ RUN apk add --no-cache \
     curl \
     bash \
     postgresql-client \
-    mysql-client
+    mysql-client \
+    mariadb-connector-c
 
 # Add trurl from edge/community repository
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community trurl
