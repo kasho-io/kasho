@@ -9,7 +9,7 @@ SELECT
     @@server_id AS server_id;
 
 -- Required settings:
--- binlog_format = ROW
+-- binlog_format = ROW (default in MySQL 8.0+, no need to set explicitly)
 -- log_bin = 1 (enabled)
 -- binlog_row_image = FULL
 -- server_id > 0 (unique per server)
@@ -18,7 +18,7 @@ SELECT
 -- [mysqld]
 -- server-id = 1
 -- log_bin = mysql-bin
--- binlog_format = ROW
 -- binlog_row_image = FULL
 -- gtid_mode = ON
 -- enforce_gtid_consistency = ON
+-- Note: binlog_format defaults to ROW in MySQL 8.0+ and the option is deprecated
