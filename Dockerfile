@@ -20,9 +20,14 @@ COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod go work sync
 
 # Build all services and tools with version information
+# PostgreSQL services
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-change-stream ./services/pg-change-stream/cmd/server
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/translicator ./services/translicator/cmd/server
 RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/pg-bootstrap-sync ./tools/runtime/pg-bootstrap-sync
+# MySQL services
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/mysql-change-stream ./services/mysql-change-stream/cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/mysql-bootstrap-sync ./tools/runtime/mysql-bootstrap-sync
+# Shared services and tools
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/translicator ./services/translicator/cmd/server
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /bin/env-template ./tools/runtime/env-template
 
 # Development stage with hot reload
@@ -46,6 +51,7 @@ RUN mkdir -p /app/bin /app/scripts /data/redis
 # Build essential tools that are needed immediately with version information
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/env-template ./tools/runtime/env-template
 RUN CGO_ENABLED=1 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/pg-bootstrap-sync ./tools/runtime/pg-bootstrap-sync
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o /app/bin/mysql-bootstrap-sync ./tools/runtime/mysql-bootstrap-sync
 
 # Copy only runtime scripts to scripts directory (same as production)
 COPY scripts/runtime/ /app/scripts/
@@ -65,7 +71,7 @@ CMD ["sh", "-c", "redis-server --daemonize no --protected-mode no --logfile /dev
 FROM alpine:latest AS production
 
 # Install runtime dependencies including trurl for URL parsing
-RUN apk add --no-cache ca-certificates tzdata redis postgresql-client bash
+RUN apk add --no-cache ca-certificates tzdata redis postgresql-client mysql-client bash
 # Add trurl from edge/community repository
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community trurl
 # Install grpcurl for bootstrap coordination (architecture-aware for multi-platform builds)
@@ -87,9 +93,14 @@ RUN mkdir -p /app/bin /app/scripts /data/redis /app/config && \
 WORKDIR /app
 
 # Copy built binaries from builder stage
+# PostgreSQL services
 COPY --from=builder /bin/pg-change-stream /app/bin/
-COPY --from=builder /bin/translicator /app/bin/
 COPY --from=builder /bin/pg-bootstrap-sync /app/bin/
+# MySQL services
+COPY --from=builder /bin/mysql-change-stream /app/bin/
+COPY --from=builder /bin/mysql-bootstrap-sync /app/bin/
+# Shared services and tools
+COPY --from=builder /bin/translicator /app/bin/
 COPY --from=builder /bin/env-template /app/bin/
 
 # Copy only runtime scripts to scripts directory
@@ -127,6 +138,9 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 CMD ["/app/scripts/kasho-help.sh"]
 
 # Alternative entry points (examples):
+# docker run kasho /app/bin/pg-change-stream
+# docker run kasho /app/bin/mysql-change-stream
 # docker run kasho /app/bin/translicator
 # docker run kasho /app/bin/pg-bootstrap-sync --help
+# docker run kasho /app/bin/mysql-bootstrap-sync --help
 # docker run kasho /app/bin/env-template
