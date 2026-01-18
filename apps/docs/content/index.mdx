@@ -8,7 +8,7 @@ Kasho solves the age-old problem of "production-like data" for staging, testing,
 
 Kasho consists of two main components working together:
 
-- **`pg-change-stream`** - Captures changes from your PostgreSQL database
+- **Change Stream Service** - Captures changes from your database (`pg-change-stream` for PostgreSQL, `mysql-change-stream` for MySQL)
 - **`translicator`** - Applies changes to target databases with optional transformations
 
 Under the hood, **Redis** is used for reliable, ordered message buffering.
@@ -17,7 +17,7 @@ Under the hood, **Redis** is used for reliable, ordered message buffering.
 
 ### 🚀 Live, Hot, Compliant Replicas
 
-Stream database changes with minimal latency using PostgreSQL's logical replication, including both DDL and DML operations. Your replicas stay in sync automatically.
+Stream database changes with minimal latency using native replication (PostgreSQL logical replication or MySQL binary log), including both DDL and DML operations. Your replicas stay in sync automatically.
 
 ### 🔒 Data Transformation
 
@@ -33,6 +33,6 @@ Get up and running with existing data and zero downtime using the included boots
 
 ## Getting Started
 
-<Callout type="info">Kasho requires PostgreSQL 15+ with logical replication enabled</Callout>
+<Callout type="info">Kasho requires PostgreSQL 15+ with logical replication enabled, or MySQL 8.0+ with binary logging enabled</Callout>
 
 Ready to get started? Check out the [Quick Start Guide](/quick-start) to deploy Kasho with Docker Compose.
