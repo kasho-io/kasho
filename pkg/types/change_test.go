@@ -78,6 +78,13 @@ func TestColumnValueWrapper_MarshalJSON(t *testing.T) {
 			wantJSON: "null",
 		},
 		{
+			name: "unset oneof value (SQL NULL)",
+			cv: ColumnValueWrapper{
+				ColumnValue: &proto.ColumnValue{},
+			},
+			wantJSON: "null",
+		},
+		{
 			name: "string with special characters",
 			cv: ColumnValueWrapper{
 				ColumnValue: &proto.ColumnValue{
