@@ -97,9 +97,9 @@ func (b *KVBuffer) GetChangesAfterBatch(ctx context.Context, position string, of
 		return nil, fmt.Errorf("failed to parse position: %w", err)
 	}
 
-	// Special case: position "0/0" means get all changes including bootstrap
+	// Special case: position "bootstrap" means get all changes including bootstrap
 	minScore := fmt.Sprintf("(%g", score)
-	if position == "0/0" {
+	if position == "bootstrap" {
 		minScore = "-inf"
 	}
 

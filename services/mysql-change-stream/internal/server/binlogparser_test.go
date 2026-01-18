@@ -73,7 +73,7 @@ func TestParseBinlogPosition(t *testing.T) {
 		},
 		{
 			name:     "bootstrap position returns zero",
-			position: "0/0",
+			position: "bootstrap",
 			want:     mysql.Position{},
 			wantErr:  false,
 		},
