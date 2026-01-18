@@ -337,6 +337,12 @@ func TestParsePositionToScore(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "bootstrap keyword",
+			position: "bootstrap",
+			expected: -1e18,
+			wantErr:  false,
+		},
+		{
 			name:     "bootstrap position",
 			position: "0/BOOTSTRAP00000001",
 			expected: -999999, // -1000000 + 1
