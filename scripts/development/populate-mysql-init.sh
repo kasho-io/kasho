@@ -13,8 +13,8 @@ mkdir -p /app/primary-init.d /app/replica-init.d
 cp /app/sql/mysql/reset/reset-schema.sql /app/primary-init.d/00-reset-schema.sql
 cp /app/sql/mysql/demo/fake_projmgmt_saas.sql /app/primary-init.d/10-demo-data.sql
 cp /app/sql/mysql/setup/create-kasho-user-primary.sql.template /app/primary-init.d/20-create-kasho-user.sql.template
-cp /app/sql/mysql/setup/setup-ddl-logging.sql /app/primary-init.d/30-setup-ddl-logging.sql
-cp /app/sql/mysql/setup/setup-replication.sql /app/primary-init.d/40-setup-replication.sql
+# Note: MySQL does not need setup-ddl-logging.sql - DDL is captured via binlog automatically
+cp /app/sql/mysql/setup/setup-replication.sql /app/primary-init.d/30-setup-replication.sql
 
 # Replica database files
 cp /app/sql/mysql/reset/reset-schema.sql /app/replica-init.d/00-reset-schema.sql
