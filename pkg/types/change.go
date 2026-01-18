@@ -39,14 +39,13 @@ func (cv *ColumnValueWrapper) UnmarshalJSON(data []byte) error {
 		cv.ColumnValue = &proto.ColumnValue{}
 	}
 
-	// Try string first
-	var strVal string
-	if err := json.Unmarshal(data, &strVal); err == nil {
-		cv.Value = &proto.ColumnValue_StringValue{StringValue: strVal}
+	// Check for null first - leave Value unset to represent NULL
+	if string(data) == "null" {
+		cv.Value = nil
 		return nil
 	}
 
-	// Try int
+	// Try int (before string to avoid treating "123" as string)
 	var intVal int64
 	if err := json.Unmarshal(data, &intVal); err == nil {
 		cv.Value = &proto.ColumnValue_IntValue{IntValue: intVal}
@@ -67,10 +66,17 @@ func (cv *ColumnValueWrapper) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	// Try timestamp
+	// Try timestamp (Go's time.Time can parse RFC3339 strings)
 	var timeVal time.Time
 	if err := json.Unmarshal(data, &timeVal); err == nil {
 		cv.Value = &proto.ColumnValue_TimestampValue{TimestampValue: timeVal.Format(time.RFC3339)}
+		return nil
+	}
+
+	// Finally try string (this is the fallback)
+	var strVal string
+	if err := json.Unmarshal(data, &strVal); err == nil {
+		cv.Value = &proto.ColumnValue_StringValue{StringValue: strVal}
 		return nil
 	}
 
