@@ -132,6 +132,7 @@ DUMP_FILE="/tmp/kasho_mysql_bootstrap_$(date +%Y%m%d_%H%M%S).sql"
 # --triggers: Include triggers
 # --no-tablespaces: Don't include tablespace info (not needed for replica)
 # --skip-lock-tables: Don't lock tables (--single-transaction handles consistency)
+# --complete-insert: Include column names in INSERT statements (required for translicator)
 # Note: --set-gtid-purged is MySQL-specific and not supported by MariaDB's mysqldump
 
 set +e  # Temporarily disable exit on error
@@ -146,6 +147,7 @@ mysqldump \
     --triggers \
     --no-tablespaces \
     --skip-lock-tables \
+    --complete-insert \
     "$MYSQL_DATABASE" > "$DUMP_FILE" 2>"${DUMP_FILE}.err"
 
 DUMP_EXIT_CODE=$?
