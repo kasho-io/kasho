@@ -2,6 +2,7 @@ package dialect
 
 import (
 	"testing"
+	"time"
 
 	"kasho/proto"
 )
@@ -269,4 +270,131 @@ func containsHelper(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// Tests for native type formatting methods
+
+func TestPostgreSQL_FormatString(t *testing.T) {
+	d := NewPostgreSQL()
+
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"simple string", "hello", "'hello'"},
+		{"with single quote", "it's", "'it''s'"},
+		{"with multiple quotes", "it's a 'test'", "'it''s a ''test'''"},
+		{"empty string", "", "''"},
+		{"with backslash", "path\\to\\file", "'path\\to\\file'"}, // PostgreSQL doesn't escape backslashes
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := d.FormatString(tt.input)
+			if got != tt.want {
+				t.Errorf("FormatString(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPostgreSQL_FormatInt(t *testing.T) {
+	d := NewPostgreSQL()
+
+	tests := []struct {
+		name  string
+		input int64
+		want  string
+	}{
+		{"positive", 42, "42"},
+		{"negative", -100, "-100"},
+		{"zero", 0, "0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := d.FormatInt(tt.input)
+			if got != tt.want {
+				t.Errorf("FormatInt(%d) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPostgreSQL_FormatBool(t *testing.T) {
+	d := NewPostgreSQL()
+
+	if got := d.FormatBool(true); got != "true" {
+		t.Errorf("FormatBool(true) = %v, want true", got)
+	}
+	if got := d.FormatBool(false); got != "false" {
+		t.Errorf("FormatBool(false) = %v, want false", got)
+	}
+}
+
+func TestPostgreSQL_FormatTimestamp(t *testing.T) {
+	d := NewPostgreSQL()
+	ts := time.Date(2024, 3, 20, 15, 4, 5, 0, time.UTC)
+
+	got := d.FormatTimestamp(ts)
+	want := "'2024-03-20T15:04:05Z'"
+	if got != want {
+		t.Errorf("FormatTimestamp() = %v, want %v", got, want)
+	}
+}
+
+func TestPostgreSQL_FormatDate(t *testing.T) {
+	d := NewPostgreSQL()
+	ts := time.Date(2024, 3, 20, 15, 4, 5, 0, time.UTC)
+
+	got := d.FormatDate(ts)
+	want := "'2024-03-20'"
+	if got != want {
+		t.Errorf("FormatDate() = %v, want %v", got, want)
+	}
+}
+
+func TestPostgreSQL_FormatNull(t *testing.T) {
+	d := NewPostgreSQL()
+	if got := d.FormatNull(); got != "NULL" {
+		t.Errorf("FormatNull() = %v, want NULL", got)
+	}
+}
+
+// Tests for DDL type methods
+
+func TestPostgreSQL_TypeUUID(t *testing.T) {
+	d := NewPostgreSQL()
+	if got := d.TypeUUID(); got != "UUID" {
+		t.Errorf("TypeUUID() = %v, want UUID", got)
+	}
+}
+
+func TestPostgreSQL_TypeText(t *testing.T) {
+	d := NewPostgreSQL()
+	if got := d.TypeText(); got != "TEXT" {
+		t.Errorf("TypeText() = %v, want TEXT", got)
+	}
+}
+
+func TestPostgreSQL_TypeTimestamp(t *testing.T) {
+	d := NewPostgreSQL()
+	if got := d.TypeTimestamp(); got != "TIMESTAMP WITH TIME ZONE" {
+		t.Errorf("TypeTimestamp() = %v, want TIMESTAMP WITH TIME ZONE", got)
+	}
+}
+
+func TestPostgreSQL_TypeDecimal(t *testing.T) {
+	d := NewPostgreSQL()
+	if got := d.TypeDecimal(10, 2); got != "DECIMAL(10,2)" {
+		t.Errorf("TypeDecimal(10, 2) = %v, want DECIMAL(10,2)", got)
+	}
+}
+
+func TestPostgreSQL_TypeInteger(t *testing.T) {
+	d := NewPostgreSQL()
+	if got := d.TypeInteger(); got != "INTEGER" {
+		t.Errorf("TypeInteger() = %v, want INTEGER", got)
+	}
 }

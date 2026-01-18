@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"flag"
 	"fmt"
 	"math/rand"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/argon2"
+	"kasho/pkg/dialect"
 )
 
 const (
@@ -100,12 +102,24 @@ type Task struct {
 }
 
 func main() {
+	// Parse command-line flags
+	dialectName := flag.String("dialect", "postgresql", "SQL dialect: postgresql or mysql")
+	flag.Parse()
+
+	// Get dialect
+	d, err := dialect.FromName(*dialectName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Supported dialects: postgresql, mysql\n")
+		os.Exit(1)
+	}
+
 	// Seed the random number generator
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	gofakeit.Seed(time.Now().UnixNano())
 
 	// Write DDL
-	writeDDL(os.Stdout)
+	writeDDL(os.Stdout, d)
 
 	// Generate and write data
 	organizations := generateOrganizations(r)
@@ -117,82 +131,132 @@ func main() {
 	tasks := generateTasks(organizations, projects, users, r)
 
 	// Write DML
-	writeDML(os.Stdout, organizations, users, subscriptions, creditCards, invoices, projects, tasks)
+	writeDML(os.Stdout, d, organizations, users, subscriptions, creditCards, invoices, projects, tasks)
 }
 
-func writeDDL(f *os.File) {
-	ddl := `
-CREATE TABLE organizations (
-    id UUID PRIMARY KEY,
-    name TEXT NOT NULL,
-    billing_address TEXT NOT NULL,
-    owner_id UUID NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
+func writeDDL(f *os.File, d dialect.Dialect) {
+	// Use dialect-specific type names
+	uuid := d.TypeUUID()
+	text := d.TypeText()
+	ts := d.TypeTimestamp()
+	decimal := d.TypeDecimal(10, 2)
+	integer := d.TypeInteger()
 
-CREATE TABLE users (
-    id UUID PRIMARY KEY,
-    organization_id UUID NOT NULL,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    password TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
+	// MySQL-specific prefix
+	if d.Name() == "mysql" {
+		f.WriteString("SET FOREIGN_KEY_CHECKS = 0;\n\n")
+	}
 
-CREATE TABLE subscriptions (
-    id UUID PRIMARY KEY,
-    organization_id UUID NOT NULL,
-    plan_id TEXT NOT NULL,
-    monthly_per_user_price DECIMAL(10,2) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
-
-CREATE TABLE credit_cards (
-    id UUID PRIMARY KEY,
-    organization_id UUID NOT NULL,
-    number TEXT NOT NULL,
-    exp_month INTEGER NOT NULL,
-    exp_year INTEGER NOT NULL,
-    cvv TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
-
-CREATE TABLE invoices (
-    id UUID PRIMARY KEY,
-    organization_id UUID NOT NULL,
-    date DATE NOT NULL,
-    cost DECIMAL(10,2) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
-
-CREATE TABLE projects (
-    id UUID PRIMARY KEY,
-    organization_id UUID NOT NULL,
-    owner_id UUID NOT NULL,
-    name TEXT NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
-
-CREATE TABLE tasks (
-    id UUID PRIMARY KEY,
-    organization_id UUID NOT NULL,
-    project_id UUID NOT NULL,
-    assignee_id UUID NOT NULL,
-    name TEXT NOT NULL,
-    description TEXT,
-    status TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
-`
+	// Build DDL with dialect-specific types
+	ddl := fmt.Sprintf(`CREATE TABLE organizations (
+    id %s PRIMARY KEY,
+    name %s NOT NULL,
+    billing_address %s NOT NULL,
+    owner_id %s NOT NULL,
+    created_at %s NOT NULL,
+    updated_at %s NOT NULL
+)`, uuid, text, text, uuid, ts, ts)
+	if d.Name() == "mysql" {
+		ddl += " ENGINE=InnoDB"
+	}
+	ddl += ";\n\n"
 	f.WriteString(ddl)
+
+	ddl = fmt.Sprintf(`CREATE TABLE users (
+    id %s PRIMARY KEY,
+    organization_id %s NOT NULL,
+    name %s NOT NULL,
+    email %s NOT NULL,
+    password %s NOT NULL,
+    created_at %s NOT NULL,
+    updated_at %s NOT NULL
+)`, uuid, uuid, text, text, text, ts, ts)
+	if d.Name() == "mysql" {
+		ddl += " ENGINE=InnoDB"
+	}
+	ddl += ";\n\n"
+	f.WriteString(ddl)
+
+	ddl = fmt.Sprintf(`CREATE TABLE subscriptions (
+    id %s PRIMARY KEY,
+    organization_id %s NOT NULL,
+    plan_id %s NOT NULL,
+    monthly_per_user_price %s NOT NULL,
+    created_at %s NOT NULL,
+    updated_at %s NOT NULL
+)`, uuid, uuid, text, decimal, ts, ts)
+	if d.Name() == "mysql" {
+		ddl += " ENGINE=InnoDB"
+	}
+	ddl += ";\n\n"
+	f.WriteString(ddl)
+
+	ddl = fmt.Sprintf(`CREATE TABLE credit_cards (
+    id %s PRIMARY KEY,
+    organization_id %s NOT NULL,
+    number %s NOT NULL,
+    exp_month %s NOT NULL,
+    exp_year %s NOT NULL,
+    cvv %s NOT NULL,
+    created_at %s NOT NULL,
+    updated_at %s NOT NULL
+)`, uuid, uuid, text, integer, integer, text, ts, ts)
+	if d.Name() == "mysql" {
+		ddl += " ENGINE=InnoDB"
+	}
+	ddl += ";\n\n"
+	f.WriteString(ddl)
+
+	ddl = fmt.Sprintf(`CREATE TABLE invoices (
+    id %s PRIMARY KEY,
+    organization_id %s NOT NULL,
+    date DATE NOT NULL,
+    cost %s NOT NULL,
+    created_at %s NOT NULL,
+    updated_at %s NOT NULL
+)`, uuid, uuid, decimal, ts, ts)
+	if d.Name() == "mysql" {
+		ddl += " ENGINE=InnoDB"
+	}
+	ddl += ";\n\n"
+	f.WriteString(ddl)
+
+	ddl = fmt.Sprintf(`CREATE TABLE projects (
+    id %s PRIMARY KEY,
+    organization_id %s NOT NULL,
+    owner_id %s NOT NULL,
+    name %s NOT NULL,
+    description %s,
+    created_at %s NOT NULL,
+    updated_at %s NOT NULL
+)`, uuid, uuid, uuid, text, text, ts, ts)
+	if d.Name() == "mysql" {
+		ddl += " ENGINE=InnoDB"
+	}
+	ddl += ";\n\n"
+	f.WriteString(ddl)
+
+	ddl = fmt.Sprintf(`CREATE TABLE tasks (
+    id %s PRIMARY KEY,
+    organization_id %s NOT NULL,
+    project_id %s NOT NULL,
+    assignee_id %s NOT NULL,
+    name %s NOT NULL,
+    description %s,
+    status %s NOT NULL,
+    created_at %s NOT NULL,
+    updated_at %s NOT NULL
+)`, uuid, uuid, uuid, uuid, text, text, text, ts, ts)
+	if d.Name() == "mysql" {
+		ddl += " ENGINE=InnoDB"
+	}
+	ddl += ";\n\n"
+	f.WriteString(ddl)
+
+	// MySQL-specific suffix
+	if d.Name() == "mysql" {
+		f.WriteString("SET FOREIGN_KEY_CHECKS = 1;\n")
+	}
 }
 
 func generateOrganizations(r *rand.Rand) []Organization {
@@ -397,54 +461,54 @@ func generateTasks(orgs []Organization, projects []Project, users []User, r *ran
 	return tasks
 }
 
-func writeDML(f *os.File, orgs []Organization, users []User, subs []Subscription, cards []CreditCard, invoices []Invoice, projects []Project, tasks []Task) {
+func writeDML(f *os.File, d dialect.Dialect, orgs []Organization, users []User, subs []Subscription, cards []CreditCard, invoices []Invoice, projects []Project, tasks []Task) {
 	// Write organizations
 	f.WriteString("\n-- Organizations\n")
 	for _, org := range orgs {
-		f.WriteString(fmt.Sprintf("INSERT INTO organizations (id, name, billing_address, owner_id, created_at, updated_at) VALUES ('%s', '%s', '%s', '%s', '%s', '%s');\n",
-			org.ID, escapeString(org.Name), escapeString(org.BillingAddress), org.OwnerID, org.CreatedAt.Format(time.RFC3339), org.UpdatedAt.Format(time.RFC3339)))
+		f.WriteString(fmt.Sprintf("INSERT INTO organizations (id, name, billing_address, owner_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s);\n",
+			d.FormatString(org.ID), d.FormatString(org.Name), d.FormatString(org.BillingAddress), d.FormatString(org.OwnerID), d.FormatTimestamp(org.CreatedAt), d.FormatTimestamp(org.UpdatedAt)))
 	}
 
 	// Write users
 	f.WriteString("\n-- Users\n")
 	for _, user := range users {
-		f.WriteString(fmt.Sprintf("INSERT INTO users (id, organization_id, name, email, password, created_at, updated_at) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s');\n",
-			user.ID, user.OrganizationID, escapeString(user.Name), escapeString(user.Email), user.Password, user.CreatedAt.Format(time.RFC3339), user.UpdatedAt.Format(time.RFC3339)))
+		f.WriteString(fmt.Sprintf("INSERT INTO users (id, organization_id, name, email, password, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s);\n",
+			d.FormatString(user.ID), d.FormatString(user.OrganizationID), d.FormatString(user.Name), d.FormatString(user.Email), d.FormatString(user.Password), d.FormatTimestamp(user.CreatedAt), d.FormatTimestamp(user.UpdatedAt)))
 	}
 
 	// Write subscriptions
 	f.WriteString("\n-- Subscriptions\n")
 	for _, sub := range subs {
-		f.WriteString(fmt.Sprintf("INSERT INTO subscriptions (id, organization_id, plan_id, monthly_per_user_price, created_at, updated_at) VALUES ('%s', '%s', '%s', %.2f, '%s', '%s');\n",
-			sub.ID, sub.OrganizationID, sub.PlanID, sub.MonthlyPerUserPrice, sub.CreatedAt.Format(time.RFC3339), sub.UpdatedAt.Format(time.RFC3339)))
+		f.WriteString(fmt.Sprintf("INSERT INTO subscriptions (id, organization_id, plan_id, monthly_per_user_price, created_at, updated_at) VALUES (%s, %s, %s, %.2f, %s, %s);\n",
+			d.FormatString(sub.ID), d.FormatString(sub.OrganizationID), d.FormatString(sub.PlanID), sub.MonthlyPerUserPrice, d.FormatTimestamp(sub.CreatedAt), d.FormatTimestamp(sub.UpdatedAt)))
 	}
 
 	// Write credit cards
 	f.WriteString("\n-- Credit Cards\n")
 	for _, card := range cards {
-		f.WriteString(fmt.Sprintf("INSERT INTO credit_cards (id, organization_id, number, exp_month, exp_year, cvv, created_at, updated_at) VALUES ('%s', '%s', '%s', %d, %d, '%s', '%s', '%s');\n",
-			card.ID, card.OrganizationID, card.Number, card.ExpMonth, card.ExpYear, card.CVV, card.CreatedAt.Format(time.RFC3339), card.UpdatedAt.Format(time.RFC3339)))
+		f.WriteString(fmt.Sprintf("INSERT INTO credit_cards (id, organization_id, number, exp_month, exp_year, cvv, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);\n",
+			d.FormatString(card.ID), d.FormatString(card.OrganizationID), d.FormatString(card.Number), d.FormatInt(int64(card.ExpMonth)), d.FormatInt(int64(card.ExpYear)), d.FormatString(card.CVV), d.FormatTimestamp(card.CreatedAt), d.FormatTimestamp(card.UpdatedAt)))
 	}
 
 	// Write invoices
 	f.WriteString("\n-- Invoices\n")
 	for _, invoice := range invoices {
-		f.WriteString(fmt.Sprintf("INSERT INTO invoices (id, organization_id, date, cost, created_at, updated_at) VALUES ('%s', '%s', '%s', %.2f, '%s', '%s');\n",
-			invoice.ID, invoice.OrganizationID, invoice.Date.Format("2006-01-02"), invoice.Cost, invoice.CreatedAt.Format(time.RFC3339), invoice.UpdatedAt.Format(time.RFC3339)))
+		f.WriteString(fmt.Sprintf("INSERT INTO invoices (id, organization_id, date, cost, created_at, updated_at) VALUES (%s, %s, %s, %.2f, %s, %s);\n",
+			d.FormatString(invoice.ID), d.FormatString(invoice.OrganizationID), d.FormatDate(invoice.Date), invoice.Cost, d.FormatTimestamp(invoice.CreatedAt), d.FormatTimestamp(invoice.UpdatedAt)))
 	}
 
 	// Write projects
 	f.WriteString("\n-- Projects\n")
 	for _, project := range projects {
-		f.WriteString(fmt.Sprintf("INSERT INTO projects (id, organization_id, owner_id, name, description, created_at, updated_at) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s');\n",
-			project.ID, project.OrganizationID, project.OwnerID, escapeString(project.Name), escapeString(project.Description), project.CreatedAt.Format(time.RFC3339), project.UpdatedAt.Format(time.RFC3339)))
+		f.WriteString(fmt.Sprintf("INSERT INTO projects (id, organization_id, owner_id, name, description, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s);\n",
+			d.FormatString(project.ID), d.FormatString(project.OrganizationID), d.FormatString(project.OwnerID), d.FormatString(project.Name), d.FormatString(project.Description), d.FormatTimestamp(project.CreatedAt), d.FormatTimestamp(project.UpdatedAt)))
 	}
 
 	// Write tasks
 	f.WriteString("\n-- Tasks\n")
 	for _, task := range tasks {
-		f.WriteString(fmt.Sprintf("INSERT INTO tasks (id, organization_id, project_id, assignee_id, name, description, status, created_at, updated_at) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');\n",
-			task.ID, task.OrganizationID, task.ProjectID, task.AssigneeID, escapeString(task.Name), escapeString(task.Description), task.Status, task.CreatedAt.Format(time.RFC3339), task.UpdatedAt.Format(time.RFC3339)))
+		f.WriteString(fmt.Sprintf("INSERT INTO tasks (id, organization_id, project_id, assignee_id, name, description, status, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);\n",
+			d.FormatString(task.ID), d.FormatString(task.OrganizationID), d.FormatString(task.ProjectID), d.FormatString(task.AssigneeID), d.FormatString(task.Name), d.FormatString(task.Description), d.FormatString(task.Status), d.FormatTimestamp(task.CreatedAt), d.FormatTimestamp(task.UpdatedAt)))
 	}
 }
 
@@ -512,7 +576,7 @@ func generateDeterministicSalt(original string, length int) []byte {
 	h := sha256.New()
 	h.Write([]byte(original))
 	fullHash := h.Sum(nil)
-	
+
 	// If we need more bytes than SHA256 provides, cycle through the hash
 	salt := make([]byte, length)
 	for i := 0; i < length; i++ {
@@ -530,14 +594,10 @@ func generatePasswordArgon2id(cleartext string, useSalt bool, time, memory uint3
 	} else {
 		salt = make([]byte, 16) // Empty salt
 	}
-	
+
 	// Generate hash
 	hash := argon2.IDKey([]byte(cleartext), salt, time, memory, threads, 32) // 32 bytes output
-	
+
 	// Format: salt$hash (both hex encoded)
 	return fmt.Sprintf("%x$%x", salt, hash)
-}
-
-func escapeString(s string) string {
-	return strings.ReplaceAll(s, "'", "''")
 }

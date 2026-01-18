@@ -26,29 +26,22 @@ func (m *MySQL) Name() string {
 
 func (m *MySQL) FormatValue(v *proto.ColumnValue) (string, error) {
 	if v == nil || v.Value == nil {
-		return "NULL", nil
+		return m.FormatNull(), nil
 	}
 
 	switch val := v.Value.(type) {
 	case *proto.ColumnValue_StringValue:
-		// MySQL requires escaping backslashes as well as single quotes
-		escaped := strings.ReplaceAll(val.StringValue, "'", "''")
-		escaped = strings.ReplaceAll(escaped, "\\", "\\\\")
-		return fmt.Sprintf("'%s'", escaped), nil
+		return m.FormatString(val.StringValue), nil
 	case *proto.ColumnValue_IntValue:
-		return fmt.Sprintf("%d", val.IntValue), nil
+		return m.FormatInt(val.IntValue), nil
 	case *proto.ColumnValue_FloatValue:
-		return fmt.Sprintf("%f", val.FloatValue), nil
+		return m.FormatFloat(val.FloatValue), nil
 	case *proto.ColumnValue_BoolValue:
-		// MySQL uses 1/0 for boolean values
-		if val.BoolValue {
-			return "1", nil
-		}
-		return "0", nil
+		return m.FormatBool(val.BoolValue), nil
 	case *proto.ColumnValue_TimestampValue:
 		// Try to parse as date first (YYYY-MM-DD)
 		if t, err := time.Parse("2006-01-02", val.TimestampValue); err == nil {
-			return fmt.Sprintf("'%s'", t.Format("2006-01-02")), nil
+			return m.FormatDate(t), nil
 		}
 		// Try to parse as timestamp
 		if t, err := time.Parse(time.RFC3339, val.TimestampValue); err == nil {
@@ -177,4 +170,63 @@ func (m *MySQL) FormatDSN(connStr string) string {
 	}
 
 	return dsn.String()
+}
+
+// Native type formatting methods
+
+func (m *MySQL) FormatString(s string) string {
+	// MySQL requires escaping backslashes as well as single quotes
+	escaped := strings.ReplaceAll(s, "'", "''")
+	escaped = strings.ReplaceAll(escaped, "\\", "\\\\")
+	return fmt.Sprintf("'%s'", escaped)
+}
+
+func (m *MySQL) FormatInt(i int64) string {
+	return fmt.Sprintf("%d", i)
+}
+
+func (m *MySQL) FormatFloat(f float64) string {
+	return fmt.Sprintf("%f", f)
+}
+
+func (m *MySQL) FormatBool(b bool) string {
+	// MySQL uses 1/0 for boolean values
+	if b {
+		return "1"
+	}
+	return "0"
+}
+
+func (m *MySQL) FormatTimestamp(t time.Time) string {
+	return fmt.Sprintf("'%s'", t.Format("2006-01-02 15:04:05"))
+}
+
+func (m *MySQL) FormatDate(t time.Time) string {
+	return fmt.Sprintf("'%s'", t.Format("2006-01-02"))
+}
+
+func (m *MySQL) FormatNull() string {
+	return "NULL"
+}
+
+// DDL type methods
+
+func (m *MySQL) TypeUUID() string {
+	return "CHAR(36)"
+}
+
+func (m *MySQL) TypeText() string {
+	return "TEXT"
+}
+
+func (m *MySQL) TypeTimestamp() string {
+	return "DATETIME(6)"
+}
+
+func (m *MySQL) TypeDecimal(precision, scale int) string {
+	return fmt.Sprintf("DECIMAL(%d,%d)", precision, scale)
+}
+
+func (m *MySQL) TypeInteger() string {
+	return "INT"
 }
