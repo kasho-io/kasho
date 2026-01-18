@@ -48,6 +48,13 @@ func (s *ChangeStreamServer) GetState() State {
 	return s.state.Current
 }
 
+// GetStartPosition returns the saved start position from bootstrap
+func (s *ChangeStreamServer) GetStartPosition() string {
+	s.stateMu.RLock()
+	defer s.stateMu.RUnlock()
+	return s.state.StartPosition
+}
+
 // IncrementAccumulated increments the accumulated change count
 func (s *ChangeStreamServer) IncrementAccumulated() {
 	s.stateMu.Lock()

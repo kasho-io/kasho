@@ -117,8 +117,12 @@ func main() {
 				// If we're in STREAMING state but don't have a client, create one
 				if currentState == server.StateStreaming && client == nil {
 					log.Println("In STREAMING state, starting binlog client")
+
+					// Get saved start position from bootstrap state
+					startPos := changeStreamServer.GetStartPosition()
+
 					var err error
-					client, err = server.NewClient(ctx, dbURL, buffer, changeStreamServer)
+					client, err = server.NewClient(ctx, dbURL, buffer, changeStreamServer, startPos)
 					if err != nil {
 						log.Printf("Failed to create binlog client: %v", err)
 						continue
