@@ -538,8 +538,8 @@ func TestRowsEventToChanges_Insert(t *testing.T) {
 	if dml1.Kind != "insert" {
 		t.Errorf("expected kind 'insert', got %s", dml1.Kind)
 	}
-	if dml1.Table != "testdb.users" {
-		t.Errorf("expected table 'testdb.users', got %s", dml1.Table)
+	if dml1.Table != "users" {
+		t.Errorf("expected table 'users', got %s", dml1.Table)
 	}
 	if len(dml1.ColumnNames) != 3 {
 		t.Errorf("expected 3 column names, got %d", len(dml1.ColumnNames))
