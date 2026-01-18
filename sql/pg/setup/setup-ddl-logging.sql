@@ -1,3 +1,20 @@
+-- Setup DDL logging for Kasho (PostgreSQL version)
+--
+-- WHY THIS IS NEEDED FOR POSTGRESQL:
+-- PostgreSQL's logical replication does not capture DDL (Data Definition Language)
+-- statements like CREATE TABLE, ALTER TABLE, etc. Only DML (INSERT, UPDATE, DELETE)
+-- is captured in the WAL stream. To replicate schema changes, we need to explicitly
+-- capture DDL statements using PostgreSQL's event trigger system.
+--
+-- This script creates:
+-- 1. kasho_ddl_log table - stores DDL statements with their WAL LSN position
+-- 2. Event triggers - capture DDL on ddl_command_start and log on ddl_command_end
+-- 3. Cleanup mechanism - removes entries older than 7 days
+--
+-- NOTE: MySQL does NOT need this file. MySQL's binary log automatically captures
+-- both DDL and DML statements, so no explicit DDL logging mechanism is required.
+-- The mysql-change-stream service reads DDL directly from the binlog.
+
 DO $do_block$
 BEGIN
   -- Drop and recreate kasho_ddl_log table
