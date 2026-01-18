@@ -27,6 +27,8 @@ func (cv ColumnValueWrapper) MarshalJSON() ([]byte, error) {
 		return json.Marshal(v.BoolValue)
 	case *proto.ColumnValue_TimestampValue:
 		return json.Marshal(v.TimestampValue)
+	case nil:
+		return json.Marshal(nil)
 	default:
 		return nil, fmt.Errorf("unknown column value type: %T", v)
 	}
