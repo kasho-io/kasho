@@ -56,11 +56,11 @@ Run the bootstrap script inside the pg-change-stream container:
 
 ```bash
 # Interactive mode - prompts before transitioning to streaming
-docker exec -it <pg-change-stream-container> ./bootstrap-kasho.sh
+docker exec -it <pg-change-stream-container> ./bootstrap-kasho-pg.sh
 
 # Automatic mode - transitions without prompting
 docker exec -it <pg-change-stream-container> \
-  env WAIT_FOR_BOOTSTRAP=true ./bootstrap-kasho.sh
+  env WAIT_FOR_BOOTSTRAP=true ./bootstrap-kasho-pg.sh
 ```
 
 <Callout type="info">

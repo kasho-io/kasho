@@ -169,7 +169,7 @@ tasks:
   dev:pg:bootstrap:
     desc: Bootstrap PostgreSQL replica from pg_dump, then start streaming changes
     cmds:
-      - cd environments/pg-development && docker-compose exec -e WAIT_FOR_BOOTSTRAP=true pg-change-stream /app/scripts/bootstrap-kasho.sh
+      - cd environments/pg-development && docker-compose exec -e WAIT_FOR_BOOTSTRAP=true pg-change-stream /app/scripts/bootstrap-kasho-pg.sh
 
   # MySQL development environment
   dev:mysql:start:

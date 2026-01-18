@@ -1,5 +1,5 @@
 #!/bin/bash
-# bootstrap-kasho.sh - Bootstrap Kasho replication from existing data
+# bootstrap-kasho-pg.sh - Bootstrap Kasho PostgreSQL replication from existing data
 
 set -euo pipefail
 

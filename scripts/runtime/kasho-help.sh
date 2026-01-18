@@ -20,8 +20,13 @@ SERVICES:
     /app/bin/translicator           - Transform and apply changes to replica
 
 SCRIPTS:
-  /app/scripts/prepare-primary-db.sh - Setup primary database for Kasho replication
-  /app/scripts/bootstrap-kasho.sh    - Bootstrap Kasho replication from existing data
+  PostgreSQL:
+    /app/scripts/prepare-dbs-pg.sh      - Setup PostgreSQL databases for Kasho replication
+    /app/scripts/bootstrap-kasho-pg.sh  - Bootstrap PostgreSQL replication from existing data
+
+  MySQL:
+    /app/scripts/prepare-dbs-mysql.sh     - Setup MySQL databases for Kasho replication
+    /app/scripts/bootstrap-kasho-mysql.sh - Bootstrap MySQL replication from existing data
 
 EXAMPLES:
   # Start PostgreSQL change stream service
@@ -33,24 +38,36 @@ EXAMPLES:
   # Start translicator service
   docker run --rm kasho /app/bin/translicator
 
-  # Bootstrap Kasho replication (from inside running container)
-  docker exec -it <container-name> /app/scripts/bootstrap-kasho.sh
+  # Bootstrap PostgreSQL replication (from inside running container)
+  docker exec -it <container-name> /app/scripts/bootstrap-kasho-pg.sh
 
-  # Bootstrap using dedicated container (PostgreSQL)
+  # Bootstrap PostgreSQL using dedicated container
   docker run --rm --network <network-name> \
     -e PRIMARY_DATABASE_URL="postgresql://..." \
     -e KV_URL="redis://..." \
     -e CHANGE_STREAM_SERVICE_ADDR="pg-change-stream:50051" \
-    kasho /app/scripts/bootstrap-kasho.sh
+    kasho /app/scripts/bootstrap-kasho-pg.sh
 
-BOOTSTRAP WORKFLOW:
-  1. Prepare primary database (run as DBA with superuser credentials):
-     docker exec -it <container> /app/scripts/prepare-primary-db.sh
+  # Bootstrap MySQL replication (from inside running container)
+  docker exec -it <container-name> /app/scripts/bootstrap-kasho-mysql.sh
 
-  2. Start services (change-stream will be in WAITING state).
+BOOTSTRAP WORKFLOW (PostgreSQL):
+  1. Prepare databases (run as DBA with superuser credentials):
+     docker exec -it <container> /app/scripts/prepare-dbs-pg.sh
+
+  2. Start services (pg-change-stream will be in WAITING state).
 
   3. Bootstrap replication:
-     docker exec -it <container> /app/scripts/bootstrap-kasho.sh
+     docker exec -it <container> /app/scripts/bootstrap-kasho-pg.sh
+
+BOOTSTRAP WORKFLOW (MySQL):
+  1. Prepare databases (run as DBA with superuser credentials):
+     docker exec -it <container> /app/scripts/prepare-dbs-mysql.sh
+
+  2. Start services (mysql-change-stream will be in WAITING state).
+
+  3. Bootstrap replication:
+     docker exec -it <container> /app/scripts/bootstrap-kasho-mysql.sh
 
 ENVIRONMENT VARIABLES:
 

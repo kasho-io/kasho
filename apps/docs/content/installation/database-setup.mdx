@@ -61,7 +61,7 @@ export REPLICA_DATABASE_SU_USER="postgres"
 export REPLICA_DATABASE_SU_PASSWORD="postgres"
 
 # Run setup script that configures both databases
-docker run --rm kasho:latest /app/scripts/prepare-dbs.sh
+docker run --rm kasho:latest /app/scripts/prepare-dbs-pg.sh
 ```
 
 This script will:

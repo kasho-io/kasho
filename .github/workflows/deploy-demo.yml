@@ -193,8 +193,8 @@ jobs:
             cd ../..
             
             # Check if bootstrap script exists
-            if [ ! -f "./scripts/runtime/bootstrap-kasho.sh" ]; then
-              echo "❌ bootstrap-kasho.sh not found"
+            if [ ! -f "./scripts/runtime/bootstrap-kasho-pg.sh" ]; then
+              echo "❌ bootstrap-kasho-pg.sh not found"
               exit 1
             fi
             
@@ -210,7 +210,7 @@ jobs:
               -e REPLICATION_SLOT_NAME="kasho_slot" \
               -e WAIT_FOR_BOOTSTRAP="true" \
               kashoio/kasho:develop \
-              /app/scripts/bootstrap-kasho.sh
+              /app/scripts/bootstrap-kasho-pg.sh
             
             echo "✅ Bootstrap process completed successfully"
 
