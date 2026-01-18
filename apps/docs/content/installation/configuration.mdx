@@ -174,7 +174,7 @@ The key requirement is that `transforms.yml` must be available at `/app/config/t
    - Restrict network access to services
 
 3. **Monitoring**
-   - Check change-stream service status: `grpcurl -plaintext <host>:50051 kasho.ChangeStreamService/GetStatus`
+   - Check change-stream service status: `grpcurl -plaintext <host>:50051 change_stream.ChangeStream/GetStatus`
    - Check service logs regularly
    - For PostgreSQL: Monitor replication slot status with `SELECT * FROM pg_replication_slots WHERE slot_name = 'kasho_slot'`
    - For MySQL: Monitor binlog position with `SHOW MASTER STATUS`
