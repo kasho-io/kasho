@@ -162,6 +162,24 @@ func TestColumnValueWrapper_UnmarshalJSON(t *testing.T) {
 			},
 		},
 		{
+			name:     "null value (SQL NULL)",
+			jsonData: "null",
+			want: ColumnValueWrapper{
+				ColumnValue: &proto.ColumnValue{
+					Value: nil, // Unset oneof represents NULL
+				},
+			},
+		},
+		{
+			name:     "timestamp value",
+			jsonData: `"2024-03-20T15:04:05Z"`,
+			want: ColumnValueWrapper{
+				ColumnValue: &proto.ColumnValue{
+					Value: &proto.ColumnValue_TimestampValue{TimestampValue: "2024-03-20T15:04:05Z"},
+				},
+			},
+		},
+		{
 			name:     "invalid json",
 			jsonData: `{"invalid": json}`,
 			wantErr:  true,
