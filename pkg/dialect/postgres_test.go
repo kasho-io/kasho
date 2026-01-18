@@ -236,10 +236,10 @@ func TestPostgreSQL_formatRegclass(t *testing.T) {
 	d := NewPostgreSQL()
 
 	tests := []struct {
-		name     string
-		schema   string
-		seqName  string
-		want     string
+		name    string
+		schema  string
+		seqName string
+		want    string
 	}{
 		{"simple names", "public", "users_id_seq", "'public.users_id_seq'"},
 		{"with single quote in schema", "it's_schema", "seq", "'it''s_schema.seq'"},

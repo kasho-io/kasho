@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"kasho/pkg/dialect"
 	"kasho/proto"
-	"translicator/internal/dialect"
 )
 
 // SQLGenerator generates SQL statements using a specific dialect
