@@ -69,7 +69,6 @@ services:
     command: >
       --server-id=1
       --log-bin=mysql-bin
-      --binlog-format=ROW
       --binlog-row-image=FULL
       --gtid-mode=ON
       --enforce-gtid-consistency=ON
@@ -95,7 +94,6 @@ services:
     command: >
       --server-id=2
       --log-bin=mysql-bin
-      --binlog-format=ROW
       --binlog-row-image=FULL
       --gtid-mode=ON
       --enforce-gtid-consistency=ON
