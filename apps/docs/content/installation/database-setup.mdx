@@ -1,10 +1,12 @@
 # Database Setup
 
-import { Callout } from "nextra/components";
+import { Callout, Tabs } from "nextra/components";
 
-This guide covers the PostgreSQL configuration and user setup required for Kasho.
+This guide covers the database configuration and user setup required for Kasho. Choose your database type below.
 
-## Database Requirements
+<Tabs items={['PostgreSQL', 'MySQL']}>
+<Tabs.Tab>
+## PostgreSQL Database Requirements
 
 ### Source PostgreSQL Database
 
@@ -220,6 +222,184 @@ CREATE EVENT TRIGGER kasho_log_ddl_end
 ON ddl_command_end
 EXECUTE FUNCTION kasho_log_ddl();
 ```
+</Tabs.Tab>
+<Tabs.Tab>
+## MySQL Database Requirements
+
+### Source MySQL Database
+
+Your source database needs:
+
+- **MySQL version:** 8.0 or higher
+- **Binary logging:** Enabled with ROW format
+- **GTID mode:** Enabled for consistent replication
+- **User permissions:** REPLICATION SLAVE, REPLICATION CLIENT, and SELECT privileges
+
+### Target Database
+
+Your target database needs:
+
+- **MySQL version:** 8.0 or higher
+- **User permissions:** ALL PRIVILEGES (required to bypass foreign key checks during replication)
+
+<Callout type="info">
+  **Simpler DDL Replication** Unlike PostgreSQL, MySQL automatically captures DDL statements in the binary log. No
+  additional DDL logging setup is required.
+</Callout>
+
+## Step 1: Configure MySQL for Binary Log Replication
+
+<Callout type="warning">Changing these settings requires a MySQL restart</Callout>
+
+Edit your `my.cnf` file:
+
+```ini
+[mysqld]
+# Unique server identifier
+server-id = 1
+
+# Enable binary logging
+log_bin = mysql-bin
+
+# Full row images for accurate replication
+binlog_row_image = FULL
+
+# Enable GTID mode for consistent replication
+gtid_mode = ON
+enforce_gtid_consistency = ON
+```
+
+<Callout type="info">
+  **Note:** `binlog_format = ROW` defaults in MySQL 8.0+ and the option is deprecated, so you don't need to set it
+  explicitly.
+</Callout>
+
+Restart MySQL after making these changes.
+
+## Step 2: Setup Both Databases
+
+### Option A: Automated Setup (Recommended)
+
+Use the provided setup script to configure both primary and replica databases:
+
+```bash
+# Set environment variables for both databases
+export PRIMARY_DATABASE_URL="mysql://kasho:pass@primary:3306/db"
+export REPLICA_DATABASE_URL="mysql://kasho:pass@replica:3306/db"
+export PRIMARY_DATABASE_SU_USER="root"
+export PRIMARY_DATABASE_SU_PASSWORD="root"
+export REPLICA_DATABASE_SU_USER="root"
+export REPLICA_DATABASE_SU_PASSWORD="root"
+
+# Run setup script that configures both databases
+docker run --rm kasho:latest /app/scripts/prepare-dbs-mysql.sh
+```
+
+This script will:
+
+1. Verify prerequisites on the primary (binlog enabled, GTID mode)
+2. Create the kasho user on the primary with REPLICATION privileges
+3. Create the kasho user on the replica with ALL PRIVILEGES
+
+### Option B: Manual Setup
+
+If you prefer manual setup, follow these steps:
+
+#### 1. Verify Binary Logging
+
+Connect as root and check:
+
+```sql
+-- Check current settings
+SELECT
+    @@binlog_format AS binlog_format,
+    @@log_bin AS log_bin_enabled,
+    @@binlog_row_image AS binlog_row_image,
+    @@gtid_mode AS gtid_mode;
+
+-- Expected values:
+-- binlog_format = ROW
+-- log_bin_enabled = 1
+-- binlog_row_image = FULL
+-- gtid_mode = ON
+```
+
+#### 2. Create User on Source Database
+
+```sql
+-- Create user with replication privileges
+CREATE USER 'kasho'@'%' IDENTIFIED BY 'your-secure-password';
+
+-- Grant replication privileges
+GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'kasho'@'%';
+
+-- Grant SELECT on all tables for reading data
+GRANT SELECT ON *.* TO 'kasho'@'%';
+
+-- Apply privileges
+FLUSH PRIVILEGES;
+```
+
+#### 3. Create User on Target Database
+
+Connect as root to your target database:
+
+```sql
+-- Create user with full privileges
+CREATE USER 'kasho'@'%' IDENTIFIED BY 'your-secure-password';
+
+-- Grant all privileges (needed to apply changes and bypass foreign key checks)
+GRANT ALL PRIVILEGES ON *.* TO 'kasho'@'%' WITH GRANT OPTION;
+
+-- Apply privileges
+FLUSH PRIVILEGES;
+```
+
+<Callout type="info">
+  **No Publication Required** Unlike PostgreSQL, MySQL doesn't require creating a publication. The binary log
+  automatically captures all changes.
+</Callout>
+
+## Step 3: Grant User Privileges
+
+MySQL uses GRANT statements for access control instead of a separate configuration file like PostgreSQL's pg_hba.conf.
+
+The user creation statements above already include `'kasho'@'%'` which allows connections from any host. For production, you may want to restrict this:
+
+```sql
+-- Restrict to specific host/network
+CREATE USER 'kasho'@'10.0.0.%' IDENTIFIED BY 'your-secure-password';
+
+-- Or restrict to specific IP
+CREATE USER 'kasho'@'192.168.1.100' IDENTIFIED BY 'your-secure-password';
+```
+
+## Step 4: Test Connection
+
+Verify the kasho user can connect:
+
+```bash
+# Test source database connection
+mysql -h source-host -P 3306 -u kasho -p -e "SELECT 1"
+
+# Test target database connection
+mysql -h target-host -P 3306 -u kasho -p -e "SELECT 1"
+
+# Verify binlog access on source
+mysql -h source-host -P 3306 -u kasho -p -e "SHOW MASTER STATUS"
+```
+
+<Callout type="info">
+  **Security Consideration** The replica user requires ALL PRIVILEGES. In production environments, consider using a
+  dedicated database instance for the replica if security policies are a concern.
+</Callout>
+
+<Callout type="info">
+  **No DDL Setup Required** MySQL automatically captures DDL statements (CREATE TABLE, ALTER TABLE, etc.) in the binary
+  log. Unlike PostgreSQL, no additional event triggers or logging tables are needed.
+</Callout>
+</Tabs.Tab>
+</Tabs>
 
 ## Next Steps
 

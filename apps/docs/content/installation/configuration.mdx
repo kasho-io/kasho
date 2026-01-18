@@ -1,9 +1,13 @@
+import { Tabs } from "nextra/components";
+
 # Configuration
 
 Kasho uses environment variables for service configuration and a YAML file for transformation rules.
 
 ## Environment Variables
 
+<Tabs items={['PostgreSQL', 'MySQL']}>
+<Tabs.Tab>
 ### `pg-change-stream` Configuration
 
 | Variable               | Description                    | Required | Example                               |
@@ -21,9 +25,32 @@ Kasho uses environment variables for service configuration and a YAML file for t
 ### `pg-bootstrap-sync` Configuration
 
 `pg-bootstrap-sync` uses command-line flags for configuration. See the [Bootstrap Process](/installation/bootstrap) guide for details.
+</Tabs.Tab>
+<Tabs.Tab>
+### `mysql-change-stream` Configuration
+
+| Variable               | Description                    | Required | Example                            |
+| ---------------------- | ------------------------------ | -------- | ---------------------------------- |
+| `KV_URL`               | Redis connection URL           | Yes      | `redis://redis:6379`               |
+| `PRIMARY_DATABASE_URL` | Source database connection URL | Yes      | `mysql://user:pass@host:3306/db`   |
+
+### `translicator` Configuration
+
+| Variable                     | Description                          | Required | Example                          |
+| ---------------------------- | ------------------------------------ | -------- | -------------------------------- |
+| `CHANGE_STREAM_SERVICE_ADDR` | `mysql-change-stream` service address | Yes      | `mysql-change-stream:50051`      |
+| `REPLICA_DATABASE_URL`       | Target database connection URL       | Yes      | `mysql://user:pass@host:3306/db` |
+
+### `mysql-bootstrap-sync` Configuration
+
+`mysql-bootstrap-sync` uses command-line flags for configuration. See the [Bootstrap Process](/installation/bootstrap) guide for details.
+</Tabs.Tab>
+</Tabs>
 
 ## Database URL Format
 
+<Tabs items={['PostgreSQL', 'MySQL']}>
+<Tabs.Tab>
 Database URLs follow the standard PostgreSQL connection string format:
 
 ```
@@ -38,7 +65,6 @@ postgresql://[user[:password]@][host][:port][/database][?param=value&...]
   - `verify-ca` - SSL with CA verification
   - `verify-full` - SSL with full verification
 - **`connect_timeout`** - Connection timeout in seconds (default: 30)
-
 - **`application_name`** - Identifies your application in pg_stat_activity
 
 ### Examples
@@ -53,6 +79,37 @@ postgresql://kasho:mypassword@prod-db.example.com:5432/mydb?sslmode=require
 # Connection with timeout and app name
 postgresql://kasho:mypassword@db:5432/mydb?connect_timeout=10&application_name=kasho
 ```
+</Tabs.Tab>
+<Tabs.Tab>
+Database URLs follow the standard MySQL connection string format:
+
+```
+mysql://[user[:password]@][host][:port][/database][?param=value&...]
+```
+
+### Common Parameters
+
+- **`tls`** - TLS/SSL connection mode
+  - `false` - No TLS
+  - `true` - TLS required
+  - `skip-verify` - TLS without certificate verification
+- **`timeout`** - Connection timeout (e.g., `10s`, `30s`)
+- **`parseTime`** - Parse time values to `time.Time` (set to `true`)
+
+### Examples
+
+```bash
+# Basic connection without TLS
+mysql://kasho:mypassword@localhost:3306/mydb?tls=false
+
+# Connection with TLS required
+mysql://kasho:mypassword@prod-db.example.com:3306/mydb?tls=true
+
+# Connection with timeout and time parsing
+mysql://kasho:mypassword@db:3306/mydb?timeout=10s&parseTime=true
+```
+</Tabs.Tab>
+</Tabs>
 
 ## Transform Configuration
 
@@ -117,10 +174,10 @@ The key requirement is that `transforms.yml` must be available at `/app/config/t
    - Restrict network access to services
 
 3. **Monitoring**
-   - Set meaningful `application_name` in URLs
-   - Monitor replication slot status: `SELECT * FROM pg_replication_slots WHERE slot_name = 'kasho_slot'`
-   - Check pg-change-stream status: `grpcurl -plaintext <host>:50051 kasho.ChangeStreamService/GetStatus`
+   - Check change-stream service status: `grpcurl -plaintext <host>:50051 kasho.ChangeStreamService/GetStatus`
    - Check service logs regularly
+   - For PostgreSQL: Monitor replication slot status with `SELECT * FROM pg_replication_slots WHERE slot_name = 'kasho_slot'`
+   - For MySQL: Monitor binlog position with `SHOW MASTER STATUS`
 
 ## Next Steps
 

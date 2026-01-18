@@ -1,4 +1,4 @@
-import { Callout } from "nextra/components";
+import { Callout, Tabs } from "nextra/components";
 
 # Bootstrap Process
 
@@ -6,15 +6,15 @@ The bootstrap process loads existing data from your source database into Kasho w
 
 ## Understanding Bootstrap States
 
-`pg-change-stream` operates in three states during its lifecycle:
+The change-stream service (`pg-change-stream` or `mysql-change-stream`) operates in three states during its lifecycle:
 
 ### WAITING
 
-No replication slot exists. Service is ready to begin bootstrap.
+No replication position captured. Service is ready to begin bootstrap.
 
 ### ACCUMULATING
 
-Replication slot created. Capturing changes during initial data load.
+Replication position captured. Accumulating changes during initial data load.
 
 ### STREAMING
 
@@ -37,16 +37,18 @@ This approach guarantees that no changes are lost during the initial data migrat
 
 Before starting bootstrap:
 
-- Ensure `pg-change-stream` is running and in WAITING state
+- Ensure the change-stream service is running and in WAITING state
 - Have sufficient disk space for the database dump
 - Ensure network connectivity between all components
 
+<Tabs items={['PostgreSQL', 'MySQL']}>
+<Tabs.Tab>
 ### Option 1: Automated Bootstrap Script (Recommended)
 
 The easiest way to bootstrap is using the provided script:
 
 ```bash
-# Check `pg-change-stream` status
+# Check pg-change-stream status
 grpcurl -plaintext pg-change-stream:50051 kasho.ChangeStreamService/GetStatus
 
 # Should show state: WAITING
@@ -98,7 +100,7 @@ FROM pg_create_logical_replication_slot('kasho_temp_slot', 'pgoutput', true);
 #### Step 2: Start Accumulation
 
 ```bash
-# Tell `pg-change-stream` to create permanent slot and start accumulating
+# Tell pg-change-stream to create permanent slot and start accumulating
 grpcurl -plaintext \
   -d '{"start_lsn": "<lsn-from-step-1>", "snapshot_name": "<snapshot-from-step-1>"}' \
   pg-change-stream:50051 \
@@ -145,11 +147,122 @@ grpcurl -plaintext \
 ```
 
 </details>
+</Tabs.Tab>
+<Tabs.Tab>
+### Option 1: Automated Bootstrap Script (Recommended)
+
+The easiest way to bootstrap is using the provided script:
+
+```bash
+# Check mysql-change-stream status
+grpcurl -plaintext mysql-change-stream:50051 kasho.ChangeStreamService/GetStatus
+
+# Should show state: WAITING
+```
+
+Run the bootstrap script inside the mysql-change-stream container:
+
+```bash
+# Interactive mode - prompts before transitioning to streaming
+docker exec -it <mysql-change-stream-container> ./bootstrap-kasho-mysql.sh
+
+# Automatic mode - transitions without prompting
+docker exec -it <mysql-change-stream-container> \
+  env WAIT_FOR_BOOTSTRAP=true ./bootstrap-kasho-mysql.sh
+```
+
+<Callout type="info">
+  **Finding Your Container Name** Use `docker ps` to find your mysql-change-stream container name. It will typically be
+  something like `kasho-mysql-change-stream-1` or similar based on your deployment method.
+</Callout>
+
+The script will:
+
+1. Get the current binlog position
+2. Signal `mysql-change-stream` to start accumulating changes
+3. Take a database dump using `mariadb-dump`
+4. Convert the dump to change events
+5. Transition to streaming mode
+
+### Option 2: Manual Bootstrap Process
+
+For more control, you can run the bootstrap steps manually:
+
+<details>
+<summary>Click to expand manual bootstrap steps</summary>
+
+#### Step 1: Get Binlog Position
+
+```sql
+-- Connect to source database
+-- Get current binlog position
+SHOW MASTER STATUS;
+
+-- Note the File and Position values (e.g., mysql-bin.000001, 12345)
+```
+
+#### Step 2: Start Accumulation
+
+```bash
+# Tell mysql-change-stream to start accumulating from the binlog position
+grpcurl -plaintext \
+  -d '{"start_position": "mysql-bin.000001:12345"}' \
+  mysql-change-stream:50051 \
+  kasho.ChangeStreamService/StartBootstrap
+```
+
+#### Step 3: Take Database Dump
+
+```bash
+# Use mariadb-dump with --single-transaction for consistency
+mariadb-dump \
+  --single-transaction \
+  --routines \
+  --triggers \
+  --no-tablespaces \
+  --skip-lock-tables \
+  --complete-insert \
+  -h source-host -P 3306 -u kasho -p \
+  your_database > dump.sql
+```
+
+<Callout type="info">
+  **Important:** The `--complete-insert` flag is required for the bootstrap sync tool to properly parse INSERT
+  statements.
+</Callout>
+
+#### Step 4: Process Dump
+
+```bash
+# Convert dump to change events
+docker run --rm \
+  -v $(pwd):/data \
+  --network your-network \
+  kashoio/kasho:latest \
+  mysql-bootstrap-sync \
+    --dump-file=/data/dump.sql \
+    --kv-url=redis://redis:6379
+```
+
+#### Step 5: Transition to Streaming
+
+```bash
+# Transition to streaming mode
+grpcurl -plaintext \
+  mysql-change-stream:50051 \
+  kasho.ChangeStreamService/CompleteBootstrap
+```
+
+</details>
+</Tabs.Tab>
+</Tabs>
 
 ## Monitoring Progress
 
 During bootstrap, monitor the progress:
 
+<Tabs items={['PostgreSQL', 'MySQL']}>
+<Tabs.Tab>
 ```bash
 # Check current state
 grpcurl -plaintext pg-change-stream:50051 kasho.ChangeStreamService/GetStatus
@@ -160,11 +273,27 @@ docker logs -f pg-change-stream
 # Monitor accumulated changes
 # The AccumulatedChanges count shows buffered changes during bootstrap
 ```
+</Tabs.Tab>
+<Tabs.Tab>
+```bash
+# Check current state
+grpcurl -plaintext mysql-change-stream:50051 kasho.ChangeStreamService/GetStatus
+
+# Watch logs
+docker logs -f mysql-change-stream
+
+# Monitor accumulated changes
+# The AccumulatedChanges count shows buffered changes during bootstrap
+```
+</Tabs.Tab>
+</Tabs>
 
 ## Large Database Considerations
 
 For databases larger than 100GB:
 
+<Tabs items={['PostgreSQL', 'MySQL']}>
+<Tabs.Tab>
 1. **Use compression:**
 
    ```bash
@@ -180,9 +309,31 @@ For databases larger than 100GB:
 3. **Monitor disk space** during the dump process
 
 4. **Run during low-traffic periods** to minimize accumulated changes
+</Tabs.Tab>
+<Tabs.Tab>
+1. **Use compression:**
+
+   ```bash
+   mariadb-dump ... | gzip > dump.sql.gz
+   ```
+
+2. **Consider table-by-table dumps for very large databases:**
+
+   ```bash
+   mariadb-dump --single-transaction --complete-insert \
+     database_name table1 table2 > dump.sql
+   ```
+
+3. **Monitor disk space** during the dump process
+
+4. **Run during low-traffic periods** to minimize accumulated changes
+</Tabs.Tab>
+</Tabs>
 
 ## Troubleshooting
 
+<Tabs items={['PostgreSQL', 'MySQL']}>
+<Tabs.Tab>
 ### "replication slot already exists"
 
 This usually means a previous bootstrap wasn't cleaned up properly:
@@ -208,10 +359,34 @@ Check for:
 ### High memory usage during bootstrap
 
 `pg-bootstrap-sync` processes the dump in batches. For very large tables, you may need to increase container memory limits.
+</Tabs.Tab>
+<Tabs.Tab>
+### "Access denied for SHOW MASTER STATUS"
+
+The kasho user needs REPLICATION CLIENT privilege:
+
+```sql
+GRANT REPLICATION CLIENT ON *.* TO 'kasho'@'%';
+FLUSH PRIVILEGES;
+```
+
+### Bootstrap seems stuck
+
+Check for:
+
+- Network connectivity issues
+- Disk space for dump file
+- MySQL binlog retention settings (ensure logs aren't being purged too quickly)
+
+### High memory usage during bootstrap
+
+`mysql-bootstrap-sync` processes the dump in batches. For very large tables, you may need to increase container memory limits.
+</Tabs.Tab>
+</Tabs>
 
 ## After Bootstrap
 
-Once bootstrap completes and `pg-change-stream` is in STREAMING state:
+Once bootstrap completes and the change-stream service is in STREAMING state:
 
 1. **Verify data integrity** - Compare row counts between source and target
 2. **Monitor replication lag** - Check that changes are flowing normally

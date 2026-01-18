@@ -34,9 +34,23 @@ docker pull kashoio/kasho:v0.3.0
 docker pull kashoio/kasho:develop
 ```
 
+## Available Commands
+
+The Kasho image contains the following services and tools:
+
+| Command | Description | Database |
+| ------- | ----------- | -------- |
+| `/app/bin/pg-change-stream` | Captures changes from PostgreSQL | PostgreSQL |
+| `/app/bin/mysql-change-stream` | Captures changes from MySQL | MySQL |
+| `/app/bin/translicator` | Applies changes to target database | Both |
+| `/app/bin/pg-bootstrap-sync` | Bootstraps replica from PostgreSQL dump | PostgreSQL |
+| `/app/bin/mysql-bootstrap-sync` | Bootstraps replica from MySQL dump | MySQL |
+
 ## Using in Docker Compose
 
-Update your `docker-compose.yml` to use the full image path:
+Update your `docker-compose.yml` to use the full image path. Choose the change-stream service based on your database type:
+
+**For PostgreSQL:**
 
 ```yaml
 services:
@@ -51,9 +65,26 @@ services:
     # ... rest of configuration
 ```
 
+**For MySQL:**
+
+```yaml
+services:
+  mysql-change-stream:
+    image: kashoio/kasho:latest
+    command: /app/bin/mysql-change-stream
+    # ... rest of configuration
+
+  translicator:
+    image: kashoio/kasho:latest
+    command: /app/bin/translicator
+    # ... rest of configuration
+```
+
 ## Using in Kubernetes
 
-Deploy directly in your Kubernetes manifests:
+Deploy directly in your Kubernetes manifests. Choose the change-stream deployment based on your database type:
+
+**For PostgreSQL:**
 
 ```yaml
 apiVersion: apps/v1
@@ -67,6 +98,34 @@ spec:
         - name: pg-change-stream
           image: kashoio/kasho:latest
           command: ["/app/bin/pg-change-stream"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: translicator
+spec:
+  template:
+    spec:
+      containers:
+        - name: translicator
+          image: kashoio/kasho:latest
+          command: ["/app/bin/translicator"]
+```
+
+**For MySQL:**
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-change-stream
+spec:
+  template:
+    spec:
+      containers:
+        - name: mysql-change-stream
+          image: kashoio/kasho:latest
+          command: ["/app/bin/mysql-change-stream"]
 ---
 apiVersion: apps/v1
 kind: Deployment

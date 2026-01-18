@@ -1,4 +1,4 @@
-import { Callout } from "nextra/components";
+import { Callout, Tabs } from "nextra/components";
 
 # Quick Start
 
@@ -9,7 +9,7 @@ This guide will help you understand Kasho's architecture and get it running in y
 Kasho consists of three required containers that work together:
 
 1. **Redis** - Used for distributed state management and caching
-2. **pg-change-stream** - Captures changes from your source PostgreSQL database
+2. **Change Stream Service** - Captures changes from your source database (`pg-change-stream` for PostgreSQL, `mysql-change-stream` for MySQL)
 3. **translicator** - Applies transformations and writes to your target database
 
 <Callout type="info">
@@ -22,7 +22,7 @@ Kasho consists of three required containers that work together:
 All Kasho components are packaged in a single Docker image available from Docker Hub:
 
 - Image: `kashoio/kasho:latest` (or specific version like `v0.3.0`)
-- Commands: `./pg-change-stream` and `./translicator`
+- Commands: `./pg-change-stream`, `./mysql-change-stream`, and `./translicator`
 
 ## Prerequisites
 
@@ -35,16 +35,39 @@ Currently, only a single `translicator` instance is supported. Multiple translic
 
 Before you begin, ensure you have:
 
-- PostgreSQL 15+ databases (source and target)
-- Databases configured with `wal_level = logical` (see below)
 - A Redis instance (or Redis-compatible service)
 - Container orchestration system (Kubernetes, ECS, Docker, etc.)
+
+<Tabs items={['PostgreSQL', 'MySQL']}>
+<Tabs.Tab>
+- PostgreSQL 15+ databases (source and target)
+- Databases configured with `wal_level = logical`
 
 <Callout type="warning">
   **PostgreSQL WAL Level Configuration** Check your current WAL level: ```sql SHOW wal_level; ``` If it's not `logical`,
   update your `postgresql.conf`: ``` wal_level = logical ``` **Important**: After changing this setting, you must
   restart PostgreSQL for it to take effect.
 </Callout>
+</Tabs.Tab>
+<Tabs.Tab>
+- MySQL 8.0+ databases (source and target)
+- Binary logging enabled with ROW format and GTID mode
+
+<Callout type="warning">
+  **MySQL Binary Log Configuration** Check your current binlog settings: ```sql SELECT @@binlog_format, @@log_bin, @@gtid_mode; ```
+  If binlog is not enabled, add to your `my.cnf`:
+  ```ini
+  [mysqld]
+  server-id = 1
+  log_bin = mysql-bin
+  binlog_row_image = FULL
+  gtid_mode = ON
+  enforce_gtid_consistency = ON
+  ```
+  **Important**: After changing these settings, you must restart MySQL for them to take effect.
+</Callout>
+</Tabs.Tab>
+</Tabs>
 
 ## Docker Compose Example
 
@@ -72,6 +95,8 @@ Create a `docker-compose.yml` file:
   and should not be changed.
 </Callout>
 
+<Tabs items={['PostgreSQL', 'MySQL']}>
+<Tabs.Tab>
 ```yaml
 services:
   redis:
@@ -106,6 +131,44 @@ services:
 volumes:
   redis-data:
 ```
+</Tabs.Tab>
+<Tabs.Tab>
+```yaml
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  mysql-change-stream:
+    image: kashoio/kasho:latest
+    command: /app/bin/mysql-change-stream
+    environment:
+      KV_URL: redis://redis:6379
+      PRIMARY_DATABASE_URL: ${PRIMARY_DATABASE_URL}
+    ports:
+      - "50051:50051"
+    depends_on:
+      - redis
+
+  translicator:
+    image: kashoio/kasho:latest
+    command: /app/bin/translicator
+    environment:
+      CHANGE_STREAM_SERVICE_ADDR: mysql-change-stream:50051
+      REPLICA_DATABASE_URL: ${REPLICA_DATABASE_URL}
+    volumes:
+      - ./config:/app/config:ro # Contains transforms.yml
+    depends_on:
+      - mysql-change-stream
+
+volumes:
+  redis-data:
+```
+</Tabs.Tab>
+</Tabs>
 
 ### Step 3: Configuration Files
 
@@ -133,10 +196,12 @@ See the [Transform Configuration](/configuration/transforms) guide for all avail
 Create a `.env` file with your database connections and service configuration.
 
 <Callout type="warning">
-  **Important**: Replace the example database URLs below with your actual PostgreSQL connection strings. The services
+  **Important**: Replace the example database URLs below with your actual connection strings. The services
   will not start successfully without valid database connections.
 </Callout>
 
+<Tabs items={['PostgreSQL', 'MySQL']}>
+<Tabs.Tab>
 ```bash
 # Source database (read-only access needed)
 # Replace with your actual source database connection string
@@ -146,12 +211,31 @@ PRIMARY_DATABASE_URL=postgresql://kasho:password@source-host:5432/source_db?sslm
 # Replace with your actual target database connection string
 REPLICA_DATABASE_URL=postgresql://kasho:password@target-host:5432/target_db?sslmode=disable
 
-# Redis connection for pg-change-stream
+# Redis connection
 KV_URL=redis://redis:6379
 
 # Change stream service for translicator
 CHANGE_STREAM_SERVICE_ADDR=pg-change-stream:50051
 ```
+</Tabs.Tab>
+<Tabs.Tab>
+```bash
+# Source database (read-only access needed)
+# Replace with your actual source database connection string
+PRIMARY_DATABASE_URL=mysql://kasho:password@source-host:3306/source_db?tls=false
+
+# Target database (write access needed)
+# Replace with your actual target database connection string
+REPLICA_DATABASE_URL=mysql://kasho:password@target-host:3306/target_db?tls=false
+
+# Redis connection
+KV_URL=redis://redis:6379
+
+# Change stream service for translicator
+CHANGE_STREAM_SERVICE_ADDR=mysql-change-stream:50051
+```
+</Tabs.Tab>
+</Tabs>
 
 <Callout type="info">
   **Production Note** In production, these service URLs will depend on your infrastructure. For example, in Kubernetes
@@ -173,7 +257,7 @@ docker-compose ps
 You should see:
 
 - `redis` - Running
-- `pg-change-stream` - Running on port 50051
+- `pg-change-stream` or `mysql-change-stream` - Running on port 50051
 - `translicator` - Running
 
 ## Production Considerations
@@ -205,6 +289,8 @@ If you have existing data in your source database, you'll need to run the bootst
   The bootstrap process ensures zero data loss by capturing changes during the initial data load
 </Callout>
 
+<Tabs items={['PostgreSQL', 'MySQL']}>
+<Tabs.Tab>
 1. Execute the bootstrap process in the pg-change-stream container:
 
 ```bash
@@ -216,6 +302,21 @@ docker exec -it kasho-example-pg-change-stream-1 /app/scripts/bootstrap-kasho-pg
   **Container Name** The container name may vary based on your setup. Use `docker ps` to find the exact name of your
   pg-change-stream container.
 </Callout>
+</Tabs.Tab>
+<Tabs.Tab>
+1. Execute the bootstrap process in the mysql-change-stream container:
+
+```bash
+# Run bootstrap process (will prompt for confirmation)
+docker exec -it kasho-example-mysql-change-stream-1 /app/scripts/bootstrap-kasho-mysql.sh
+```
+
+<Callout type="info">
+  **Container Name** The container name may vary based on your setup. Use `docker ps` to find the exact name of your
+  mysql-change-stream container.
+</Callout>
+</Tabs.Tab>
+</Tabs>
 
 2. The bootstrap process will:
    - Create a consistent snapshot of your source database
@@ -229,7 +330,7 @@ If you prefer, you can manually bootstrap things with a bit more effort. See the
 
 Check that replication is working:
 
-1. **Check `pg-change-stream` status (using gRPC):**
+1. **Check change-stream service status (using gRPC):**
 
    ```bash
    # Using grpcurl (install with: brew install grpcurl)
@@ -238,10 +339,20 @@ Check that replication is working:
 
 2. **View logs:**
 
+<Tabs items={['PostgreSQL', 'MySQL']}>
+<Tabs.Tab>
    ```bash
    docker-compose logs -f pg-change-stream
    docker-compose logs -f translicator
    ```
+</Tabs.Tab>
+<Tabs.Tab>
+   ```bash
+   docker-compose logs -f mysql-change-stream
+   docker-compose logs -f translicator
+   ```
+</Tabs.Tab>
+</Tabs>
 
 3. **Make a test change in your source database:**
 
@@ -269,5 +380,6 @@ Check that replication is working:
 **Connection errors:**
 
 - Ensure databases are accessible from Docker containers
-- Verify PostgreSQL has `wal_level = logical`
+- For PostgreSQL: Verify `wal_level = logical`
+- For MySQL: Verify binary logging is enabled with `SHOW VARIABLES LIKE 'log_bin'`
 - Check firewall rules allow connections
