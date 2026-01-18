@@ -36,11 +36,25 @@ fi
 # Parse database URL to get connection parameters
 eval $(/app/scripts/parse-db-url.sh)
 
-MYSQL_HOST="${PRIMARY_HOST}"
-MYSQL_PORT="${PRIMARY_PORT}"
-MYSQL_USER="${PRIMARY_KASHO_USER}"
-MYSQL_PASSWORD="${PRIMARY_KASHO_PASSWORD}"
-MYSQL_DATABASE="${PRIMARY_DB}"
+# Debug: show what was parsed
+echo "DEBUG: Parsed URL components:"
+echo "  PRIMARY_DATABASE_HOST=${PRIMARY_DATABASE_HOST:-<not set>}"
+echo "  PRIMARY_DATABASE_PORT=${PRIMARY_DATABASE_PORT:-<not set>}"
+echo "  PRIMARY_DATABASE_KASHO_USER=${PRIMARY_DATABASE_KASHO_USER:-<not set>}"
+echo "  PRIMARY_DATABASE_DB=${PRIMARY_DATABASE_DB:-<not set>}"
+echo ""
+
+MYSQL_HOST="${PRIMARY_DATABASE_HOST:-}"
+MYSQL_PORT="${PRIMARY_DATABASE_PORT:-}"
+MYSQL_USER="${PRIMARY_DATABASE_KASHO_USER:-}"
+MYSQL_PASSWORD="${PRIMARY_DATABASE_KASHO_PASSWORD:-}"
+MYSQL_DATABASE="${PRIMARY_DATABASE_DB:-}"
+
+if [[ -z "$MYSQL_HOST" ]]; then
+    echo "ERROR: Failed to parse PRIMARY_DATABASE_URL"
+    echo "URL: $PRIMARY_DATABASE_URL"
+    exit 1
+fi
 
 # Check if mysql-change-stream is running and in WAITING state
 echo "Checking mysql-change-stream status..."
@@ -64,13 +78,38 @@ echo ""
 # Step 1: Get current binlog position with FLUSH TABLES WITH READ LOCK
 # This ensures we get a consistent snapshot
 echo "1. Getting binlog position..."
+echo "   Connecting to $MYSQL_HOST:$MYSQL_PORT as $MYSQL_USER..."
+
+# MySQL connection options - skip SSL for development (self-signed certs)
+MYSQL_OPTS="--skip-ssl"
+
+# First, test basic connectivity
+echo "   Testing connection..."
+if ! mysql $MYSQL_OPTS -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; then
+    echo "ERROR: Cannot connect to MySQL at $MYSQL_HOST:$MYSQL_PORT"
+    mysql $MYSQL_OPTS -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "SELECT 1" 2>&1
+    exit 1
+fi
+echo "   Connection OK"
 
 # Get binlog position - we need to lock tables briefly to get consistent position
-BINLOG_INFO=$(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -N -e "
-    FLUSH TABLES WITH READ LOCK;
-    SHOW MASTER STATUS;
-    UNLOCK TABLES;
-" 2>/dev/null | head -1)
+echo "   Running SHOW MASTER STATUS..."
+BINLOG_OUTPUT=$(mysql $MYSQL_OPTS -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" -N -e "SHOW MASTER STATUS" 2>&1)
+
+MYSQL_EXIT_CODE=$?
+echo "   Exit code: $MYSQL_EXIT_CODE"
+echo "   Output: '$BINLOG_OUTPUT'"
+
+if [[ $MYSQL_EXIT_CODE -ne 0 ]]; then
+    echo "ERROR: MySQL command failed (exit code: $MYSQL_EXIT_CODE)"
+    echo "$BINLOG_OUTPUT"
+    echo ""
+    echo "The MySQL user may need additional privileges:"
+    echo "  GRANT RELOAD, REPLICATION CLIENT ON *.* TO 'kasho'@'%';"
+    exit 1
+fi
+
+BINLOG_INFO=$(echo "$BINLOG_OUTPUT" | head -1)
 
 if [[ -z "$BINLOG_INFO" ]]; then
     echo "ERROR: Failed to get binlog position"
@@ -112,6 +151,7 @@ DUMP_FILE="/tmp/kasho_mysql_bootstrap_$(date +%Y%m%d_%H%M%S).sql"
 # --skip-lock-tables: Don't lock tables (--single-transaction handles consistency)
 # --set-gtid-purged=OFF: Don't include GTID info (we're not using GTID replication here)
 if ! mysqldump \
+    $MYSQL_OPTS \
     -h "$MYSQL_HOST" \
     -P "$MYSQL_PORT" \
     -u "$MYSQL_USER" \
