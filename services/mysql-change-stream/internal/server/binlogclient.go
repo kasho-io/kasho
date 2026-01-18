@@ -134,7 +134,9 @@ func parseMySQLURL(dbURL string) (host string, port uint16, user, password, data
 }
 
 // NewClient creates a new MySQL binlog replication client
-func NewClient(ctx context.Context, dbURL string, buffer *kvbuffer.KVBuffer, changeServer *ChangeStreamServer) (*Client, error) {
+// startPosition is the binlog position to start streaming from (e.g., "mysql-bin.000001:4")
+// If empty, the client will start from the current master position.
+func NewClient(ctx context.Context, dbURL string, buffer *kvbuffer.KVBuffer, changeServer *ChangeStreamServer, startPosition string) (*Client, error) {
 	client := &Client{
 		dbURL:        dbURL,
 		buffer:       buffer,
@@ -142,6 +144,15 @@ func NewClient(ctx context.Context, dbURL string, buffer *kvbuffer.KVBuffer, cha
 		done:         make(chan struct{}),
 		changeChan:   make(chan types.Change, 1000),
 		ready:        make(chan struct{}),
+	}
+
+	// Parse and set the start position before connecting
+	if startPosition != "" {
+		pos, err := ParseBinlogPosition(startPosition)
+		if err != nil {
+			return nil, fmt.Errorf("invalid start position %q: %w", startPosition, err)
+		}
+		client.currentPos = pos
 	}
 
 	if err := client.ConnectWithRetry(ctx); err != nil {
