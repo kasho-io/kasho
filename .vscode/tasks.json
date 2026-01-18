@@ -94,7 +94,7 @@
     {
       "label": "kasho shell (MySQL)",
       "type": "shell",
-      "command": "echo 'Note: MySQL bootstrap is not yet implemented. See kasho-c4p for progress.'; zsh",
+      "command": "echo 'You probably want to run \"task dev:mysql:bootstrap\" once things are up and running'; zsh",
       "presentation": {
         "reveal": "always",
         "panel": "new",
