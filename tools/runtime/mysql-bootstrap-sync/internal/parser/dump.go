@@ -64,6 +64,7 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 
 	var currentStatement strings.Builder
 	tableRowCounts := make(map[string]int)
+	delimiter := ";" // Current statement delimiter (mysqldump uses DELIMITER to change this)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -77,8 +78,14 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 			continue
 		}
 
-		// Skip SET statements and session control
+		// Handle DELIMITER statements (used for stored procedures, functions, triggers)
 		upperLine := strings.ToUpper(trimmedLine)
+		if strings.HasPrefix(upperLine, "DELIMITER ") {
+			delimiter = strings.TrimSpace(trimmedLine[10:]) // 10 = len("DELIMITER ")
+			continue
+		}
+
+		// Skip SET statements and session control
 		if strings.HasPrefix(upperLine, "SET ") ||
 			strings.HasPrefix(upperLine, "LOCK TABLES") ||
 			strings.HasPrefix(upperLine, "UNLOCK TABLES") ||
@@ -92,10 +99,17 @@ func (p *DumpParser) ParseStream(reader interface{}) (*ParseResult, error) {
 		currentStatement.WriteString(line)
 		currentStatement.WriteString("\n")
 
-		// Check if statement is complete (ends with semicolon)
-		if strings.HasSuffix(trimmedLine, ";") {
+		// Check if statement is complete (ends with current delimiter)
+		if strings.HasSuffix(trimmedLine, delimiter) {
 			sql := strings.TrimSpace(currentStatement.String())
+			// Remove the delimiter from the end of the statement
+			sql = strings.TrimSuffix(sql, delimiter)
+			sql = strings.TrimSpace(sql)
 			currentStatement.Reset()
+
+			if sql == "" {
+				continue
+			}
 
 			// Parse the complete statement
 			if err := p.parseStatement(sql, result, tableRowCounts); err != nil {

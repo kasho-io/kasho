@@ -510,3 +510,97 @@ func TestDumpParser_NumericValues(t *testing.T) {
 		}
 	}
 }
+
+func TestDumpParser_DelimiterStatements(t *testing.T) {
+	parser := NewDumpParser()
+
+	// Test stored procedure with DELIMITER change (common in mysqldump)
+	sql := `
+INSERT INTO users (id, name) VALUES (1, 'Before proc');
+DELIMITER ;;
+CREATE PROCEDURE cleanup()
+BEGIN
+    DELETE FROM logs WHERE created_at < NOW() - INTERVAL 7 DAY;
+    DELETE FROM temp WHERE id > 0;
+END ;;
+DELIMITER ;
+INSERT INTO users (id, name) VALUES (2, 'After proc');
+`
+
+	result, err := parser.ParseStream(strings.NewReader(sql))
+	if err != nil {
+		t.Fatalf("ParseStream() error = %v", err)
+	}
+
+	// Should have: 2 DML (INSERTs) + 1 DDL (CREATE PROCEDURE)
+	if len(result.Statements) != 3 {
+		t.Errorf("expected 3 statements, got %d", len(result.Statements))
+	}
+
+	// First statement: INSERT before procedure
+	dml1, ok := result.Statements[0].(DMLStatement)
+	if !ok {
+		t.Errorf("statement 0: expected DMLStatement, got %T", result.Statements[0])
+	} else if dml1.Table != "users" {
+		t.Errorf("statement 0: table = %v, want 'users'", dml1.Table)
+	}
+
+	// Second statement: CREATE PROCEDURE (as DDL)
+	ddl, ok := result.Statements[1].(DDLStatement)
+	if !ok {
+		t.Errorf("statement 1: expected DDLStatement, got %T", result.Statements[1])
+	} else {
+		// The procedure should contain the full body including both DELETE statements
+		if !strings.Contains(ddl.SQL, "DELETE FROM logs") {
+			t.Errorf("procedure missing 'DELETE FROM logs': %s", ddl.SQL)
+		}
+		if !strings.Contains(ddl.SQL, "DELETE FROM temp") {
+			t.Errorf("procedure missing 'DELETE FROM temp': %s", ddl.SQL)
+		}
+		if !strings.Contains(ddl.SQL, "END") {
+			t.Errorf("procedure missing 'END': %s", ddl.SQL)
+		}
+	}
+
+	// Third statement: INSERT after procedure
+	dml2, ok := result.Statements[2].(DMLStatement)
+	if !ok {
+		t.Errorf("statement 2: expected DMLStatement, got %T", result.Statements[2])
+	} else if dml2.ColumnValues[0][1] != "After proc" {
+		t.Errorf("statement 2: name = %v, want 'After proc'", dml2.ColumnValues[0][1])
+	}
+}
+
+func TestDumpParser_DelimiterResetToSemicolon(t *testing.T) {
+	parser := NewDumpParser()
+
+	// Test that delimiter properly resets back to semicolon
+	sql := `
+DELIMITER ;;
+CREATE TRIGGER test_trigger BEFORE INSERT ON users FOR EACH ROW BEGIN SET NEW.created_at = NOW(); END;;
+DELIMITER ;
+INSERT INTO users (id, name) VALUES (1, 'Test');
+INSERT INTO users (id, name) VALUES (2, 'Test2');
+`
+
+	result, err := parser.ParseStream(strings.NewReader(sql))
+	if err != nil {
+		t.Fatalf("ParseStream() error = %v", err)
+	}
+
+	// Should have: 1 DDL (trigger) + 2 DML (INSERTs)
+	if len(result.Statements) != 3 {
+		t.Errorf("expected 3 statements, got %d", len(result.Statements))
+	}
+
+	// The two INSERT statements should both be parsed correctly after delimiter reset
+	dmlCount := 0
+	for _, stmt := range result.Statements {
+		if _, ok := stmt.(DMLStatement); ok {
+			dmlCount++
+		}
+	}
+	if dmlCount != 2 {
+		t.Errorf("expected 2 DML statements after delimiter reset, got %d", dmlCount)
+	}
+}
