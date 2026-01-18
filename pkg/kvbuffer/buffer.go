@@ -126,7 +126,12 @@ func (b *KVBuffer) GetChangesAfterBatch(ctx context.Context, position string, of
 // - PostgreSQL LSN: "0/100" format
 // - MySQL binlog: "mysql-bin.000001:4" format (filename:offset)
 // - Bootstrap: "0/BOOTSTRAP%016d" format (negative scores for ordering)
+// - Special "bootstrap" value: returns negative infinity score
 func (b *KVBuffer) parsePositionToScore(position string) (float64, error) {
+	// Special case: "bootstrap" means start from the beginning
+	if position == "bootstrap" {
+		return -1e18, nil
+	}
 	// Bootstrap positions: "0/BOOTSTRAP%016d" → -1000000 + seq
 	if len(position) > 2 && position[:2] == "0/" && len(position) >= 11 && position[2:11] == "BOOTSTRAP" {
 		var seq int64
