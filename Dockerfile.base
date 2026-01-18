@@ -13,7 +13,8 @@ RUN apk add --no-cache \
     redis \
     curl \
     bash \
-    postgresql-client
+    postgresql-client \
+    mysql-client
 
 # Add trurl from edge/community repository
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community trurl
@@ -63,7 +64,8 @@ RUN apk add --no-cache \
     redis \
     curl \
     bash \
-    postgresql-client
+    postgresql-client \
+    mysql-client
 
 # Add trurl from edge/community repository
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community trurl
