@@ -8,6 +8,10 @@ echo "Populating MySQL init directories..."
 # Create directories if they don't exist
 mkdir -p /app/primary-init.d /app/replica-init.d
 
+# Clean up stale files from previous runs (preserves .gitignore)
+find /app/primary-init.d -name "*.sql" -o -name "*.template" | xargs rm -f 2>/dev/null || true
+find /app/replica-init.d -name "*.sql" -o -name "*.template" | xargs rm -f 2>/dev/null || true
+
 # Copy SQL files to init directories with proper numeric prefixes
 # Primary database files
 cp /app/sql/mysql/reset/reset-schema.sql /app/primary-init.d/00-reset-schema.sql
