@@ -2,6 +2,7 @@ package dialect
 
 import (
 	"testing"
+	"time"
 
 	"kasho/proto"
 )
@@ -330,5 +331,177 @@ func TestMySQL_FormatDSN(t *testing.T) {
 				t.Errorf("FormatDSN(%q) = %q, want %q", tt.connStr, got, tt.expected)
 			}
 		})
+	}
+}
+
+// Tests for native type formatting methods
+
+func TestMySQL_FormatString(t *testing.T) {
+	d := NewMySQL()
+
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"simple string", "hello", "'hello'"},
+		{"with single quote", "it's", "'it''s'"},
+		{"with multiple quotes", "it's a 'test'", "'it''s a ''test'''"},
+		{"empty string", "", "''"},
+		{"with backslash", "path\\to\\file", "'path\\\\to\\\\file'"}, // MySQL escapes backslashes
+		{"with quote and backslash", "it's a \\test", "'it''s a \\\\test'"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := d.FormatString(tt.input)
+			if got != tt.want {
+				t.Errorf("FormatString(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMySQL_FormatInt(t *testing.T) {
+	d := NewMySQL()
+
+	tests := []struct {
+		name  string
+		input int64
+		want  string
+	}{
+		{"positive", 42, "42"},
+		{"negative", -100, "-100"},
+		{"zero", 0, "0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := d.FormatInt(tt.input)
+			if got != tt.want {
+				t.Errorf("FormatInt(%d) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMySQL_FormatBool(t *testing.T) {
+	d := NewMySQL()
+
+	if got := d.FormatBool(true); got != "1" {
+		t.Errorf("FormatBool(true) = %v, want 1", got)
+	}
+	if got := d.FormatBool(false); got != "0" {
+		t.Errorf("FormatBool(false) = %v, want 0", got)
+	}
+}
+
+func TestMySQL_FormatTimestamp(t *testing.T) {
+	d := NewMySQL()
+	ts := time.Date(2024, 3, 20, 15, 4, 5, 0, time.UTC)
+
+	got := d.FormatTimestamp(ts)
+	want := "'2024-03-20 15:04:05'"
+	if got != want {
+		t.Errorf("FormatTimestamp() = %v, want %v", got, want)
+	}
+}
+
+func TestMySQL_FormatDate(t *testing.T) {
+	d := NewMySQL()
+	ts := time.Date(2024, 3, 20, 15, 4, 5, 0, time.UTC)
+
+	got := d.FormatDate(ts)
+	want := "'2024-03-20'"
+	if got != want {
+		t.Errorf("FormatDate() = %v, want %v", got, want)
+	}
+}
+
+func TestMySQL_FormatNull(t *testing.T) {
+	d := NewMySQL()
+	if got := d.FormatNull(); got != "NULL" {
+		t.Errorf("FormatNull() = %v, want NULL", got)
+	}
+}
+
+// Tests for DDL type methods
+
+func TestMySQL_TypeUUID(t *testing.T) {
+	d := NewMySQL()
+	if got := d.TypeUUID(); got != "CHAR(36)" {
+		t.Errorf("TypeUUID() = %v, want CHAR(36)", got)
+	}
+}
+
+func TestMySQL_TypeText(t *testing.T) {
+	d := NewMySQL()
+	if got := d.TypeText(); got != "TEXT" {
+		t.Errorf("TypeText() = %v, want TEXT", got)
+	}
+}
+
+func TestMySQL_TypeTimestamp(t *testing.T) {
+	d := NewMySQL()
+	if got := d.TypeTimestamp(); got != "DATETIME(6)" {
+		t.Errorf("TypeTimestamp() = %v, want DATETIME(6)", got)
+	}
+}
+
+func TestMySQL_TypeDecimal(t *testing.T) {
+	d := NewMySQL()
+	if got := d.TypeDecimal(10, 2); got != "DECIMAL(10,2)" {
+		t.Errorf("TypeDecimal(10, 2) = %v, want DECIMAL(10,2)", got)
+	}
+}
+
+func TestMySQL_TypeInteger(t *testing.T) {
+	d := NewMySQL()
+	if got := d.TypeInteger(); got != "INT" {
+		t.Errorf("TypeInteger() = %v, want INT", got)
+	}
+}
+
+// Test that MySQL and PostgreSQL format methods differ as expected
+
+func TestMySQL_FormatTimestamp_DiffersFromPostgres(t *testing.T) {
+	mysql := NewMySQL()
+	postgres := NewPostgreSQL()
+	ts := time.Date(2024, 3, 20, 15, 4, 5, 0, time.UTC)
+
+	mysqlTs := mysql.FormatTimestamp(ts)
+	pgTs := postgres.FormatTimestamp(ts)
+
+	// MySQL uses space-separated format
+	if mysqlTs != "'2024-03-20 15:04:05'" {
+		t.Errorf("MySQL FormatTimestamp() = %v, want '2024-03-20 15:04:05'", mysqlTs)
+	}
+	// PostgreSQL uses RFC3339 format
+	if pgTs != "'2024-03-20T15:04:05Z'" {
+		t.Errorf("PostgreSQL FormatTimestamp() = %v, want '2024-03-20T15:04:05Z'", pgTs)
+	}
+}
+
+func TestMySQL_TypeUUID_DiffersFromPostgres(t *testing.T) {
+	mysql := NewMySQL()
+	postgres := NewPostgreSQL()
+
+	if mysql.TypeUUID() != "CHAR(36)" {
+		t.Errorf("MySQL TypeUUID() = %v, want CHAR(36)", mysql.TypeUUID())
+	}
+	if postgres.TypeUUID() != "UUID" {
+		t.Errorf("PostgreSQL TypeUUID() = %v, want UUID", postgres.TypeUUID())
+	}
+}
+
+func TestMySQL_TypeTimestamp_DiffersFromPostgres(t *testing.T) {
+	mysql := NewMySQL()
+	postgres := NewPostgreSQL()
+
+	if mysql.TypeTimestamp() != "DATETIME(6)" {
+		t.Errorf("MySQL TypeTimestamp() = %v, want DATETIME(6)", mysql.TypeTimestamp())
+	}
+	if postgres.TypeTimestamp() != "TIMESTAMP WITH TIME ZONE" {
+		t.Errorf("PostgreSQL TypeTimestamp() = %v, want TIMESTAMP WITH TIME ZONE", postgres.TypeTimestamp())
 	}
 }

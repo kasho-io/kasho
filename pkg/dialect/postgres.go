@@ -25,22 +25,22 @@ func (p *PostgreSQL) Name() string {
 
 func (p *PostgreSQL) FormatValue(v *proto.ColumnValue) (string, error) {
 	if v == nil || v.Value == nil {
-		return "NULL", nil
+		return p.FormatNull(), nil
 	}
 
 	switch val := v.Value.(type) {
 	case *proto.ColumnValue_StringValue:
-		return fmt.Sprintf("'%s'", strings.ReplaceAll(val.StringValue, "'", "''")), nil
+		return p.FormatString(val.StringValue), nil
 	case *proto.ColumnValue_IntValue:
-		return fmt.Sprintf("%d", val.IntValue), nil
+		return p.FormatInt(val.IntValue), nil
 	case *proto.ColumnValue_FloatValue:
-		return fmt.Sprintf("%f", val.FloatValue), nil
+		return p.FormatFloat(val.FloatValue), nil
 	case *proto.ColumnValue_BoolValue:
-		return fmt.Sprintf("%t", val.BoolValue), nil
+		return p.FormatBool(val.BoolValue), nil
 	case *proto.ColumnValue_TimestampValue:
 		// Try to parse as date first (YYYY-MM-DD)
 		if t, err := time.Parse("2006-01-02", val.TimestampValue); err == nil {
-			return fmt.Sprintf("'%s'", t.Format("2006-01-02")), nil
+			return p.FormatDate(t), nil
 		}
 		// Try to parse as timestamp
 		if t, err := time.Parse(time.RFC3339, val.TimestampValue); err == nil {
@@ -136,4 +136,56 @@ func (p *PostgreSQL) GetDriverName() string {
 func (p *PostgreSQL) FormatDSN(connStr string) string {
 	// lib/pq supports URL format natively, no conversion needed
 	return connStr
+}
+
+// Native type formatting methods
+
+func (p *PostgreSQL) FormatString(s string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
+}
+
+func (p *PostgreSQL) FormatInt(i int64) string {
+	return fmt.Sprintf("%d", i)
+}
+
+func (p *PostgreSQL) FormatFloat(f float64) string {
+	return fmt.Sprintf("%f", f)
+}
+
+func (p *PostgreSQL) FormatBool(b bool) string {
+	return fmt.Sprintf("%t", b)
+}
+
+func (p *PostgreSQL) FormatTimestamp(t time.Time) string {
+	return fmt.Sprintf("'%s'", t.Format(time.RFC3339))
+}
+
+func (p *PostgreSQL) FormatDate(t time.Time) string {
+	return fmt.Sprintf("'%s'", t.Format("2006-01-02"))
+}
+
+func (p *PostgreSQL) FormatNull() string {
+	return "NULL"
+}
+
+// DDL type methods
+
+func (p *PostgreSQL) TypeUUID() string {
+	return "UUID"
+}
+
+func (p *PostgreSQL) TypeText() string {
+	return "TEXT"
+}
+
+func (p *PostgreSQL) TypeTimestamp() string {
+	return "TIMESTAMP WITH TIME ZONE"
+}
+
+func (p *PostgreSQL) TypeDecimal(precision, scale int) string {
+	return fmt.Sprintf("DECIMAL(%d,%d)", precision, scale)
+}
+
+func (p *PostgreSQL) TypeInteger() string {
+	return "INTEGER"
 }
