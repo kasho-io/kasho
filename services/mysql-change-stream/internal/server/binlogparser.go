@@ -47,7 +47,9 @@ func RowsEventToChanges(e *canal.RowsEvent, pos mysql.Position) []types.Change {
 	var changes []types.Change
 	position := FormatBinlogPosition(pos)
 
-	tableName := fmt.Sprintf("%s.%s", e.Table.Schema, e.Table.Name)
+	// Use just the table name without database prefix to be consistent with
+	// the bootstrap dump parser and transforms config format
+	tableName := e.Table.Name
 
 	switch e.Action {
 	case canal.InsertAction:
