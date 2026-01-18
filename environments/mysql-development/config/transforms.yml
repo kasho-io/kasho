@@ -1,7 +1,7 @@
 major_version: 0
 tables:
-  # MySQL uses database.table format (not schema.table like PostgreSQL)
-  primary_db.users:
+  # MySQL uses just table name (no schema/database prefix like PostgreSQL's public.users)
+  users:
     name: FakeName
     email:
       type: Template
