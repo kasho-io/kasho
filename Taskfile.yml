@@ -188,9 +188,15 @@ tasks:
     deps: [dev:mysql:stop, dev:mysql:start]
 
   dev:mysql:bootstrap:
-    desc: Bootstrap MySQL replica from mysqldump, then start streaming changes
+    desc: "[NOT YET IMPLEMENTED] Bootstrap MySQL replica from mysqldump"
     cmds:
-      - cd environments/mysql-development && docker-compose exec -e WAIT_FOR_BOOTSTRAP=true mysql-change-stream /app/scripts/bootstrap-kasho.sh
+      - |
+        echo "❌ MySQL bootstrap is not yet implemented"
+        echo "   See beads issue: kasho-c4p"
+        echo ""
+        echo "   The MySQL change-stream service and bootstrap tooling"
+        echo "   are still under development."
+        exit 1
 
   # Legacy aliases (show error directing to explicit commands)
   dev:
