@@ -109,8 +109,9 @@ COPY scripts/runtime/ /app/scripts/
 # Make scripts executable
 RUN chmod +x /app/scripts/*.sh
 
-# Copy only necessary SQL files
-COPY sql/setup/ /app/sql/setup/
+# Copy SQL setup files for PostgreSQL and MySQL
+COPY sql/pg/ /app/sql/pg/
+COPY sql/mysql/ /app/sql/mysql/
 
 # Copy proto files for grpcurl
 COPY proto/ /app/proto/
