@@ -68,18 +68,19 @@ services:
       - ./pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - ./server.crt:/etc/postgresql/server.crt:ro
       - ./server.key:/tmp/server.key:ro
-    command: >-
-      bash -c "
+    command:
+      - bash
+      - -c
+      - |
         cp /tmp/server.key /etc/postgresql/server.key &&
         chmod 600 /etc/postgresql/server.key &&
         chown postgres:postgres /etc/postgresql/server.key &&
-        exec docker-entrypoint.sh postgres
-          -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
-          -c listen_addresses='*' -c log_connections=on -c log_hostname=on
-          -c ssl=on -c ssl_cert_file=/etc/postgresql/server.crt
-          -c ssl_key_file=/etc/postgresql/server.key
+        exec docker-entrypoint.sh postgres \
+          -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 \
+          -c listen_addresses='*' -c log_connections=on -c log_hostname=on \
+          -c ssl=on -c ssl_cert_file=/etc/postgresql/server.crt \
+          -c ssl_key_file=/etc/postgresql/server.key \
           -c hba_file=/etc/postgresql/pg_hba.conf
-      "
     depends_on:
       prepare-postgres-init-d:
         condition: service_completed_successfully
@@ -100,18 +101,19 @@ services:
       - ./pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - ./server.crt:/etc/postgresql/server.crt:ro
       - ./server.key:/tmp/server.key:ro
-    command: >-
-      bash -c "
+    command:
+      - bash
+      - -c
+      - |
         cp /tmp/server.key /etc/postgresql/server.key &&
         chmod 600 /etc/postgresql/server.key &&
         chown postgres:postgres /etc/postgresql/server.key &&
-        exec docker-entrypoint.sh postgres
-          -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
-          -c listen_addresses='*' -c log_connections=on -c log_hostname=on
-          -c ssl=on -c ssl_cert_file=/etc/postgresql/server.crt
-          -c ssl_key_file=/etc/postgresql/server.key
+        exec docker-entrypoint.sh postgres \
+          -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 \
+          -c listen_addresses='*' -c log_connections=on -c log_hostname=on \
+          -c ssl=on -c ssl_cert_file=/etc/postgresql/server.crt \
+          -c ssl_key_file=/etc/postgresql/server.key \
           -c hba_file=/etc/postgresql/pg_hba.conf
-      "
     depends_on:
       prepare-postgres-init-d:
         condition: service_completed_successfully
