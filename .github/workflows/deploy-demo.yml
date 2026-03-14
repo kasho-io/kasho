@@ -205,7 +205,7 @@ jobs:
             # URL-encode the superuser password (/, +, = must be percent-encoded in URLs)
             ENCODED_SU_PASSWORD=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${{ secrets.PRIMARY_DATABASE_SU_PASSWORD }}', safe=''))")
             docker run --rm \
-              --network demo_default \
+              --network pg-demo_default \
               -e PRIMARY_DATABASE_URL="postgresql://${{ secrets.PRIMARY_DATABASE_SU_USER }}:${ENCODED_SU_PASSWORD}@postgres-primary:5432/${{ secrets.PRIMARY_DATABASE_DB }}?sslmode=require" \
               -e KV_URL="redis://redis:6379" \
               -e CHANGE_STREAM_SERVICE_ADDR="pg-change-stream:50051" \
