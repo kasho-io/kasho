@@ -177,7 +177,7 @@ jobs:
             # Wait for pg-change-stream to be ready
             echo "⏳ Waiting for pg-change-stream to be ready..."
             for i in {1..30}; do
-              if docker exec demo-pg-change-stream-1 nc -z localhost 50051 2>/dev/null; then
+              if docker exec pg-demo-pg-change-stream-1 nc -z localhost 50051 2>/dev/null; then
                 echo "✅ pg-change-stream is ready"
                 break
               fi
