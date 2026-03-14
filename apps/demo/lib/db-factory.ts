@@ -29,8 +29,12 @@ class PostgreSQLPool implements DatabasePool {
   private pool: PgPool;
 
   constructor(connectionString: string) {
-    const ssl = connectionString.includes("sslmode=require") ? { rejectUnauthorized: false } : undefined;
-    this.pool = new PgPool({ connectionString, ssl });
+    const needsSsl = connectionString.includes("sslmode=require");
+    // Strip sslmode from the connection string so pg doesn't apply its own SSL
+    // defaults (which reject self-signed certificates)
+    const cleanedConnectionString = connectionString.replace(/[?&]sslmode=require/, "").replace(/\?$/, "");
+    const ssl = needsSsl ? { rejectUnauthorized: false } : undefined;
+    this.pool = new PgPool({ connectionString: cleanedConnectionString, ssl });
   }
 
   async query(sql: string, params?: unknown[]) {
