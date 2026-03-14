@@ -44,6 +44,11 @@ services:
     command: ["/app/bin/translicator"]
     env_file:
       - .env
+    healthcheck:
+      test: ["CMD", "pgrep", "translicator"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
     depends_on:
       pg-change-stream:
         condition: service_healthy
