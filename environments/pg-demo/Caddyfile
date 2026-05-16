@@ -1,9 +1,10 @@
 # Caddy reverse proxy for the Kasho demo.
 #
-# Provisions a Let's Encrypt cert for demo.kasho.io automatically once the
-# DNS A record points at this box.
+# DEMO_HOST is injected via the .env file by the deploy workflow. Caddy
+# provisions a Let's Encrypt cert for it automatically once DNS resolves
+# to this box.
 
-demo.kasho.io {
+{$DEMO_HOST} {
 	encode zstd gzip
 	reverse_proxy demo:3001
 }
