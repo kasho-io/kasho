@@ -1,11 +1,9 @@
 # Caddy reverse proxy for the Kasho demo.
 #
-# Set DEMO_HOSTNAME in the .env file (e.g., DEMO_HOSTNAME=demo.kasho.io) and
-# Caddy will provision a Let's Encrypt certificate automatically. Use a
-# subdomain like demo2.kasho.io during cutover to validate the deployment
-# before swapping the production DNS record.
+# Provisions a Let's Encrypt cert for demo.kasho.io automatically once the
+# DNS A record points at this box.
 
-{$DEMO_HOSTNAME} {
+demo.kasho.io {
 	encode zstd gzip
 	reverse_proxy demo:3001
 }

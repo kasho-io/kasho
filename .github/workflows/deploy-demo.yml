@@ -115,9 +115,6 @@ jobs:
             REPLICA_DATABASE_SU_USER=${{ secrets.REPLICA_DATABASE_SU_USER }}
             REPLICA_DATABASE_SU_PASSWORD=${{ secrets.REPLICA_DATABASE_SU_PASSWORD }}
             REPLICA_DATABASE_DB=${{ secrets.REPLICA_DATABASE_DB }}
-
-            # Hostname Caddy uses to provision the TLS cert for the demo
-            DEMO_HOSTNAME=${{ secrets.DEMO_HOSTNAME }}
             EOL
 
             # Bring everything down but preserve named volumes so Caddy's
