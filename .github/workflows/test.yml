@@ -44,6 +44,10 @@ jobs:
               - 'go.work.sum'
             proto:
               - 'proto/**'
+            demo-app:
+              - 'apps/demo/**'
+              - 'package.json'
+              - 'package-lock.json'
       
       # Dynamically detect all apps and which ones changed
       - name: Detect apps
@@ -85,9 +89,9 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           # Properly evaluate docker_changes as a boolean
-          if [[ "${{ steps.changes.outputs.go-services }}" == "true" ]] || [[ "${{ steps.changes.outputs.proto }}" == "true" ]]; then
+          if [[ "${{ steps.changes.outputs.go-services }}" == "true" ]] || [[ "${{ steps.changes.outputs.proto }}" == "true" ]] || [[ "${{ steps.changes.outputs.demo-app }}" == "true" ]]; then
             DOCKER_CHANGES="true"
-          else  
+          else
             DOCKER_CHANGES="false"
           fi
           
