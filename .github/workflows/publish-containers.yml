@@ -177,12 +177,10 @@ jobs:
           cache-to: type=gha,mode=max,scope=demo
 
       - name: Save build status
-        if: ${{ github.event_name == 'workflow_run' }}
         run: |
           echo "BUILT_DEVELOP_IMAGE=true" > build-status.txt
 
       - name: Upload build status artifact
-        if: ${{ github.event_name == 'workflow_run' }}
         uses: actions/upload-artifact@v4
         with:
           name: build-status
