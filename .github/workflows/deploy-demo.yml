@@ -89,24 +89,32 @@ jobs:
             docker pull kashoio/kasho-demo:develop
 
             cd environments/pg-demo
-            
+
+            # The PRIMARY/REPLICA_DATABASE_URL secrets historically pointed at
+            # the host's public hostname:port because containers reached Postgres
+            # via the docker-published host ports. Those ports are no longer
+            # published, so rewrite the host portion to the internal docker
+            # service hostnames before writing the .env.
+            PRIMARY_DB_URL=$(echo "${{ secrets.PRIMARY_DATABASE_URL }}" | sed -E 's|@[^/]+/|@postgres-primary:5432/|')
+            REPLICA_DB_URL=$(echo "${{ secrets.REPLICA_DATABASE_URL }}" | sed -E 's|@[^/]+/|@postgres-replica:5432/|')
+
             # Create .env file from secrets
             cat > .env << EOL
             # User and group IDs for file permissions
             UID=$(id -u)
             GID=$(id -g)
-            
+
             # Redis connection for pg-change-stream
             KV_URL=${{ secrets.KV_URL }}
-            
+
             # Change stream service for translicator
             CHANGE_STREAM_SERVICE_ADDR=${{ secrets.CHANGE_STREAM_SERVICE_ADDR }}
 
             # Primary database URL for pg-change-stream
-            PRIMARY_DATABASE_URL=${{ secrets.PRIMARY_DATABASE_URL }}
-            
+            PRIMARY_DATABASE_URL=$PRIMARY_DB_URL
+
             # Replica database URL for translicator
-            REPLICA_DATABASE_URL=${{ secrets.REPLICA_DATABASE_URL }}
+            REPLICA_DATABASE_URL=$REPLICA_DB_URL
             
             # Database configuration for docker-compose PostgreSQL containers
             PRIMARY_DATABASE_SU_USER=${{ secrets.PRIMARY_DATABASE_SU_USER }}
