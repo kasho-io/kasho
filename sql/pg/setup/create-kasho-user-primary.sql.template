@@ -6,11 +6,16 @@ BEGIN
     DROP ROLE {{.PRIMARY_DATABASE_KASHO_USER}};
   END IF;
   CREATE ROLE {{.PRIMARY_DATABASE_KASHO_USER}} WITH REPLICATION LOGIN PASSWORD '{{.PRIMARY_DATABASE_KASHO_PASSWORD}}';
-  -- Grant necessary permissions
+  -- Grant necessary permissions. The kasho user already owns the DDL
+  -- logging trigger (CREATE on schema) and handles replication, so it
+  -- doubles as the application user for the bundled demo. Granting full
+  -- DML keeps a single connection string usable for both replication and
+  -- read/write app traffic. Production deployments that want a stricter
+  -- least-privilege replication user should not use this template as-is.
   GRANT USAGE, CREATE ON SCHEMA public TO {{.PRIMARY_DATABASE_KASHO_USER}};
-  GRANT SELECT ON ALL TABLES IN SCHEMA public TO {{.PRIMARY_DATABASE_KASHO_USER}};
-  GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO {{.PRIMARY_DATABASE_KASHO_USER}};
+  GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO {{.PRIMARY_DATABASE_KASHO_USER}};
+  GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO {{.PRIMARY_DATABASE_KASHO_USER}};
   -- Set default privileges for future objects
-  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO {{.PRIMARY_DATABASE_KASHO_USER}};
-  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON SEQUENCES TO {{.PRIMARY_DATABASE_KASHO_USER}};
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {{.PRIMARY_DATABASE_KASHO_USER}};
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO {{.PRIMARY_DATABASE_KASHO_USER}};
 END$$; 
