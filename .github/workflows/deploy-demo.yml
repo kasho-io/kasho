@@ -84,9 +84,10 @@ jobs:
             # Log in to Docker Hub
             echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
             
-            # Pull the develop image
+            # Pull the develop images
             docker pull kashoio/kasho:develop
-            
+            docker pull kashoio/kasho-demo:develop
+
             cd environments/pg-demo
             
             # Create .env file from secrets
@@ -114,9 +115,21 @@ jobs:
             REPLICA_DATABASE_SU_USER=${{ secrets.REPLICA_DATABASE_SU_USER }}
             REPLICA_DATABASE_SU_PASSWORD=${{ secrets.REPLICA_DATABASE_SU_PASSWORD }}
             REPLICA_DATABASE_DB=${{ secrets.REPLICA_DATABASE_DB }}
+
+            # Hostname Caddy uses to provision the TLS cert for the demo
+            DEMO_HOSTNAME=${{ secrets.DEMO_HOSTNAME }}
             EOL
 
-            docker compose down -v
+            # Bring everything down but preserve named volumes so Caddy's
+            # Let's Encrypt certs survive across deploys (LE rate-limits dupe
+            # cert issuance to 5/week). Database state is rebuilt from
+            # bootstrap below, so explicitly remove only those volumes.
+            docker compose down
+            docker volume rm \
+              pg-demo_postgres-primary-data \
+              pg-demo_postgres-replica-data \
+              pg-demo_redis-data \
+              2>/dev/null || true
             docker compose up -d
             
             # Wait for services to start
@@ -171,7 +184,25 @@ jobs:
             else
               echo "✅ redis is running"
             fi
-            
+
+            # Check demo service
+            if ! docker compose ps demo | grep -q "Up"; then
+              echo "❌ demo failed to start"
+              docker compose logs --tail=50 demo
+              exit 1
+            else
+              echo "✅ demo is running"
+            fi
+
+            # Check caddy service
+            if ! docker compose ps caddy | grep -q "Up"; then
+              echo "❌ caddy failed to start"
+              docker compose logs --tail=50 caddy
+              exit 1
+            else
+              echo "✅ caddy is running"
+            fi
+
             echo "🎉 All services are running successfully"
             
             # Wait for pg-change-stream to be ready

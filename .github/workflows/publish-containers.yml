@@ -14,6 +14,7 @@ on:
 
 env:
   IMAGE_NAME: kashoio/kasho
+  DEMO_IMAGE_NAME: kashoio/kasho-demo
 
 jobs:
   check-changes:
@@ -149,11 +150,37 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Extract demo image metadata
+        id: demo-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DEMO_IMAGE_NAME }}
+          tags: |
+            type=raw,value=develop,enable=${{ github.event_name == 'workflow_run' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') }}
+            type=semver,pattern={{version}}
+            type=semver,pattern=v{{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern=v{{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=sha,format=short
+
+      - name: Build and push demo image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/demo/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.demo-meta.outputs.tags }}
+          labels: ${{ steps.demo-meta.outputs.labels }}
+          cache-from: type=gha,scope=demo
+          cache-to: type=gha,mode=max,scope=demo
+
       - name: Save build status
         if: ${{ github.event_name == 'workflow_run' }}
         run: |
           echo "BUILT_DEVELOP_IMAGE=true" > build-status.txt
-          
+
       - name: Upload build status artifact
         if: ${{ github.event_name == 'workflow_run' }}
         uses: actions/upload-artifact@v4
