@@ -5,5 +5,6 @@
   "assets": {
     "directory": "./out",
     "not_found_handling": "404-page"
-  }
+  },
+  "routes": [{ "pattern": "docs.kasho.io", "custom_domain": true }]
 }
