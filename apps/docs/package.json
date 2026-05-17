@@ -12,7 +12,7 @@
     "type-check": "npx tsc --noEmit",
     "prettier": "npx prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "prettier:check": "npx prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "postbuild": "npx pagefind --site .next/server/app --output-path public/_pagefind"
+    "postbuild": "npx pagefind --site out --output-path out/_pagefind"
   },
   "dependencies": {
     "@napi-rs/simple-git": "^0.1.19",
