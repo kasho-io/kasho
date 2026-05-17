@@ -67,7 +67,7 @@ class MySQLPool implements DatabasePool {
   async query(sql: string, params?: unknown[]) {
     // MySQL uses ? placeholders, convert from PostgreSQL $1, $2 style
     const convertedSql = convertParams(sql, "mysql");
-    const [rows] = await this.pool.execute(convertedSql, params);
+    const [rows] = await this.pool.execute(convertedSql, params as mysql.ExecuteValues[]);
     return { rows: rows as Record<string, unknown>[] };
   }
 
