@@ -5,10 +5,9 @@ import { useEffect, useState } from "react";
 
 export default function Home() {
   const isDev = process.env.NODE_ENV === "development";
-  const demoPort = process.env.APP_DEMO_PORT ?? "3001";
   const docsPort = process.env.APP_DOCS_PORT ?? "3002";
-  const demoUrl = isDev ? `http://localhost:${demoPort}` : "https://demo.kasho.io";
   const docsUrl = isDev ? `http://localhost:${docsPort}` : "https://docs.kasho.io";
+  const demoUrl = `${docsUrl}/demo`;
   const githubUrl = "https://github.com/kasho-io/kasho";
 
   const [isDarkMode, setIsDarkMode] = useState(false);

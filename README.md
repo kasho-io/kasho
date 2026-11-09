@@ -6,6 +6,18 @@
 
 Kasho is a security-and-privacy-first PostgreSQL replication tool that captures and applies DDL (Data Definition Language) and DML (Data Manipulation Language) changes from a primary database to a replica database. For DML changes, each will be fed through a transform layer in order to modify / sanitize things so that no sensitive data is exposed to the replica database. It uses PostgreSQL's logical replication capabilities to ensure that schema changes and data modifications are properly synchronized.
 
+## Try the Demo
+
+With only Docker installed, you can watch Kasho anonymize live changes on your own machine:
+
+```bash
+git clone https://github.com/kasho-io/kasho.git
+cd kasho/environments/pg-demo
+docker compose up -d
+```
+
+Then open [http://localhost:3001](http://localhost:3001). See [Try the Demo](https://docs.kasho.io/demo) for what to try. Run `docker compose down -v` when you're done.
+
 ## Features
 
 - Captures DDL changes using a custom trigger-based logging system
@@ -44,11 +56,10 @@ Kasho is a security-and-privacy-first PostgreSQL replication tool that captures 
 
 #### Demo (`environments/pg-demo/`)
 
-- Production-like environment for demonstration and testing
-- Uses production Docker image builds
-- Includes PostgreSQL primary and replica databases
-- All core services configured for production deployment
-- Automated deployment via GitHub Actions
+- One-command local demo (`docker compose up -d`), with nothing to build or configure
+- Uses the published Docker images
+- Includes PostgreSQL primary and replica databases, bootstrapped automatically
+- Keeps all state in memory, so every start is a clean demo
 
 ### Tools (`tools/`)
 
@@ -160,29 +171,39 @@ docker run kasho ./pg-change-stream
 docker run kasho ./translicator
 docker run kasho ./pg-bootstrap-sync --help
 
-# Or use environment-specific docker-compose files
-cd environments/pg-demo && docker-compose up
 ```
 
 ## Getting Started
 
-1. Reset and start the development environment. In another terminal, run:
+These steps build Kasho from source for development. To simply see it running, use [Try the Demo](#try-the-demo).
+
+1. Create the local configuration files and install the app dependencies:
 
 ```bash
-task dev:reset
+cp environments/pg-development/.env.example environments/pg-development/.env
+cp apps/demo/.env.example apps/demo/.env.local
+npm install
 ```
 
-2. Bootstrap the replica database from the primary. This will create a consistent snapshot and start streaming changes:
+2. Start the development environment. It runs in the foreground, so use a separate terminal:
 
 ```bash
-task dev:bootstrap
+task dev:pg:start
 ```
 
-3. Run the demo app to visualize the replication. In a separate terminal, run:
+3. Once the services are up, bootstrap the replica database from the primary. This will create a consistent snapshot and start streaming changes:
+
+```bash
+task dev:pg:bootstrap
+```
+
+4. Run the demo app to visualize the replication. In a separate terminal, run:
 
 ```bash
 task dev:app:demo
 ```
+
+Use `task dev:pg:stop` to stop the environment and remove its data. MySQL equivalents are available as `task dev:mysql:*`.
 
 ## Requirements
 
