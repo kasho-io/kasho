@@ -22,7 +22,7 @@ RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/c
 
 # Install Go tools
 RUN go install github.com/air-verse/air@v1.62.0 && \
-    go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
+    go install github.com/fullstorydev/grpcurl/cmd/grpcurl@v1.9.3
 
 # Set working directory
 WORKDIR /app
