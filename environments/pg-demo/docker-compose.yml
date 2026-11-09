@@ -1,128 +1,57 @@
+# Kasho local demo (PostgreSQL)
+#
+#   docker compose up -d      # then open http://localhost:3001
+#   docker compose down -v    # remove everything
+#
+# Uses the published images, so there is nothing to build. All database and
+# Redis state lives in memory: the bootstrap only runs from a clean start, so
+# every `up` rebuilds the demo from scratch. The credentials below are for this
+# throwaway local stack only, and only the demo UI is published to the host.
+
+name: kasho-demo
+
+x-kasho-env: &kasho-env
+  KV_URL: redis://redis:6379
+  CHANGE_STREAM_SERVICE_ADDR: pg-change-stream:50051
+  PRIMARY_DATABASE_URL: postgresql://kasho:kasho@postgres-primary:5432/primary_db?sslmode=disable
+  REPLICA_DATABASE_URL: postgresql://kasho:kasho@postgres-replica:5432/replica_db?sslmode=disable
+
 services:
   prepare-postgres-init-d:
-    user: "${UID}:${GID}"
     image: kashoio/kasho:develop
+    # The image runs as a non-root user, but freshly created volumes are owned by root.
+    user: root
     volumes:
       - ../../sql:/app/sql:ro
-      - ./primary-init.d:/app/primary-init.d
-      - ./replica-init.d:/app/replica-init.d
+      - primary-init:/app/primary-init.d
+      - replica-init:/app/replica-init.d
       - ../../scripts/development/populate-postgres-init.sh:/app/scripts/populate-postgres-init.sh:ro
-    env_file:
-      - .env
     environment:
-      - ENV=demo
+      <<: *kasho-env
+      ENV: demo
     command: ["/app/scripts/populate-postgres-init.sh"]
 
   redis:
     image: redis:7-alpine
-    expose:
-      - "6379"
-    volumes:
-      - redis-data:/data
-    command: redis-server --appendonly yes
-
-  pg-change-stream:
-    image: kashoio/kasho:develop
-    command: ["/app/bin/pg-change-stream"]
-    expose:
-      - "50051"
-    env_file:
-      - .env
-    volumes:
-      - redis-data:/data/redis
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "50051"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-    depends_on:
-      - postgres-primary
-      - redis
-
-  translicator:
-    image: kashoio/kasho:develop
-    command: ["/app/bin/translicator"]
-    env_file:
-      - .env
-    healthcheck:
-      test: ["CMD", "pgrep", "translicator"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-    depends_on:
-      pg-change-stream:
-        condition: service_healthy
-      postgres-replica:
-        condition: service_started
-    volumes:
-      - ./config:/app/config
-
-  demo:
-    image: kashoio/kasho-demo:develop
-    env_file:
-      - .env
-    expose:
-      - "3001"
-    environment:
-      PORT: "3001"
-      HOSTNAME: "0.0.0.0"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-    depends_on:
-      postgres-primary:
-        condition: service_started
-      postgres-replica:
-        condition: service_started
-
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    env_file:
-      - .env
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - demo
+    command: redis-server --save "" --appendonly no
 
   postgres-primary:
     image: postgres:17
     environment:
-      POSTGRES_USER: ${PRIMARY_DATABASE_SU_USER}
-      POSTGRES_PASSWORD: ${PRIMARY_DATABASE_SU_PASSWORD}
-      POSTGRES_DB: ${PRIMARY_DATABASE_DB}
-    env_file:
-      - .env
-    # Internal-only: no host port binding. Reachable from other compose
-    # services as postgres-primary:5432.
-    expose:
-      - "5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: primary_db
+    tmpfs:
+      - /var/lib/postgresql/data
     volumes:
-      - postgres-primary-data:/var/lib/postgresql/data
-      - ./primary-init.d:/docker-entrypoint-initdb.d:ro
-      - ./pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
-      - ./server.crt:/etc/postgresql/server.crt:ro
-      - ./server.key:/tmp/server.key:ro
-    command:
-      - bash
-      - -c
-      - |
-        cp /tmp/server.key /etc/postgresql/server.key &&
-        chmod 600 /etc/postgresql/server.key &&
-        chown postgres:postgres /etc/postgresql/server.key &&
-        exec docker-entrypoint.sh postgres \
-          -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 \
-          -c listen_addresses='*' -c log_connections=on -c log_hostname=on \
-          -c ssl=on -c ssl_cert_file=/etc/postgresql/server.crt \
-          -c ssl_key_file=/etc/postgresql/server.key \
-          -c hba_file=/etc/postgresql/pg_hba.conf
+      - primary-init:/docker-entrypoint-initdb.d:ro
+    command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
+    healthcheck:
+      # Uses TCP because the server only listens on a Unix socket during init.
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "primary_db"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
     depends_on:
       prepare-postgres-init-d:
         condition: service_completed_successfully
@@ -130,46 +59,81 @@ services:
   postgres-replica:
     image: postgres:17
     environment:
-      POSTGRES_USER: ${REPLICA_DATABASE_SU_USER}
-      POSTGRES_PASSWORD: ${REPLICA_DATABASE_SU_PASSWORD}
-      POSTGRES_DB: ${REPLICA_DATABASE_DB}
-    env_file:
-      - .env
-    # Internal-only: no host port binding. Reachable from other compose
-    # services as postgres-replica:5432.
-    expose:
-      - "5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: replica_db
+    tmpfs:
+      - /var/lib/postgresql/data
     volumes:
-      - postgres-replica-data:/var/lib/postgresql/data
-      - ./replica-init.d:/docker-entrypoint-initdb.d:ro
-      - ./pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
-      - ./server.crt:/etc/postgresql/server.crt:ro
-      - ./server.key:/tmp/server.key:ro
-    command:
-      - bash
-      - -c
-      - |
-        cp /tmp/server.key /etc/postgresql/server.key &&
-        chmod 600 /etc/postgresql/server.key &&
-        chown postgres:postgres /etc/postgresql/server.key &&
-        exec docker-entrypoint.sh postgres \
-          -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10 \
-          -c listen_addresses='*' -c log_connections=on -c log_hostname=on \
-          -c ssl=on -c ssl_cert_file=/etc/postgresql/server.crt \
-          -c ssl_key_file=/etc/postgresql/server.key \
-          -c hba_file=/etc/postgresql/pg_hba.conf
+      - replica-init:/docker-entrypoint-initdb.d:ro
+    command: postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "replica_db"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
     depends_on:
       prepare-postgres-init-d:
         condition: service_completed_successfully
 
+  pg-change-stream:
+    image: kashoio/kasho:develop
+    command: ["/app/bin/pg-change-stream"]
+    environment: *kasho-env
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50051"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  translicator:
+    image: kashoio/kasho:develop
+    command: ["/app/bin/translicator"]
+    environment: *kasho-env
+    volumes:
+      - ./config:/app/config:ro
+    depends_on:
+      pg-change-stream:
+        condition: service_healthy
+      postgres-replica:
+        condition: service_healthy
+
+  bootstrap:
+    image: kashoio/kasho:develop
+    command: ["/app/scripts/bootstrap-kasho-pg.sh"]
+    environment:
+      <<: *kasho-env
+      # Taking the snapshot needs superuser access to the primary.
+      PRIMARY_DATABASE_URL: postgresql://postgres:postgres@postgres-primary:5432/primary_db?sslmode=disable
+      REPLICATION_SLOT_NAME: kasho_slot
+      WAIT_FOR_BOOTSTRAP: "true"
+    depends_on:
+      translicator:
+        condition: service_started
+      pg-change-stream:
+        condition: service_healthy
+      postgres-primary:
+        condition: service_healthy
+
+  demo:
+    image: kashoio/kasho-demo:develop
+    environment:
+      PRIMARY_DATABASE_URL: postgresql://kasho:kasho@postgres-primary:5432/primary_db?sslmode=disable
+      REPLICA_DATABASE_URL: postgresql://kasho:kasho@postgres-replica:5432/replica_db?sslmode=disable
+    volumes:
+      # The UI's config panel reads this path, so it always shows the active transforms.
+      - ./config:/app/environments/pg-development/config:ro
+    ports:
+      - "127.0.0.1:${DEMO_PORT:-3001}:3001"
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+
 volumes:
-  postgres-primary-data:
-    driver: local
-  postgres-replica-data:
-    driver: local
-  redis-data:
-    driver: local
-  caddy-data:
-    driver: local
-  caddy-config:
-    driver: local 
+  primary-init:
+  replica-init:
