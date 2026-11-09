@@ -1,0 +1,63 @@
+import { Callout } from "nextra/components";
+
+# Try the Demo
+
+See Kasho anonymize live PostgreSQL changes on your own machine. The demo runs a primary database, a replica, Kasho, and a small web UI that shows both databases side by side. It uses published container images, so there is nothing to build.
+
+You'll need [Docker](https://docs.docker.com/get-docker/) with Docker Compose v2, and port 3001 free.
+
+## Start the Demo
+
+```bash
+git clone https://github.com/kasho-io/kasho.git
+cd kasho/environments/pg-demo
+docker compose up -d
+```
+
+The command returns once the replica has been bootstrapped from the primary, which usually takes under a minute after the images are downloaded. Then open [http://localhost:3001](http://localhost:3001). The replica table may take up to another minute to finish filling in.
+
+<Callout type="info">
+  **Port 3001 already in use?** Run `DEMO_PORT=3005 docker compose up -d` and open that port instead.
+</Callout>
+
+## What to Try
+
+- **Change a row.** Edit a name or email in the Primary table and click **Save**. Within a few seconds the same row changes in the Replica table, with fake values in place of what you typed.
+- **See the rules.** Expand **transforms.yml Configuration** at the top of the page to see the rules applied to each column.
+- **Change the rules.** Edit `config/transforms.yml`, then restart the demo:
+
+  ```bash
+  docker compose down
+  docker compose up -d
+  ```
+
+  See [Transform Configuration](/configuration/transforms) for the available transforms.
+
+## What's Running
+
+| Service                       | Purpose                                                        |
+| ----------------------------- | -------------------------------------------------------------- |
+| `postgres-primary`            | Source database, loaded with sample SaaS data                  |
+| `pg-change-stream`            | Captures changes from the primary                              |
+| `redis`                       | Buffers changes in order                                       |
+| `translicator`                | Applies your transforms and writes to the replica              |
+| `postgres-replica`            | Target database holding only anonymized data                   |
+| `demo`                        | The web UI on port 3001                                        |
+| `prepare-postgres-init-d`, `bootstrap` | One-time setup steps, which exit when finished        |
+
+To follow what Kasho is doing:
+
+```bash
+docker compose logs -f pg-change-stream translicator
+```
+
+<Callout type="warning">
+  The demo is for local evaluation only. It uses fixed passwords and keeps all data in memory, so each start begins from
+  the same sample data. See the [Quick Start](/quick-start) to run Kasho against your own databases.
+</Callout>
+
+## Clean Up
+
+```bash
+docker compose down -v
+```

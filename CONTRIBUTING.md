@@ -30,13 +30,17 @@ cd kasho
 # 3. Install npm dependencies
 npm install
 
-# 4. Start the development environment (Docker)
-task dev
+# 4. Create the local configuration files
+cp environments/pg-development/.env.example environments/pg-development/.env
+cp apps/demo/.env.example apps/demo/.env.local
 
-# 5. In another terminal, bootstrap the replica database
-task dev:bootstrap
+# 5. Start the development environment (Docker)
+task dev:pg:start
 
-# 6. Run an app (e.g., the demo)
+# 6. In another terminal, bootstrap the replica database
+task dev:pg:bootstrap
+
+# 7. Run an app (e.g., the demo)
 task dev:app:demo
 ```
 
@@ -48,10 +52,9 @@ This project uses both Task (for orchestration) and npm (for Node.js apps). Here
 
 | Task | Command |
 |------|---------|
-| Start Docker dev environment | `task dev` |
-| Stop Docker environment | `task dev:stop` |
-| Reset environment (fresh start) | `task dev:reset` |
-| Bootstrap replica database | `task dev:bootstrap` |
+| Start Docker dev environment | `task dev:pg:start` |
+| Stop Docker environment and remove its data | `task dev:pg:stop` |
+| Bootstrap replica database | `task dev:pg:bootstrap` |
 | Build Docker images | `task build` |
 | Run a specific app | `task dev:app:demo` |
 | Run ALL tests (Go + apps) | `task test` |
@@ -91,7 +94,7 @@ kasho/
 ├── pkg/                     # Shared Go packages
 ├── environments/            # Docker Compose configurations
 │   ├── pg-development/      # Local dev environment
-│   └── pg-demo/             # Production-like demo
+│   └── pg-demo/             # One-command local demo
 ├── proto/                   # Protocol buffer definitions
 └── sql/                     # Database setup scripts
 ```
@@ -104,7 +107,7 @@ Go services run inside Docker with hot-reload via [air](https://github.com/air-v
 
 ```bash
 # Start the environment (services auto-reload on file changes)
-task dev
+task dev:pg:start
 
 # Run Go tests
 task test:go
@@ -141,7 +144,7 @@ npm run prettier --workspace=apps/demo
 
 Environment variables are managed separately for Docker services and apps:
 
-- **Docker services**: `environments/pg-development/.env` and `environments/pg-demo/.env`
+- **Docker services**: `environments/pg-development/.env` (the local demo in `environments/pg-demo/` needs no configuration)
 - **Next.js apps**: Use standard Next.js `.env.local` files within each app directory
 
 See `.env.example` files in each environment directory for available variables.
@@ -229,7 +232,8 @@ export PATH="$PATH:$(go env GOPATH)/bin"
 
 ```bash
 # Reset the environment (removes volumes)
-task dev:reset
+task dev:pg:stop
+task dev:pg:start
 ```
 
 ### npm install fails
