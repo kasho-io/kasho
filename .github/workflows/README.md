@@ -13,12 +13,8 @@ The workflows are designed to run in this order:
      - After Test Suite passes on main → publishes as `:develop`
      - On version tag push (v*) → publishes as `:v1.0.0` and `:latest`
    - Publishes to Docker Hub
-   
-3. **Deploy Demo** (`deploy-demo.yml`)
-   - Triggers: After Publish Container Images completes on main
-   - Pulls pre-built `:develop` images from Docker Hub
-   - Deploys to DigitalOcean droplet
-   - Note: Currently uses `:develop` tag (pre-release phase)
+
+The local demo (`environments/pg-demo/`) runs the `:develop` images, so publishing them keeps the demo current.
 
 ## Container Images
 
@@ -35,4 +31,4 @@ The workflows are designed to run in this order:
 
 ## Local Development
 
-The development environment (`environments/pg-development/`) continues to use local builds with hot-reload via air. Only the demo and production deployments use the published container images.
+The development environment (`environments/pg-development/`) continues to use local builds with hot-reload via air. Only the local demo and production deployments use the published container images.
